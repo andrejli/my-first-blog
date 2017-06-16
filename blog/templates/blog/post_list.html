@@ -5,8 +5,13 @@
     <title>First</title>
 </head>
 <body>
-    <p>Ahoj!</p>
-    <p>Funguje to!</p>
-    <div>{{ posts }}</div>
+    <div>
+        <h1><a href="/">Django Girls Blog</a> </h1>
+    </div>
+    <p>published: {{ post.published_date }}</p>
+    <h1><a href="">{{ post.title }}</a> </h1>
+    <p>{{ post.text|linebreaksbr }}</p>
+    </div>
+(% endfor %)
 </body>
 </html>
