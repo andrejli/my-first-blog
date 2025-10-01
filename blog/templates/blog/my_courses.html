@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+{% load static %}
+{% load course_extras %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Courses - Terminal LMS</title>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="page-header">
+        <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
+        <div class="top-menu">
+            <span>{{ user.username }}@lms:~$ my-courses</span>
+            <a href="{% url 'course_list' %}" class="btn btn-default">browse</a>
+            <a href="{% url 'student_dashboard' %}" class="btn btn-info">dashboard</a>
+        </div>
+    </div>
+
+    <div class="content container">
+        <div class="row">
+            <div class="col-md-8">
+                <h2>My Courses</h2>
+                <p class="subtitle">Manage your enrolled courses and track your progress</p>
+
+                <!-- Enrolled Courses -->
+                {% if enrolled_courses %}
+                    <div class="course-section">
+                        <h3><i class="glyphicon glyphicon-education"></i> Currently Enrolled ({{ enrolled_courses|length }})</h3>
+                        <div class="row">
+                            {% for enrollment in enrolled_courses %}
+                            <div class="col-md-6">
+                                <div class="course-card">
+                                    <div class="course-header">
+                                        <h4>
+                                            <a href="{% url 'course_detail' enrollment.course.id %}">
+                                                {{ enrollment.course.title }}
+                                            </a>
+                                        </h4>
+                                        <span class="course-code">{{ enrollment.course.course_code }}</span>
+                                    </div>
+                                    
+                                    <div class="course-meta">
+                                        <div class="enrollment-info">
+                                            <small><strong>Enrolled:</strong> {{ enrollment.enrollment_date|date:"M d, Y" }}</small>
+                                            <br>
+                                            <small><strong>Status:</strong> 
+                                                <span class="status-{{ enrollment.status }}">{{ enrollment.status|title }}</span>
+                                            </small>
+                                            {% if enrollment.grade %}
+                                            <br>
+                                            <small><strong>Grade:</strong> <span class="grade">{{ enrollment.grade }}%</span></small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="course-progress">
+                                        {% with progress=enrollment.course|get_user_progress:user %}
+                                        <div class="progress-info">
+                                            <span class="progress-text">
+                                                {{ progress.completed_lessons }} / {{ progress.total_lessons }} lessons
+                                            </span>
+                                            <span class="progress-percentage">{{ progress.progress_percentage|floatformat:0 }}%</span>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: {{ progress.progress_percentage }}%">
+                                            </div>
+                                        </div>
+                                        {% endwith %}
+                                    </div>
+
+                                    <div class="course-actions">
+                                        <a href="{% url 'course_detail' enrollment.course.id %}" 
+                                           class="btn btn-primary btn-sm">Continue Learning</a>
+                                        {% if enrollment.status == 'enrolled' %}
+                                        <a href="{% url 'drop_course' enrollment.course.id %}" 
+                                           class="btn btn-danger btn-sm"
+                                           onclick="return confirm('Are you sure you want to drop this course?')">Drop Course</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% if forloop.counter0|divisibleby:2 %}
+                            </div><div class="row">
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Completed Courses -->
+                {% if completed_courses %}
+                    <div class="course-section">
+                        <h3><i class="glyphicon glyphicon-ok-circle"></i> Completed Courses ({{ completed_courses|length }})</h3>
+                        <div class="row">
+                            {% for enrollment in completed_courses %}
+                            <div class="col-md-6">
+                                <div class="course-card completed">
+                                    <div class="course-header">
+                                        <h4>
+                                            <a href="{% url 'course_detail' enrollment.course.id %}">
+                                                {{ enrollment.course.title }}
+                                            </a>
+                                        </h4>
+                                        <span class="course-code">{{ enrollment.course.course_code }}</span>
+                                    </div>
+                                    
+                                    <div class="course-meta">
+                                        <small><strong>Completed:</strong> {{ enrollment.completion_date|date:"M d, Y" }}</small>
+                                        <br>
+                                        <small><strong>Grade:</strong> <span class="grade">{{ enrollment.grade }}%</span></small>
+                                    </div>
+
+                                    <div class="course-actions">
+                                        <a href="{% url 'course_detail' enrollment.course.id %}" 
+                                           class="btn btn-success btn-sm">Review Course</a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% if forloop.counter0|divisibleby:2 %}
+                            </div><div class="row">
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- No Courses Message -->
+                {% if not enrolled_courses and not completed_courses %}
+                    <div class="alert alert-info">
+                        <h4>No courses yet!</h4>
+                        <p>You haven't enrolled in any courses. Browse our course catalog to get started.</p>
+                        <a href="{% url 'course_list' %}" class="btn btn-primary">Browse Courses</a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-md-4">
+                <div class="sidebar">
+                    <!-- Quick Stats -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Learning Statistics</h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="stat-item">
+                                <span class="stat-number">{{ enrolled_courses|length }}</span>
+                                <span class="stat-label">Active Courses</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ completed_courses|length }}</span>
+                                <span class="stat-label">Completed</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ total_lessons }}</span>
+                                <span class="stat-label">Lessons Completed</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    {% if recent_progress %}
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Recent Activity</h4>
+                        </div>
+                        <div class="panel-body">
+                            {% for progress in recent_progress %}
+                            <div class="activity-item">
+                                <div class="activity-title">{{ progress.lesson.title }}</div>
+                                <div class="activity-course">{{ progress.lesson.course.title }}</div>
+                                <div class="activity-date">{{ progress.completion_date|timesince }} ago</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Quick Actions -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Quick Actions</h4>
+                        </div>
+                        <div class="panel-body">
+                            <a href="{% url 'course_list' %}" class="btn btn-primary btn-block">
+                                <i class="glyphicon glyphicon-search"></i> Browse Courses
+                            </a>
+                            <a href="{% url 'student_dashboard' %}" class="btn btn-info btn-block">
+                                <i class="glyphicon glyphicon-dashboard"></i> Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .subtitle {
+            color: #888888;
+            margin-bottom: 30px;
+        }
+        
+        .course-section {
+            margin-bottom: 40px;
+        }
+        
+        .course-section h3 {
+            color: #32cd32;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #333333;
+            padding-bottom: 10px;
+        }
+        
+        .course-card {
+            border: 1px solid #333333;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #0a0a0a;
+            transition: all 0.3s ease;
+        }
+        
+        .course-card:hover {
+            border-color: #32cd32;
+            box-shadow: 0 0 10px rgba(50, 205, 50, 0.3);
+        }
+        
+        .course-card.completed {
+            border-color: #007bff;
+            background-color: rgba(0, 123, 255, 0.05);
+        }
+        
+        .course-card.completed:hover {
+            border-color: #007bff;
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
+        }
+        
+        .course-header h4 {
+            margin: 0 0 5px 0;
+        }
+        
+        .course-header h4 a {
+            color: #ffc107;
+            text-decoration: none;
+        }
+        
+        .course-header h4 a:hover {
+            color: #32cd32;
+        }
+        
+        .course-code {
+            color: #888888;
+            font-size: 12px;
+            font-family: 'Ubuntu Mono', monospace;
+            text-transform: uppercase;
+        }
+        
+        .course-meta {
+            margin: 15px 0;
+            color: #888888;
+            font-size: 13px;
+        }
+        
+        .course-meta .status-enrolled {
+            color: #32cd32;
+        }
+        
+        .course-meta .status-completed {
+            color: #007bff;
+        }
+        
+        .course-meta .status-dropped {
+            color: #dc3545;
+        }
+        
+        .course-meta .grade {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        
+        .course-progress {
+            margin: 15px 0;
+        }
+        
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #888888;
+        }
+        
+        .progress-text {
+            font-family: 'Ubuntu Mono', monospace;
+        }
+        
+        .progress-percentage {
+            font-family: 'Ubuntu Mono', monospace;
+            font-weight: bold;
+            color: #ffc107;
+        }
+        
+        .course-actions {
+            margin-top: 15px;
+            border-top: 1px solid #333333;
+            padding-top: 15px;
+        }
+        
+        .course-actions .btn {
+            margin-right: 10px;
+        }
+        
+        .stat-item {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .stat-item .stat-number {
+            display: block;
+            font-size: 24px;
+            font-weight: bold;
+            color: #32cd32;
+            font-family: 'Ubuntu Mono', monospace;
+        }
+        
+        .stat-item .stat-label {
+            display: block;
+            font-size: 12px;
+            color: #888888;
+            text-transform: uppercase;
+        }
+        
+        .activity-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #333333;
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .activity-title {
+            color: #ffc107;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        
+        .activity-course {
+            color: #888888;
+            font-size: 12px;
+            margin: 2px 0;
+        }
+        
+        .activity-date {
+            color: #666666;
+            font-size: 11px;
+            font-family: 'Ubuntu Mono', monospace;
+        }
+    </style>
+</body>
+</html>

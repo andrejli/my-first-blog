@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Terminal LMS{% endblock %}</title>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="page-header">
+        <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
+        <div class="top-menu">
+            {% if user.is_authenticated %}
+                <span>user@lms:~$ whoami → {{ user.username }}</span>
+                {% if user.is_staff and user.is_superuser %}
+                    <a href="/admin/" class="btn btn-default">admin</a>
+                {% else %}
+                    {% if user.userprofile.role == 'instructor' %}
+                        <a href="{% url 'instructor_dashboard' %}" class="btn btn-default">dashboard</a>
+                    {% else %}
+                        <a href="{% url 'student_dashboard' %}" class="btn btn-default">dashboard</a>
+                    {% endif %}
+                {% endif %}
+                <a href="{% url 'logout' %}" class="btn btn-default">logout</a>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-default">login</a>
+                <a href="{% url 'register' %}" class="btn btn-default">register</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% block content %}
+    {% endblock %}
+
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

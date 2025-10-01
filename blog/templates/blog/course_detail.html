@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+{% load static %}
+{% load course_extras %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ course.title }} - LMS</title>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="page-header">
+        <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
+        <div class="top-menu">
+            {% if user.is_authenticated %}
+                <span>user@lms:~$ {{ user.username }}</span>
+                <a href="{% url 'course_list' %}" class="btn btn-default">courses</a>
+            {% else %}
+                <a href="/admin/" class="btn btn-default">login</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="content container">
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Course Header -->
+                <div class="course-header">
+                    <h2>{{ course.title }}</h2>
+                    <p class="course-code"><strong>Course Code:</strong> {{ course.course_code }}</p>
+                    <p class="lead">{{ course.description }}</p>
+                </div>
+
+                <!-- Course Info -->
+                <div class="row course-info">
+                    <div class="col-sm-3">
+                        <strong>Instructor:</strong><br>
+                        {{ course.instructor.get_full_name|default:course.instructor.username }}
+                    </div>
+                    <div class="col-sm-3">
+                        <strong>Duration:</strong><br>
+                        {{ course.duration_weeks }} week{% if course.duration_weeks != 1 %}s{% endif %}
+                    </div>
+                    <div class="col-sm-3">
+                        <strong>Enrolled:</strong><br>
+                        {{ course.get_enrolled_count }}/{{ course.max_students }} students
+                    </div>
+                    <div class="col-sm-3">
+                        <strong>Published:</strong><br>
+                        {{ course.published_date|date:"M d, Y" }}
+                    </div>
+                </div>
+
+                <!-- Enrollment Status -->
+                {% if user.is_authenticated %}
+                    {% if is_enrolled %}
+                        <div class="alert alert-success">
+                            <h4><i class="glyphicon glyphicon-ok"></i> You are enrolled in this course!</h4>
+                            {% if total_lessons > 0 %}
+                                <p>Progress: {{ completed_lessons }}/{{ total_lessons }} lessons completed 
+                                ({{ completed_lessons|floatformat:0 }}{% if total_lessons %}{{ ''|add:completed_lessons|mul:100|div:total_lessons|floatformat:0 }}%{% endif %})</p>
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {% if total_lessons %}{{ completed_lessons|mul:100|div:total_lessons }}{% else %}0{% endif %}%">
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <h4>Ready to start learning?</h4>
+                            <p>Enroll in this course to access all lessons and track your progress.</p>
+                            <a href="{% url 'enroll_course' course.id %}" class="btn btn-success">
+                                <i class="glyphicon glyphicon-plus"></i> Enroll Now
+                            </a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-warning">
+                        <h4>Login Required</h4>
+                        <p>Please <a href="/admin/">login</a> to enroll in this course and access lessons.</p>
+                    </div>
+                {% endif %}
+
+                <!-- Course Prerequisites -->
+                {% if course.prerequisites %}
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4>Prerequisites</h4>
+                    </div>
+                    <div class="panel-body">
+                        {{ course.prerequisites|linebreaks }}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Course Lessons -->
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4>Course Content</h4>
+                    </div>
+                    <div class="panel-body">
+                        {% if lessons %}
+                            <div class="lesson-list">
+                                {% for lesson in lessons %}
+                                <div class="lesson-item">
+                                    <div class="row">
+                                        <div class="col-sm-1">
+                                            {% if is_enrolled %}
+                                                {% if user_progress|get_item:lesson.pk %}
+                                                    <i class="glyphicon glyphicon-ok-circle text-success"></i>
+                                                {% else %}
+                                                    <i class="glyphicon glyphicon-record text-muted"></i>
+                                                {% endif %}
+                                            {% else %}
+                                                <i class="glyphicon glyphicon-lock text-warning"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-sm-1">
+                                            <span class="lesson-number">{{ lesson.order }}</span>
+                                        </div>
+                                        <div class="col-sm-8">
+                                            {% if is_enrolled %}
+                                                <a href="{% url 'lesson_detail' course.id lesson.id %}" class="lesson-link">
+                                                    {{ lesson.title }}
+                                                </a>
+                                            {% else %}
+                                                <span class="lesson-title-locked">{{ lesson.title }}</span>
+                                            {% endif %}
+                                            {% if lesson.video_url %}
+                                                <small class="text-muted"><i class="glyphicon glyphicon-play-circle"></i> Video</small>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-sm-2 text-right">
+                                            {% if is_enrolled and user_progress|get_item:lesson.pk %}
+                                                <small class="text-success">Completed</small>
+                                            {% elif is_enrolled %}
+                                                <small class="text-muted">Not started</small>
+                                            {% else %}
+                                                <small class="text-warning">Locked</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No lessons available yet. Check back soon!</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-md-4">
+                <div class="sidebar">
+                    <!-- Quick Actions -->
+                    {% if user.is_authenticated and is_enrolled %}
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Quick Actions</h4>
+                        </div>
+                        <div class="panel-body">
+                            {% if lessons %}
+                                {% for lesson in lessons %}
+                                    {% if not user_progress|get_item:lesson.pk %}
+                                        <a href="{% url 'lesson_detail' course.id lesson.id %}" class="btn btn-primary btn-block">
+                                            Continue with Lesson {{ lesson.order }}
+                                        </a>
+                                        {% break %}
+                                    {% endif %}
+                                {% empty %}
+                                    <p>All lessons completed! 🎉</p>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Course Stats -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Course Stats</h4>
+                        </div>
+                        <div class="panel-body">
+                            <p><strong>{{ lessons.count }}</strong> lesson{% if lessons.count != 1 %}s{% endif %}</p>
+                            <p><strong>{{ course.get_enrolled_count }}</strong> student{% if course.get_enrolled_count != 1 %}s{% endif %} enrolled</p>
+                            <p><strong>{{ course.duration_weeks }}</strong> week duration</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom filter for template -->
+    {% load static %}
+    <script>
+        // Terminal-style cursor effect
+        console.log("⚡ Terminal LMS loaded successfully");
+    </script>
+</body>
+</html>

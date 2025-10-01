@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+{% load static %}
+{% load course_extras %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ course.title }} - Students - Terminal LMS</title>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="page-header">
+        <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
+        <div class="top-menu">
+            <span>instructor@lms:~$ students/{{ course.course_code }}</span>
+            <a href="{% url 'course_detail' course.id %}" class="btn btn-default">course</a>
+            <a href="{% url 'instructor_dashboard' %}" class="btn btn-info">dashboard</a>
+        </div>
+    </div>
+
+    <div class="content container">
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Course Header -->
+                <div class="course-header">
+                    <h2>{{ course.title }} <small class="course-code">{{ course.course_code }}</small></h2>
+                    <p class="course-description">{{ course.description|truncatewords:20 }}</p>
+                </div>
+
+                <!-- Students List -->
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4><i class="glyphicon glyphicon-user"></i> Enrolled Students ({{ total_students }})</h4>
+                    </div>
+                    <div class="panel-body">
+                        {% if student_progress %}
+                            <div class="table-responsive">
+                                <table class="table table-striped student-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Student</th>
+                                            <th>Enrolled</th>
+                                            <th>Progress</th>
+                                            <th>Completion</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in student_progress %}
+                                        <tr>
+                                            <td>
+                                                <div class="student-info">
+                                                    <strong>{{ item.student.get_full_name|default:item.student.username }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">@{{ item.student.username }}</small>
+                                                    {% if item.student.email %}
+                                                    <br>
+                                                    <small class="text-muted">{{ item.student.email }}</small>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="enrollment-date">
+                                                    {{ item.enrollment.enrollment_date|date:"M d, Y" }}
+                                                </span>
+                                                <br>
+                                                <small class="text-muted">
+                                                    {{ item.enrollment.enrollment_date|timesince }} ago
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <div class="progress-container">
+                                                    <div class="progress-text">
+                                                        <span class="completed">{{ item.completed_lessons }}</span> / 
+                                                        <span class="total">{{ item.total_lessons }}</span>
+                                                    </div>
+                                                    <div class="progress">
+                                                        <div class="progress-bar" role="progressbar" 
+                                                             style="width: {{ item.progress_percentage }}%">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="completion-percentage">
+                                                    {{ item.progress_percentage|floatformat:0 }}%
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="enrollment-status status-{{ item.enrollment.status }}">
+                                                    {{ item.enrollment.status|title }}
+                                                </span>
+                                                {% if item.enrollment.grade %}
+                                                <br>
+                                                <small class="grade">Grade: {{ item.enrollment.grade }}%</small>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <h4>No students enrolled yet</h4>
+                                <p>Students will appear here once they enroll in your course.</p>
+                                <a href="{% url 'course_detail' course.id %}" class="btn btn-primary">View Course</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-md-4">
+                <div class="sidebar">
+                    <!-- Course Stats -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Course Statistics</h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="stat-item">
+                                <span class="stat-number">{{ total_students }}</span>
+                                <span class="stat-label">Total Students</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ total_lessons }}</span>
+                                <span class="stat-label">Total Lessons</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ course.max_students }}</span>
+                                <span class="stat-label">Max Capacity</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Overview -->
+                    {% if student_progress %}
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Progress Overview</h4>
+                        </div>
+                        <div class="panel-body">
+                            {% with completed_count=0 in_progress_count=0 not_started_count=0 %}
+                                {% for item in student_progress %}
+                                    {% if item.progress_percentage == 100 %}
+                                        {% with completed_count=completed_count|add:1 %}{% endwith %}
+                                    {% elif item.progress_percentage > 0 %}
+                                        {% with in_progress_count=in_progress_count|add:1 %}{% endwith %}
+                                    {% else %}
+                                        {% with not_started_count=not_started_count|add:1 %}{% endwith %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                <div class="progress-overview">
+                                    <div class="overview-item">
+                                        <span class="overview-number text-success">
+                                            {% for item in student_progress %}{% if item.progress_percentage == 100 %}1{% endif %}{% endfor %}
+                                        </span>
+                                        <span class="overview-label">Completed</span>
+                                    </div>
+                                    <div class="overview-item">
+                                        <span class="overview-number text-warning">
+                                            {% for item in student_progress %}{% if item.progress_percentage > 0 and item.progress_percentage < 100 %}1{% endif %}{% endfor %}
+                                        </span>
+                                        <span class="overview-label">In Progress</span>
+                                    </div>
+                                    <div class="overview-item">
+                                        <span class="overview-number text-muted">
+                                            {% for item in student_progress %}{% if item.progress_percentage == 0 %}1{% endif %}{% endfor %}
+                                        </span>
+                                        <span class="overview-label">Not Started</span>
+                                    </div>
+                                </div>
+                            {% endwith %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Quick Actions -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Quick Actions</h4>
+                        </div>
+                        <div class="panel-body">
+                            <a href="{% url 'course_detail' course.id %}" class="btn btn-primary btn-block">
+                                <i class="glyphicon glyphicon-eye-open"></i> View Course
+                            </a>
+                            <a href="/admin/blog/course/{{ course.id }}/change/" class="btn btn-default btn-block">
+                                <i class="glyphicon glyphicon-edit"></i> Edit Course
+                            </a>
+                            <a href="/admin/blog/lesson/add/?course={{ course.id }}" class="btn btn-success btn-block">
+                                <i class="glyphicon glyphicon-plus"></i> Add Lesson
+                            </a>
+                            <a href="{% url 'instructor_dashboard' %}" class="btn btn-info btn-block">
+                                <i class="glyphicon glyphicon-dashboard"></i> Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .course-header {
+            margin-bottom: 30px;
+        }
+        
+        .course-header h2 {
+            margin-bottom: 10px;
+        }
+        
+        .course-description {
+            color: #888888;
+        }
+        
+        .student-table {
+            color: #ffc107;
+        }
+        
+        .student-table th {
+            color: #32cd32;
+            background-color: #1a1a1a;
+            border-color: #333333;
+            font-family: 'Ubuntu', sans-serif;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+        
+        .student-table td {
+            border-color: #333333;
+            vertical-align: middle;
+        }
+        
+        .student-info strong {
+            color: #32cd32;
+        }
+        
+        .enrollment-date {
+            font-family: 'Ubuntu Mono', monospace;
+            color: #ffc107;
+        }
+        
+        .progress-container {
+            min-width: 100px;
+        }
+        
+        .progress-text {
+            font-family: 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        
+        .progress-text .completed {
+            color: #32cd32;
+            font-weight: bold;
+        }
+        
+        .progress-text .total {
+            color: #888888;
+        }
+        
+        .completion-percentage {
+            font-family: 'Ubuntu Mono', monospace;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .enrollment-status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        
+        .status-enrolled {
+            background-color: rgba(50, 205, 50, 0.2);
+            color: #32cd32;
+            border: 1px solid #32cd32;
+        }
+        
+        .status-completed {
+            background-color: rgba(0, 123, 255, 0.2);
+            color: #007bff;
+            border: 1px solid #007bff;
+        }
+        
+        .status-dropped {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border: 1px solid #dc3545;
+        }
+        
+        .grade {
+            color: #ffc107;
+            font-family: 'Ubuntu Mono', monospace;
+        }
+        
+        .stat-item {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .stat-item .stat-number {
+            display: block;
+            font-size: 24px;
+            font-weight: bold;
+            color: #32cd32;
+            font-family: 'Ubuntu Mono', monospace;
+        }
+        
+        .stat-item .stat-label {
+            display: block;
+            font-size: 12px;
+            color: #888888;
+            text-transform: uppercase;
+        }
+        
+        .overview-item {
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .overview-number {
+            display: block;
+            font-size: 18px;
+            font-weight: bold;
+            font-family: 'Ubuntu Mono', monospace;
+        }
+        
+        .overview-label {
+            display: block;
+            font-size: 11px;
+            color: #888888;
+            text-transform: uppercase;
+        }
+    </style>
+</body>
+</html>

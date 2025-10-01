@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+{% load static %}
+{% load course_extras %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Terminal LMS</title>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="page-header">
+        <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
+        <div class="top-menu">
+            <span>user@lms:~$ dashboard → {{ user.username }}</span>
+            <a href="{% url 'course_list' %}" class="btn btn-default">courses</a>
+            <a href="{% url 'my_courses' %}" class="btn btn-info">my-courses</a>
+        </div>
+    </div>
+
+    <div class="content container">
+        <div class="row">
+            <div class="col-md-8">
+                <h2>$ ls -la /home/{{ user.username }}/courses</h2>
+                
+                <!-- Current Enrollments -->
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4><i class="glyphicon glyphicon-education"></i> Active Enrollments ({{ total_enrolled }})</h4>
+                    </div>
+                    <div class="panel-body">
+                        {% if course_progress %}
+                            {% for item in course_progress %}
+                            <div class="course-progress-item">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h5>
+                                            <a href="{% url 'course_detail' item.course.id %}">{{ item.course.title }}</a>
+                                            <small class="course-code">{{ item.course.course_code }}</small>
+                                        </h5>
+                                        <p class="course-instructor">
+                                            <i class="glyphicon glyphicon-user"></i>
+                                            {{ item.course.instructor.get_full_name|default:item.course.instructor.username }}
+                                        </p>
+                                        <p class="enrollment-date">
+                                            <i class="glyphicon glyphicon-calendar"></i>
+                                            Enrolled: {{ item.enrollment.enrollment_date|date:"M d, Y" }}
+                                        </p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="progress-info">
+                                            <div class="progress-stats">
+                                                <span class="completed">{{ item.completed_lessons }}</span> / 
+                                                <span class="total">{{ item.total_lessons }}</span> lessons
+                                            </div>
+                                            <div class="progress">
+                                                <div class="progress-bar" role="progressbar" 
+                                                     style="width: {{ item.progress_percentage }}%">
+                                                    {{ item.progress_percentage|floatformat:0 }}%
+                                                </div>
+                                            </div>
+                                            <div class="course-actions">
+                                                <a href="{% url 'course_detail' item.course.id %}" class="btn btn-primary btn-sm">continue</a>
+                                                <a href="{% url 'drop_course' item.course.id %}" class="btn btn-warning btn-sm" 
+                                                   onclick="return confirm('Are you sure you want to drop this course?')">drop</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-info">
+                                <h4>No active enrollments</h4>
+                                <p>You haven't enrolled in any courses yet.</p>
+                                <a href="{% url 'course_list' %}" class="btn btn-success">Browse Courses</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Completed Courses -->
+                {% if completed_enrollments %}
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4><i class="glyphicon glyphicon-ok-circle"></i> Completed Courses ({{ total_completed }})</h4>
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            {% for enrollment in completed_enrollments %}
+                            <div class="col-md-6">
+                                <div class="completed-course-card">
+                                    <h5>
+                                        <a href="{% url 'course_detail' enrollment.course.id %}">{{ enrollment.course.title }}</a>
+                                        <i class="glyphicon glyphicon-ok-circle text-success"></i>
+                                    </h5>
+                                    <p class="course-code">{{ enrollment.course.course_code }}</p>
+                                    <p class="completion-date">
+                                        <i class="glyphicon glyphicon-calendar"></i>
+                                        Completed: {{ enrollment.completion_date|date:"M d, Y" }}
+                                    </p>
+                                    {% if enrollment.grade %}
+                                    <p class="grade">
+                                        <i class="glyphicon glyphicon-star"></i>
+                                        Grade: {{ enrollment.grade }}%
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-md-4">
+                <div class="sidebar">
+                    <!-- Quick Stats -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Learning Stats</h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="stat-item">
+                                <span class="stat-number">{{ total_enrolled }}</span>
+                                <span class="stat-label">Active Enrollments</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ total_completed }}</span>
+                                <span class="stat-label">Completed Courses</span>
+                            </div>
+                            {% if course_progress %}
+                            <div class="stat-item">
+                                <span class="stat-number">
+                                    {% widthratio course_progress|length total_enrolled 100 %}%
+                                </span>
+                                <span class="stat-label">Progress Rate</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Quick Actions</h4>
+                        </div>
+                        <div class="panel-body">
+                            <a href="{% url 'course_list' %}" class="btn btn-success btn-block">
+                                <i class="glyphicon glyphicon-search"></i> Browse Courses
+                            </a>
+                            <a href="{% url 'my_courses' %}" class="btn btn-info btn-block">
+                                <i class="glyphicon glyphicon-list"></i> My Courses
+                            </a>
+                            {% if user.userprofile.role == 'instructor' %}
+                            <a href="{% url 'instructor_dashboard' %}" class="btn btn-primary btn-block">
+                                <i class="glyphicon glyphicon-blackboard"></i> Instructor Panel
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>System Info</h4>
+                        </div>
+                        <div class="panel-body">
+                            <p><strong>User:</strong> {{ user.username }}</p>
+                            <p><strong>Role:</strong> {{ user.userprofile.role|title }}</p>
+                            <p><strong>Member since:</strong> {{ user.date_joined|date:"M Y" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .course-progress-item {
+            padding: 20px 0;
+            border-bottom: 1px solid #333333;
+        }
+        
+        .course-progress-item:last-child {
+            border-bottom: none;
+        }
+        
+        .course-progress-item h5 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        
+        .course-progress-item h5 a {
+            color: #32cd32;
+            text-decoration: none;
+        }
+        
+        .course-progress-item h5 a:hover {
+            color: #ffc107;
+        }
+        
+        .course-instructor, .enrollment-date {
+            color: #888888;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        
+        .progress-info {
+            text-align: center;
+        }
+        
+        .progress-stats {
+            margin-bottom: 10px;
+            font-family: 'Ubuntu Mono', monospace;
+        }
+        
+        .progress-stats .completed {
+            color: #32cd32;
+            font-weight: bold;
+        }
+        
+        .progress-stats .total {
+            color: #ffc107;
+        }
+        
+        .course-actions {
+            margin-top: 10px;
+        }
+        
+        .course-actions .btn {
+            margin: 2px;
+        }
+        
+        .completed-course-card {
+            background-color: #111111;
+            border: 1px solid #32cd32;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .completed-course-card h5 {
+            margin-top: 0;
+            color: #32cd32;
+        }
+        
+        .completed-course-card h5 a {
+            color: #32cd32;
+            text-decoration: none;
+        }
+        
+        .completion-date, .grade {
+            color: #888888;
+            font-size: 12px;
+        }
+        
+        .stat-item {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            display: block;
+            font-size: 24px;
+            font-weight: bold;
+            color: #32cd32;
+            font-family: 'Ubuntu Mono', monospace;
+        }
+        
+        .stat-label {
+            display: block;
+            font-size: 12px;
+            color: #888888;
+            text-transform: uppercase;
+        }
+    </style>
+</body>
+</html>

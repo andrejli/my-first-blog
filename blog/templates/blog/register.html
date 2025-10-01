@@ -1,0 +1,179 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Register - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="terminal-card">
+                <div class="terminal-header">
+                    <span class="terminal-icon">></span> Create Account
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" class="terminal-form">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            <label for="{{ form.username.id_for_label }}" class="terminal-label">Username:</label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                                <div class="terminal-error">
+                                    {% for error in form.username.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="terminal-help">Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.password1.id_for_label }}" class="terminal-label">Password:</label>
+                            {{ form.password1 }}
+                            {% if form.password1.errors %}
+                                <div class="terminal-error">
+                                    {% for error in form.password1.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="terminal-help">Your password can't be too similar to your other personal information.</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.password2.id_for_label }}" class="terminal-label">Confirm Password:</label>
+                            {{ form.password2 }}
+                            {% if form.password2.errors %}
+                                <div class="terminal-error">
+                                    {% for error in form.password2.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="terminal-help">Enter the same password as before, for verification.</small>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-terminal btn-block">
+                            <span class="terminal-prompt">$</span> create_account
+                        </button>
+                    </form>
+                    
+                    <div class="text-center mt-4">
+                        <p class="terminal-text">Already have an account?</p>
+                        <a href="{% url 'login' %}" class="btn btn-terminal-outline">
+                            <span class="terminal-prompt">$</span> login
+                        </a>
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <a href="{% url 'course_list' %}" class="terminal-link">
+                            <span class="terminal-prompt">$</span> back to courses
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.terminal-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.terminal-label {
+    color: #32cd32;
+    font-family: 'Ubuntu Mono', monospace;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.terminal-form input[type="text"],
+.terminal-form input[type="password"] {
+    background-color: #1a1a1a;
+    border: 2px solid #32cd32;
+    color: #ffffff;
+    font-family: 'Ubuntu Mono', monospace;
+    padding: 0.75rem;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.terminal-form input[type="text"]:focus,
+.terminal-form input[type="password"]:focus {
+    background-color: #2a2a2a;
+    border-color: #9acd32;
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(50, 205, 50, 0.3);
+    outline: none;
+}
+
+.terminal-help {
+    color: #888888;
+    font-family: 'Ubuntu Mono', monospace;
+    font-size: 0.85em;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.terminal-error {
+    color: #ff6b6b;
+    font-family: 'Ubuntu Mono', monospace;
+    font-size: 0.85em;
+    margin-top: 0.25rem;
+}
+
+.terminal-error small {
+    display: block;
+    margin-top: 0.125rem;
+}
+
+.btn-terminal-outline {
+    background-color: transparent;
+    border: 2px solid #32cd32;
+    color: #32cd32;
+    font-family: 'Ubuntu Mono', monospace;
+    font-weight: bold;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-terminal-outline:hover {
+    background-color: #32cd32;
+    color: #000000;
+    text-decoration: none;
+}
+
+.alert {
+    font-family: 'Ubuntu Mono', monospace;
+    border-radius: 4px;
+}
+
+.alert-error {
+    background-color: #cc0000;
+    border-color: #ff0000;
+    color: #ffffff;
+}
+
+.alert-success {
+    background-color: #006600;
+    border-color: #32cd32;
+    color: #ffffff;
+}
+</style>
+{% endblock %}

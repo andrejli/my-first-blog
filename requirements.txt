@@ -1,0 +1,27 @@
+# Django LMS - Python Package Requirements
+# Install with: pip install -r requirements.txt
+#
+# This is an ultralight Learning Management System built with Django
+# For development and educational purposes
+
+# Core Django Framework
+Django>=5.2.0,<6.0.0
+
+# Image processing for user profiles and course content
+Pillow>=10.0.0
+
+# Forms enhancement
+django-crispy-forms>=2.0
+
+# Development and testing (optional)
+# Uncomment the following for development:
+# pytest>=7.0.0
+# pytest-django>=4.5.0
+# coverage>=7.0.0
+
+# Production deployment (optional)
+# Uncomment the following for production:
+# gunicorn>=21.0.0
+# psycopg2-binary>=2.9.0  # For PostgreSQL
+# whitenoise>=6.0.0       # For static files
+# django-environ>=0.11.0  # For environment variables

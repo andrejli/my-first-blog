@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+{% load static %}
+{% load course_extras %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instructor Dashboard - Terminal LMS</title>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="page-header">
+        <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
+        <div class="top-menu">
+            <span>instructor@lms:~$ dashboard → {{ user.username }}</span>
+            <a href="{% url 'course_list' %}" class="btn btn-default">courses</a>
+            <a href="/admin/blog/course/add/" class="btn btn-success">new-course</a>
+        </div>
+    </div>
+
+    <div class="content container">
+        <div class="row">
+            <div class="col-md-8">
+                <h2>$ ls -la /home/{{ user.username }}/teaching</h2>
+                
+                <!-- Instructor Courses -->
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4><i class="glyphicon glyphicon-blackboard"></i> My Courses ({{ total_courses }})</h4>
+                    </div>
+                    <div class="panel-body">
+                        {% if course_stats %}
+                            {% for stat in course_stats %}
+                            <div class="instructor-course-item">
+                                <div class="row">
+                                    <div class="col-md-7">
+                                        <h5>
+                                            <a href="{% url 'course_detail' stat.course.id %}">{{ stat.course.title }}</a>
+                                            <span class="course-status course-status-{{ stat.course.status }}">{{ stat.course.status }}</span>
+                                        </h5>
+                                        <p class="course-code">{{ stat.course.course_code }}</p>
+                                        <p class="course-meta">
+                                            <i class="glyphicon glyphicon-calendar"></i>
+                                            Created: {{ stat.course.created_date|date:"M d, Y" }}
+                                            {% if stat.course.published_date %}
+                                            | Published: {{ stat.course.published_date|date:"M d, Y" }}
+                                            {% endif %}
+                                        </p>
+                                        <p class="course-lessons">
+                                            <i class="glyphicon glyphicon-list"></i>
+                                            {{ stat.total_lessons }} lesson{% if stat.total_lessons != 1 %}s{% endif %}
+                                        </p>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <div class="course-stats">
+                                            <div class="enrollment-stats">
+                                                <div class="stat-box">
+                                                    <span class="stat-number">{{ stat.enrolled_count }}</span>
+                                                    <span class="stat-label">Students</span>
+                                                </div>
+                                                <div class="capacity-bar">
+                                                    <div class="progress">
+                                                        <div class="progress-bar" role="progressbar" 
+                                                             style="width: {{ stat.capacity_percentage }}%">
+                                                            {{ stat.enrolled_count }}/{{ stat.course.max_students }}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="course-actions">
+                                                <a href="{% url 'course_detail' stat.course.id %}" class="btn btn-primary btn-sm">view</a>
+                                                <a href="{% url 'course_students' stat.course.id %}" class="btn btn-info btn-sm">students</a>
+                                                <a href="/admin/blog/course/{{ stat.course.id }}/change/" class="btn btn-default btn-sm">edit</a>
+                                                <a href="/admin/blog/lesson/add/?course={{ stat.course.id }}" class="btn btn-success btn-sm">add-lesson</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Recent Enrollments -->
+                                {% if stat.recent_enrollments %}
+                                <div class="recent-enrollments">
+                                    <h6>Recent Enrollments:</h6>
+                                    <div class="enrollment-list">
+                                        {% for enrollment in stat.recent_enrollments %}
+                                        <span class="enrollment-item">
+                                            {{ enrollment.student.username }}
+                                            <small>({{ enrollment.enrollment_date|date:"M d" }})</small>
+                                        </span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-info">
+                                <h4>No courses created yet</h4>
+                                <p>Start by creating your first course to begin teaching.</p>
+                                <a href="/admin/blog/course/add/" class="btn btn-success">Create Your First Course</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-md-4">
+                <div class="sidebar">
+                    <!-- Teaching Stats -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Teaching Stats</h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="stat-item">
+                                <span class="stat-number">{{ total_courses }}</span>
+                                <span class="stat-label">Total Courses</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ total_students }}</span>
+                                <span class="stat-label">Total Students</span>
+                            </div>
+                            {% if total_courses > 0 %}
+                            <div class="stat-item">
+                                <span class="stat-number">
+                                    {% widthratio total_students total_courses 1 %}
+                                </span>
+                                <span class="stat-label">Avg Students/Course</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Quick Actions</h4>
+                        </div>
+                        <div class="panel-body">
+                            <a href="/admin/blog/course/add/" class="btn btn-success btn-block">
+                                <i class="glyphicon glyphicon-plus"></i> Create Course
+                            </a>
+                            <a href="/admin/blog/lesson/add/" class="btn btn-info btn-block">
+                                <i class="glyphicon glyphicon-file"></i> Add Lesson
+                            </a>
+                            <a href="/admin/blog/course/" class="btn btn-default btn-block">
+                                <i class="glyphicon glyphicon-cog"></i> Manage Courses
+                            </a>
+                            <a href="{% url 'student_dashboard' %}" class="btn btn-primary btn-block">
+                                <i class="glyphicon glyphicon-user"></i> Student View
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- System Info -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Instructor Info</h4>
+                        </div>
+                        <div class="panel-body">
+                            <p><strong>Name:</strong> {{ user.get_full_name|default:user.username }}</p>
+                            <p><strong>Username:</strong> {{ user.username }}</p>
+                            <p><strong>Email:</strong> {{ user.email|default:"Not set" }}</p>
+                            <p><strong>Teaching since:</strong> {{ user.date_joined|date:"M Y" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .instructor-course-item {
+            padding: 20px 0;
+            border-bottom: 1px solid #333333;
+        }
+        
+        .instructor-course-item:last-child {
+            border-bottom: none;
+        }
+        
+        .instructor-course-item h5 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        
+        .instructor-course-item h5 a {
+            color: #32cd32;
+            text-decoration: none;
+        }
+        
+        .instructor-course-item h5 a:hover {
+            color: #ffc107;
+        }
+        
+        .course-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .course-status-published {
+            background-color: rgba(50, 205, 50, 0.2);
+            color: #32cd32;
+            border: 1px solid #32cd32;
+        }
+        
+        .course-status-draft {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 1px solid #ffc107;
+        }
+        
+        .course-status-archived {
+            background-color: rgba(136, 136, 136, 0.2);
+            color: #888888;
+            border: 1px solid #888888;
+        }
+        
+        .course-meta, .course-lessons {
+            color: #888888;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        
+        .course-stats {
+            text-align: center;
+        }
+        
+        .enrollment-stats {
+            margin-bottom: 15px;
+        }
+        
+        .stat-box {
+            margin-bottom: 10px;
+        }
+        
+        .stat-box .stat-number {
+            display: block;
+            font-size: 20px;
+            font-weight: bold;
+            color: #32cd32;
+            font-family: 'Ubuntu Mono', monospace;
+        }
+        
+        .stat-box .stat-label {
+            display: block;
+            font-size: 11px;
+            color: #888888;
+            text-transform: uppercase;
+        }
+        
+        .capacity-bar {
+            margin-bottom: 10px;
+        }
+        
+        .capacity-bar .progress {
+            height: 15px;
+        }
+        
+        .course-actions .btn {
+            margin: 2px;
+        }
+        
+        .recent-enrollments {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #333333;
+        }
+        
+        .recent-enrollments h6 {
+            color: #888888;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        
+        .enrollment-list {
+            font-family: 'Ubuntu Mono', monospace;
+            font-size: 12px;
+        }
+        
+        .enrollment-item {
+            display: inline-block;
+            background-color: #1a1a1a;
+            color: #ffc107;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin: 2px;
+            border: 1px solid #333333;
+        }
+        
+        .enrollment-item small {
+            color: #888888;
+        }
+        
+        .stat-item {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .stat-item .stat-number {
+            display: block;
+            font-size: 24px;
+            font-weight: bold;
+            color: #32cd32;
+            font-family: 'Ubuntu Mono', monospace;
+        }
+        
+        .stat-item .stat-label {
+            display: block;
+            font-size: 12px;
+            color: #888888;
+            text-transform: uppercase;
+        }
+    </style>
+</body>
+</html>

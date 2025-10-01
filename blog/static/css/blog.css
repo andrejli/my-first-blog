@@ -1,28 +1,488 @@
+/* Terminal-themed LMS Styles with Ubuntu Font */
 
+/* Import Ubuntu font */
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap');
 
-.page-header {
-    background-color: #ff9400;
-    margin-top: 0;
-    padding: 20px 20px 20px 40px;
+/* Global terminal theme */
+* {
+    box-sizing: border-box;
 }
 
-.page-header h1, .page-header h1 a, .page-header h1 a:visited, .page-header h1 a:active{
-    color: #ffffff;
-    font-size: 36pt;
+body {
+    background-color: #000000;
+    color: #ffc107; /* Amber */
+    font-family: 'Ubuntu', monospace;
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+}
+
+/* Headers with terminal styling */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Ubuntu', sans-serif;
+    color: #32cd32; /* Lawngreen */
+    font-weight: 500;
+    text-shadow: 0 0 5px rgba(50, 205, 50, 0.3);
+}
+
+/* Page header - terminal style */
+.page-header {
+    background-color: #0f0f0f;
+    border-bottom: 2px solid #32cd32;
+    margin-top: 0;
+    padding: 20px 40px;
+    box-shadow: 0 2px 10px rgba(50, 205, 50, 0.2);
+}
+
+.page-header h1, .page-header h1 a, .page-header h1 a:visited, .page-header h1 a:active {
+    color: #32cd32;
+    font-size: 28pt;
+    text-decoration: none;
+    font-family: 'Ubuntu', sans-serif;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(50, 205, 50, 0.5);
+    transition: all 0.3s ease;
+}
+
+.page-header h1 a:hover {
+    color: #ffc107;
+    text-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+}
+
+/* Top menu terminal style */
+.top-menu {
+    float: right;
+    margin-top: 10px;
+}
+
+.top-menu span {
+    color: #ffc107;
+    margin-right: 15px;
+    font-family: 'Ubuntu Mono', monospace;
+    font-size: 14px;
+}
+
+.top-menu .btn {
+    background-color: #1a1a1a;
+    color: #32cd32;
+    border: 1px solid #32cd32;
+    font-family: 'Ubuntu Mono', monospace;
+    transition: all 0.3s ease;
+}
+
+.top-menu .btn:hover {
+    background-color: #32cd32;
+    color: #000000;
+    box-shadow: 0 0 10px rgba(50, 205, 50, 0.5);
+}
+
+/* Content area */
+.content {
+    margin: 0 20px;
+    background-color: #000000;
+}
+
+.container {
+    background-color: #000000;
+}
+
+/* Course cards terminal style */
+.course-card {
+    background-color: #111111;
+    border: 1px solid #32cd32;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    min-height: 280px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(50, 205, 50, 0.1);
+}
+
+.course-card:hover {
+    border-color: #ffc107;
+    box-shadow: 0 5px 15px rgba(255, 193, 7, 0.2);
+    transform: translateY(-2px);
+}
+
+.course-card h3 {
+    margin-top: 0;
+    color: #32cd32;
+}
+
+.course-card h3 a {
+    color: #32cd32;
+    text-decoration: none;
+    font-family: 'Ubuntu', sans-serif;
+    transition: color 0.3s ease;
+}
+
+.course-card h3 a:hover {
+    color: #ffc107;
+    text-shadow: 0 0 5px rgba(255, 193, 7, 0.3);
+}
+
+.course-code {
+    color: #888888;
+    font-family: 'Ubuntu Mono', monospace;
+    background-color: #1a1a1a;
+    padding: 2px 6px;
+    border-radius: 3px;
+    display: inline-block;
+    margin-bottom: 10px;
+    border: 1px solid #333333;
+}
+
+.course-description {
+    color: #ffc107;
+    margin-bottom: 15px;
+    min-height: 60px;
+    font-family: 'Ubuntu', sans-serif;
+}
+
+/* Panels and cards */
+.panel {
+    background-color: #111111;
+    border: 1px solid #32cd32;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(50, 205, 50, 0.1);
+}
+
+.panel-heading {
+    background-color: #1a1a1a;
+    border-bottom: 1px solid #32cd32;
+    color: #32cd32;
+    padding: 10px 15px;
+    font-family: 'Ubuntu', sans-serif;
+    font-weight: 500;
+}
+
+.panel-body {
+    padding: 15px;
+    color: #ffc107;
+    background-color: #111111;
+}
+
+/* Buttons terminal style */
+.btn {
+    font-family: 'Ubuntu', sans-serif;
+    border-radius: 3px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+.btn-primary {
+    background-color: #1a1a1a;
+    border-color: #32cd32;
+    color: #32cd32;
+}
+
+.btn-primary:hover {
+    background-color: #32cd32;
+    border-color: #32cd32;
+    color: #000000;
+    box-shadow: 0 0 10px rgba(50, 205, 50, 0.5);
+}
+
+.btn-success {
+    background-color: #1a1a1a;
+    border-color: #ffc107;
+    color: #ffc107;
+}
+
+.btn-success:hover {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #000000;
+    box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+}
+
+.btn-default {
+    background-color: #1a1a1a;
+    border-color: #888888;
+    color: #888888;
+}
+
+.btn-default:hover {
+    background-color: #888888;
+    border-color: #888888;
+    color: #000000;
+}
+
+.btn-info {
+    background-color: #1a1a1a;
+    border-color: #17a2b8;
+    color: #17a2b8;
+}
+
+.btn-info:hover {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+    color: #000000;
+}
+
+/* Alerts terminal style */
+.alert {
+    border-radius: 5px;
+    font-family: 'Ubuntu', sans-serif;
+    border-width: 1px;
+}
+
+.alert-success {
+    background-color: rgba(50, 205, 50, 0.1);
+    border-color: #32cd32;
+    color: #32cd32;
+}
+
+.alert-info {
+    background-color: rgba(255, 193, 7, 0.1);
+    border-color: #ffc107;
+    color: #ffc107;
+}
+
+.alert-warning {
+    background-color: rgba(255, 165, 0, 0.1);
+    border-color: #ffa500;
+    color: #ffa500;
+}
+
+/* Progress bars */
+.progress {
+    background-color: #1a1a1a;
+    border: 1px solid #333333;
+    border-radius: 3px;
+    height: 25px;
+}
+
+.progress-bar {
+    background: linear-gradient(45deg, #32cd32, #ffc107);
+    color: #000000;
+    font-family: 'Ubuntu Mono', monospace;
+    font-weight: 700;
+    text-align: center;
+    line-height: 23px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+/* Course info styling */
+.course-info {
+    background-color: #111111;
+    border: 1px solid #333333;
+    border-radius: 5px;
+    margin-bottom: 30px;
+    padding: 15px;
+    color: #ffc107;
+}
+
+.course-info strong {
+    color: #32cd32;
+    font-family: 'Ubuntu', sans-serif;
+}
+
+/* Lesson items */
+.lesson-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #333333;
+    color: #ffc107;
+    font-family: 'Ubuntu', sans-serif;
+}
+
+.lesson-item:last-child {
+    border-bottom: none;
+}
+
+.lesson-number {
+    font-weight: bold;
+    color: #32cd32;
+    font-family: 'Ubuntu Mono', monospace;
+}
+
+.lesson-link {
+    color: #ffc107;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.lesson-link:hover {
+    color: #32cd32;
+    text-shadow: 0 0 5px rgba(50, 205, 50, 0.3);
+}
+
+.lesson-title-locked {
+    color: #666666;
+}
+
+/* Text colors */
+.text-success {
+    color: #32cd32 !important;
+}
+
+.text-muted {
+    color: #888888 !important;
+}
+
+.text-warning {
+    color: #ffa500 !important;
+}
+
+/* Course meta information */
+.course-meta {
+    margin-bottom: 15px;
+    font-size: 12px;
+    color: #888888;
+    font-family: 'Ubuntu Mono', monospace;
+}
+
+.course-meta .row {
+    margin-bottom: 5px;
+}
+
+.course-actions {
+    text-align: right;
+}
+
+/* Sidebar styling */
+.sidebar {
+    margin-top: 20px;
+}
+
+/* Forms */
+input, textarea, select {
+    background-color: #1a1a1a !important;
+    color: #ffc107 !important;
+    border: 1px solid #333333 !important;
+    font-family: 'Ubuntu Mono', monospace !important;
+}
+
+input:focus, textarea:focus, select:focus {
+    border-color: #32cd32 !important;
+    box-shadow: 0 0 5px rgba(50, 205, 50, 0.3) !important;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+    background: none;
+    padding-left: 0;
+    color: #888888;
+    font-family: 'Ubuntu Mono', monospace;
+}
+
+.breadcrumb a {
+    color: #32cd32;
     text-decoration: none;
 }
 
-.content {
-    margin-left: 40px;
+.breadcrumb a:hover {
+    color: #ffc107;
 }
 
-h1, h2, h3, h4 {
-    font-family: 'Lobster', cursive;
+/* Lesson content styling */
+.lesson-content {
+    margin-bottom: 40px;
+}
+
+.lesson-content h4 {
+    margin-top: 30px;
+    margin-bottom: 15px;
+    color: #32cd32;
+    border-bottom: 1px solid #333333;
+    padding-bottom: 5px;
+}
+
+.lesson-content h4:first-child {
+    margin-top: 0;
+}
+
+.content-body {
+    line-height: 1.8;
+    font-size: 16px;
+    color: #ffc107;
+    font-family: 'Ubuntu', sans-serif;
+}
+
+/* Video container */
+.video-container {
+    margin-bottom: 20px;
+    border: 1px solid #32cd32;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+/* Navigation */
+.lesson-navigation {
+    border-top: 1px solid #333333;
+    padding-top: 20px;
+    margin-top: 30px;
+}
+
+/* Icons styling */
+.glyphicon {
+    margin-right: 5px;
+}
+
+/* Links */
+a {
+    color: #32cd32;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: #ffc107;
+    text-decoration: none;
+}
+
+/* Terminal cursor effect for headings */
+h1::after, h2::after {
+    content: "_";
+    animation: blink 1s infinite;
+    color: #32cd32;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .page-header h1 {
+        font-size: 20pt;
+    }
+    
+    .top-menu {
+        float: none;
+        margin-top: 10px;
+        text-align: center;
+    }
+    
+    .content {
+        margin: 0 10px;
+    }
+}
+
+/* Legacy blog styles for backward compatibility */
+.post {
+    margin-bottom: 70px;
+    background-color: #111111;
+    border: 1px solid #32cd32;
+    border-radius: 5px;
+    padding: 20px;
+}
+
+.post h1 a, .post h1 a:visited {
+    color: #32cd32;
 }
 
 .date {
     float: right;
-    color: #828282;
+    color: #888888;
+    font-family: 'Ubuntu Mono', monospace;
 }
 
 .save {
@@ -31,19 +491,8 @@ h1, h2, h3, h4 {
 
 .post-form textarea, .post-form input {
     width: 100%;
-}
-
-.top-menu, .top-menu:hover, .top-menu:visited {
-    color: #ffffff;
-    float: right;
-    font-size: 26pt;
-    margin-right: 20px;
-}
-
-.post {
-    margin-bottom: 70px;
-}
-
-.post h1 a, post h1 a:visited {
-    color: #000000;
+    background-color: #1a1a1a;
+    color: #ffc107;
+    border: 1px solid #333333;
+    font-family: 'Ubuntu Mono', monospace;
 }

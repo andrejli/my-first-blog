@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+{% load static %}
+{% load course_extras %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ lesson.title }} - {{ course.title }} - LMS</title>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="page-header">
+        <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
+        <div class="top-menu">
+            <span>user@lms:~$ lesson {{ lesson_number }}/{{ total_lessons }}</span>
+            <a href="{% url 'course_detail' course.id %}" class="btn btn-default">back</a>
+        </div>
+    </div>
+
+    <div class="content container">
+        <div class="row">
+            <div class="col-md-9">
+                <!-- Lesson Header -->
+                <div class="lesson-header">
+                    <nav class="breadcrumb">
+                        <a href="{% url 'course_list' %}">Courses</a> > 
+                        <a href="{% url 'course_detail' course.id %}">{{ course.title }}</a> > 
+                        <span>Lesson {{ lesson_number }}</span>
+                    </nav>
+                    
+                    <h2>{{ lesson.title }}</h2>
+                    <p class="lesson-meta">
+                        <strong>Course:</strong> {{ course.title }} ({{ course.course_code }}) | 
+                        <strong>Lesson:</strong> {{ lesson_number }} of {{ total_lessons }}
+                    </p>
+                </div>
+
+                <!-- Progress Indicator -->
+                <div class="lesson-progress">
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ lesson_number|mul:100|div:total_lessons }}%">
+                            {{ lesson_number }} / {{ total_lessons }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lesson Content -->
+                <div class="lesson-content">
+                    <!-- Video if available -->
+                    {% if lesson.video_url %}
+                    <div class="lesson-video">
+                        <h4><i class="glyphicon glyphicon-play-circle"></i> Video Content</h4>
+                        <div class="video-container">
+                            {% if 'youtube.com' in lesson.video_url or 'youtu.be' in lesson.video_url %}
+                                <!-- YouTube embed -->
+                                {% with lesson.video_url|cut:"https://www.youtube.com/watch?v="|cut:"https://youtu.be/" as video_id %}
+                                <iframe width="100%" height="400" 
+                                        src="https://www.youtube.com/embed/{{ video_id }}" 
+                                        frameborder="0" allowfullscreen>
+                                </iframe>
+                                {% endwith %}
+                            {% else %}
+                                <!-- Generic link -->
+                                <p><a href="{{ lesson.video_url }}" target="_blank" class="btn btn-primary">
+                                    <i class="glyphicon glyphicon-play"></i> Watch Video
+                                </a></p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Text Content -->
+                    <div class="lesson-text">
+                        <h4><i class="glyphicon glyphicon-file-text"></i> Lesson Content</h4>
+                        <div class="content-body">
+                            {{ lesson.content|linebreaks }}
+                        </div>
+                    </div>
+
+                    <!-- Completion Status -->
+                    <div class="lesson-completion">
+                        {% if progress.completed %}
+                            <div class="alert alert-success">
+                                <h4><i class="glyphicon glyphicon-ok-circle"></i> Lesson Completed!</h4>
+                                <p>You completed this lesson on {{ progress.completion_date|date:"M d, Y at H:i" }}.</p>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <h4><i class="glyphicon glyphicon-info-sign"></i> Mark as Complete</h4>
+                                <p>Have you finished this lesson? Mark it as complete to track your progress.</p>
+                                <form method="post" action="{% url 'mark_lesson_complete' course.id lesson.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="glyphicon glyphicon-ok"></i> Mark as Complete
+                                    </button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <div class="lesson-navigation">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            {% if prev_lesson %}
+                                <a href="{% url 'lesson_detail' course.id prev_lesson.id %}" class="btn btn-default">
+                                    <i class="glyphicon glyphicon-chevron-left"></i> Previous: {{ prev_lesson.title|truncatechars:30 }}
+                                </a>
+                            {% endif %}
+                        </div>
+                        <div class="col-sm-6 text-right">
+                            {% if next_lesson %}
+                                <a href="{% url 'lesson_detail' course.id next_lesson.id %}" class="btn btn-primary">
+                                    Next: {{ next_lesson.title|truncatechars:30 }} <i class="glyphicon glyphicon-chevron-right"></i>
+                                </a>
+                            {% else %}
+                                <a href="{% url 'course_detail' course.id %}" class="btn btn-success">
+                                    <i class="glyphicon glyphicon-list"></i> Course Complete!
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-md-3">
+                <div class="sidebar">
+                    <!-- Lesson Info -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Lesson Info</h4>
+                        </div>
+                        <div class="panel-body">
+                            <p><strong>Lesson:</strong> {{ lesson_number }} of {{ total_lessons }}</p>
+                            <p><strong>Course:</strong> {{ course.course_code }}</p>
+                            <p><strong>Created:</strong> {{ lesson.created_date|date:"M d, Y" }}</p>
+                            {% if lesson.video_url %}
+                                <p><i class="glyphicon glyphicon-play-circle text-success"></i> Video included</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Quick Actions</h4>
+                        </div>
+                        <div class="panel-body">
+                            <a href="{% url 'course_detail' course.id %}" class="btn btn-default btn-block">
+                                <i class="glyphicon glyphicon-list"></i> All Lessons
+                            </a>
+                            {% if not progress.completed %}
+                                <form method="post" action="{% url 'mark_lesson_complete' course.id lesson.id %}" style="margin-top: 10px;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success btn-block">
+                                        <i class="glyphicon glyphicon-ok"></i> Complete Lesson
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

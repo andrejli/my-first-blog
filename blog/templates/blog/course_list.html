@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMS - Course Catalog</title>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="page-header">
+        <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
+        <div class="top-menu">
+            {% if user.is_authenticated %}
+                <span>user@lms:~$ whoami → {{ user.username }}</span>
+                {% if user.userprofile.role == 'admin' %}
+                    <a href="/admin/" class="btn btn-default">admin</a>
+                {% elif user.userprofile.role == 'instructor' %}
+                    <a href="{% url 'instructor_dashboard' %}" class="btn btn-default">dashboard</a>
+                {% else %}
+                    <a href="{% url 'student_dashboard' %}" class="btn btn-default">dashboard</a>
+                {% endif %}
+                <a href="{% url 'logout' %}" class="btn btn-default">logout</a>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-default">login</a>
+                <a href="{% url 'register' %}" class="btn btn-default">register</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="content container">
+        <div class="row">
+            <div class="col-md-8">
+                <h2>Available Courses</h2>
+                
+                {% if courses %}
+                    <div class="row">
+                        {% for course in courses %}
+                        <div class="col-md-6">
+                            <div class="course-card panel panel-default">
+                                <div class="panel-body">
+                                    <h3><a href="{% url 'course_detail' course.id %}">{{ course.title }}</a></h3>
+                                    <p class="course-code"><strong>{{ course.course_code }}</strong></p>
+                                    <p class="course-description">{{ course.description|truncatewords:20 }}</p>
+                                    
+                                    <div class="course-meta">
+                                        <div class="row">
+                                            <div class="col-sm-6">
+                                                <small class="text-muted">
+                                                    <i class="glyphicon glyphicon-user"></i> 
+                                                    {{ course.instructor.get_full_name|default:course.instructor.username }}
+                                                </small>
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <small class="text-muted">
+                                                    <i class="glyphicon glyphicon-time"></i> 
+                                                    {{ course.duration_weeks }} week{% if course.duration_weeks != 1 %}s{% endif %}
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-sm-6">
+                                                <small class="text-muted">
+                                                    <i class="glyphicon glyphicon-education"></i> 
+                                                    {{ course.get_enrolled_count }}/{{ course.max_students }} enrolled
+                                                </small>
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <small class="text-muted">
+                                                    <i class="glyphicon glyphicon-calendar"></i> 
+                                                    {{ course.published_date|date:"M d, Y" }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="course-actions">
+                                        <a href="{% url 'course_detail' course.id %}" class="btn btn-primary btn-sm">
+                                            View Course
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <h4>No courses available yet</h4>
+                        <p>Check back soon for new learning opportunities!</p>
+                        {% if user.is_authenticated and user.userprofile.role == 'instructor' %}
+                        <p><a href="/admin/blog/course/add/" class="btn btn-success">Create Your First Course</a></p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+                <div class="sidebar">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Quick Stats</h4>
+                        </div>
+                        <div class="panel-body">
+                            <p><strong>{{ courses.count }}</strong> course{% if courses.count != 1 %}s{% endif %} available</p>
+                            {% if user.is_authenticated %}
+                                <p><strong>{{ user.enrollment_set.count }}</strong> course{% if user.enrollment_set.count != 1 %}s{% endif %} enrolled</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if user.is_authenticated %}
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Quick Actions</h4>
+                        </div>
+                        <div class="panel-body">
+                            {% if user.userprofile.role == 'instructor' %}
+                                <a href="/admin/blog/course/add/" class="btn btn-success btn-block">Create Course</a>
+                                <a href="/admin/blog/lesson/add/" class="btn btn-info btn-block">Add Lesson</a>
+                            {% endif %}
+                            <a href="/admin/" class="btn btn-default btn-block">Admin Panel</a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
