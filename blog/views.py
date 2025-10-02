@@ -6,6 +6,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse
+from django.db import transaction
 from .models import Post, Course, Enrollment, Lesson, Progress, UserProfile
 
 
@@ -92,6 +93,7 @@ def course_detail(request, course_id):
     is_enrolled = False
     enrollment = None
     user_progress = {}
+    next_lesson = None
     
     if request.user.is_authenticated:
         try:
@@ -102,6 +104,12 @@ def course_detail(request, course_id):
             progress_queryset = Progress.objects.filter(student=request.user, lesson__course=course)
             user_progress = {p.lesson.pk: p.completed for p in progress_queryset}
             
+            # Find the next lesson to continue
+            for lesson in lessons:
+                if not user_progress.get(lesson.pk, False):
+                    next_lesson = lesson
+                    break
+            
         except Enrollment.DoesNotExist:
             pass
     
@@ -111,6 +119,7 @@ def course_detail(request, course_id):
         'is_enrolled': is_enrolled,
         'enrollment': enrollment,
         'user_progress': user_progress,
+        'next_lesson': next_lesson,
         'total_lessons': lessons.count(),
         'completed_lessons': sum(user_progress.values()) if user_progress else 0,
     }
@@ -122,27 +131,53 @@ def course_detail(request, course_id):
 @login_required
 def lesson_detail(request, course_id, lesson_id):
     """Display individual lesson content"""
-    course = get_object_or_404(Course, id=course_id, status='published')
-    lesson = get_object_or_404(Lesson, id=lesson_id, course=course, is_published=True)
+    # For instructors: allow viewing their own lessons regardless of publication status
+    if hasattr(request.user, 'userprofile') and request.user.userprofile.role == 'instructor':
+        # Instructors can view their own lessons in any status
+        course = get_object_or_404(Course, id=course_id, instructor=request.user)
+        lesson = get_object_or_404(Lesson, id=lesson_id, course=course)
+        is_instructor_preview = True
+    else:
+        # Students can only view published lessons in published courses
+        course = get_object_or_404(Course, id=course_id, status='published')
+        lesson = get_object_or_404(Lesson, id=lesson_id, course=course, is_published=True)
+        is_instructor_preview = False
     
-    # Check if user is enrolled
-    try:
-        enrollment = Enrollment.objects.get(student=request.user, course=course)
-    except Enrollment.DoesNotExist:
-        messages.error(request, 'You must be enrolled in this course to view lessons.')
-        return redirect('course_detail', course_id=course_id)
+    # For students: check enrollment
+    if not is_instructor_preview:
+        try:
+            enrollment = Enrollment.objects.get(student=request.user, course=course)
+        except Enrollment.DoesNotExist:
+            messages.error(request, 'You must be enrolled in this course to view lessons.')
+            return redirect('course_detail', course_id=course_id)
+    else:
+        enrollment = None
     
-    # Get or create progress for this lesson
-    progress, created = Progress.objects.get_or_create(
-        student=request.user,
-        lesson=lesson,
-        defaults={'completed': False}
-    )
+    # Get or create progress for this lesson (only for students)
+    progress = None
+    if not is_instructor_preview:
+        progress, created = Progress.objects.get_or_create(
+            student=request.user,
+            lesson=lesson,
+            defaults={'completed': False}
+        )
     
     # Get all lessons for navigation
-    all_lessons = Lesson.objects.filter(course=course, is_published=True).order_by('order')
+    if is_instructor_preview:
+        # Instructors see all lessons (published and unpublished)
+        all_lessons = Lesson.objects.filter(course=course).order_by('order')
+    else:
+        # Students only see published lessons
+        all_lessons = Lesson.objects.filter(course=course, is_published=True).order_by('order')
+    
     lesson_list = list(all_lessons)
-    current_index = lesson_list.index(lesson)
+    
+    # Find current lesson index
+    try:
+        current_index = lesson_list.index(lesson)
+    except ValueError:
+        # Lesson not in the filtered list (shouldn't happen, but handle gracefully)
+        current_index = 0
     
     # Previous and next lessons
     prev_lesson = lesson_list[current_index - 1] if current_index > 0 else None
@@ -156,6 +191,7 @@ def lesson_detail(request, course_id, lesson_id):
         'next_lesson': next_lesson,
         'lesson_number': current_index + 1,
         'total_lessons': len(lesson_list),
+        'is_instructor_preview': is_instructor_preview,
     }
     
     return render(request, 'blog/lesson_detail.html', context)
@@ -327,7 +363,25 @@ def my_courses(request):
         status__in=['enrolled', 'completed']
     ).select_related('course').order_by('-enrollment_date')
     
-    return render(request, 'blog/my_courses.html', {'enrollments': enrollments})
+    # Separate enrolled and completed courses
+    enrolled_courses = enrollments.filter(status='enrolled')
+    completed_courses = enrollments.filter(status='completed')
+    
+    # Get recent progress (last 5 completed lessons)
+    recent_progress = Progress.objects.filter(
+        student=request.user,
+        completed=True,
+        completion_date__isnull=False
+    ).select_related('lesson', 'lesson__course').order_by('-completion_date')[:5]
+    
+    context = {
+        'enrollments': enrollments,
+        'enrolled_courses': enrolled_courses,
+        'completed_courses': completed_courses,
+        'recent_progress': recent_progress,
+    }
+    
+    return render(request, 'blog/my_courses.html', context)
 
 
 # Course students view (for instructors)
@@ -405,3 +459,306 @@ def mark_lesson_complete(request, course_id, lesson_id):
         return redirect('lesson_detail', course_id=course_id, lesson_id=lesson_id)
     
     return redirect('course_list')
+
+
+# Phase 2: Enhanced Instructor Lesson Management Views
+
+def instructor_required(view_func):
+    """Decorator to ensure user is an instructor"""
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('login')
+        if not hasattr(request.user, 'userprofile') or request.user.userprofile.role != 'instructor':
+            messages.error(request, 'Access denied. Instructor privileges required.')
+            return redirect('course_list')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+@instructor_required
+def instructor_course_detail(request, course_id):
+    """Enhanced course management for instructors"""
+    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    
+    # Get lessons ordered by order field
+    lessons = Lesson.objects.filter(course=course).order_by('order')
+    
+    # Get enrollment statistics
+    total_students = course.get_enrolled_count()
+    lessons_stats = []
+    
+    for lesson in lessons:
+        completed_count = Progress.objects.filter(
+            lesson=lesson,
+            completed=True
+        ).count()
+        
+        lessons_stats.append({
+            'lesson': lesson,
+            'completed_count': completed_count,
+            'completion_rate': (completed_count / total_students * 100) if total_students > 0 else 0,
+        })
+    
+    context = {
+        'course': course,
+        'lessons_stats': lessons_stats,
+        'total_students': total_students,
+        'total_lessons': lessons.count(),
+        'published_lessons': lessons.filter(is_published=True).count(),
+    }
+    
+    return render(request, 'blog/instructor_course_detail.html', context)
+
+
+@instructor_required
+def create_lesson(request, course_id):
+    """Create a new lesson for a course"""
+    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        content = request.POST.get('content', '').strip()
+        video_url = request.POST.get('video_url', '').strip()
+        is_published = request.POST.get('is_published') == 'on'
+        
+        if not title or not content:
+            messages.error(request, 'Title and content are required.')
+        else:
+            # Get next order number
+            last_lesson = Lesson.objects.filter(course=course).order_by('-order').first()
+            next_order = (last_lesson.order + 1) if last_lesson else 1
+            
+            lesson = Lesson.objects.create(
+                course=course,
+                title=title,
+                content=content,
+                video_url=video_url,
+                order=next_order,
+                is_published=is_published
+            )
+            
+            messages.success(request, f'Lesson "{lesson.title}" created successfully!')
+            return redirect('instructor_course_detail', course_id=course_id)
+    
+    context = {
+        'course': course,
+        'action': 'Create',
+    }
+    
+    return render(request, 'blog/lesson_form.html', context)
+
+
+@instructor_required
+def edit_lesson(request, lesson_id):
+    """Edit an existing lesson"""
+    lesson = get_object_or_404(Lesson, id=lesson_id, course__instructor=request.user)
+    
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        content = request.POST.get('content', '').strip()
+        video_url = request.POST.get('video_url', '').strip()
+        is_published = request.POST.get('is_published') == 'on'
+        
+        if not title or not content:
+            messages.error(request, 'Title and content are required.')
+        else:
+            lesson.title = title
+            lesson.content = content
+            lesson.video_url = video_url
+            lesson.is_published = is_published
+            lesson.save()
+            
+            messages.success(request, f'Lesson "{lesson.title}" updated successfully!')
+            return redirect('instructor_course_detail', course_id=lesson.course.id)
+    
+    context = {
+        'course': lesson.course,
+        'lesson': lesson,
+        'action': 'Edit',
+    }
+    
+    return render(request, 'blog/lesson_form.html', context)
+
+
+@instructor_required
+def delete_lesson(request, lesson_id):
+    """Delete a lesson"""
+    lesson = get_object_or_404(Lesson, id=lesson_id, course__instructor=request.user)
+    course_id = lesson.course.id
+    
+    if request.method == 'POST':
+        lesson_title = lesson.title
+        lesson.delete()
+        messages.success(request, f'Lesson "{lesson_title}" deleted successfully!')
+        return redirect('instructor_course_detail', course_id=course_id)
+    
+    context = {
+        'lesson': lesson,
+        'course': lesson.course,
+    }
+    
+    return render(request, 'blog/lesson_confirm_delete.html', context)
+
+
+@instructor_required
+def reorder_lessons(request, course_id):
+    """Reorder lessons in a course"""
+    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    
+    if request.method == 'POST':
+        lesson_orders = request.POST.getlist('lesson_order')
+        
+        # Use a transaction to prevent integrity errors
+        try:
+            with transaction.atomic():
+                # First, set all lesson orders to negative values to avoid conflicts
+                lessons_to_update = Lesson.objects.filter(course=course)
+                for lesson in lessons_to_update:
+                    lesson.order = -lesson.id  # Use negative ID to ensure uniqueness
+                    lesson.save()
+                
+                # Then, set the correct order values
+                for i, lesson_id in enumerate(lesson_orders):
+                    try:
+                        lesson = Lesson.objects.get(id=lesson_id, course=course)
+                        lesson.order = i + 1
+                        lesson.save()
+                    except Lesson.DoesNotExist:
+                        continue
+            
+            messages.success(request, 'Lesson order updated successfully!')
+        except Exception as e:
+            messages.error(request, f'Error updating lesson order: {str(e)}')
+    
+    return redirect('instructor_course_detail', course_id=course_id)
+
+
+@instructor_required
+def create_course(request):
+    """Create a new course for an instructor"""
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        course_code = request.POST.get('course_code', '').strip()
+        description = request.POST.get('description', '').strip()
+        duration_weeks = request.POST.get('duration_weeks', '4')
+        max_students = request.POST.get('max_students', '30')
+        prerequisites = request.POST.get('prerequisites', '').strip()
+        status = request.POST.get('status', 'draft')
+        
+        # Validation
+        errors = []
+        if not title:
+            errors.append('Course title is required.')
+        if not course_code:
+            errors.append('Course code is required.')
+        elif Course.objects.filter(course_code=course_code).exists():
+            errors.append('Course code already exists. Please choose a different one.')
+        if not description:
+            errors.append('Course description is required.')
+        
+        try:
+            duration_weeks = int(duration_weeks)
+            if duration_weeks < 1:
+                errors.append('Duration must be at least 1 week.')
+        except ValueError:
+            errors.append('Duration must be a valid number.')
+            
+        try:
+            max_students = int(max_students)
+            if max_students < 1:
+                errors.append('Maximum students must be at least 1.')
+        except ValueError:
+            errors.append('Maximum students must be a valid number.')
+        
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+        else:
+            course = Course.objects.create(
+                title=title,
+                course_code=course_code,
+                description=description,
+                instructor=request.user,
+                duration_weeks=duration_weeks,
+                max_students=max_students,
+                prerequisites=prerequisites,
+                status=status
+            )
+            
+            if status == 'published':
+                course.publish()
+            
+            messages.success(request, f'Course "{course.title}" created successfully!')
+            return redirect('instructor_course_detail', course_id=course.id)
+    
+    context = {
+        'action': 'Create',
+    }
+    
+    return render(request, 'blog/course_form.html', context)
+
+
+@instructor_required
+def edit_course(request, course_id):
+    """Edit an existing course"""
+    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        course_code = request.POST.get('course_code', '').strip()
+        description = request.POST.get('description', '').strip()
+        duration_weeks = request.POST.get('duration_weeks', '4')
+        max_students = request.POST.get('max_students', '30')
+        prerequisites = request.POST.get('prerequisites', '').strip()
+        status = request.POST.get('status', 'draft')
+        
+        # Validation
+        errors = []
+        if not title:
+            errors.append('Course title is required.')
+        if not course_code:
+            errors.append('Course code is required.')
+        elif Course.objects.filter(course_code=course_code).exclude(id=course.id).exists():
+            errors.append('Course code already exists. Please choose a different one.')
+        if not description:
+            errors.append('Course description is required.')
+        
+        try:
+            duration_weeks = int(duration_weeks)
+            if duration_weeks < 1:
+                errors.append('Duration must be at least 1 week.')
+        except ValueError:
+            errors.append('Duration must be a valid number.')
+            
+        try:
+            max_students = int(max_students)
+            if max_students < 1:
+                errors.append('Maximum students must be at least 1.')
+        except ValueError:
+            errors.append('Maximum students must be a valid number.')
+        
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+        else:
+            course.title = title
+            course.course_code = course_code
+            course.description = description
+            course.duration_weeks = duration_weeks
+            course.max_students = max_students
+            course.prerequisites = prerequisites
+            course.status = status
+            course.save()
+            
+            if status == 'published' and not course.published_date:
+                course.publish()
+            
+            messages.success(request, f'Course "{course.title}" updated successfully!')
+            return redirect('instructor_course_detail', course_id=course.id)
+    
+    context = {
+        'course': course,
+        'action': 'Edit',
+    }
+    
+    return render(request, 'blog/course_form.html', context)

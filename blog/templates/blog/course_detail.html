@@ -164,17 +164,17 @@
                             <h4>Quick Actions</h4>
                         </div>
                         <div class="panel-body">
-                            {% if lessons %}
-                                {% for lesson in lessons %}
-                                    {% if not user_progress|get_item:lesson.pk %}
-                                        <a href="{% url 'lesson_detail' course.id lesson.id %}" class="btn btn-primary btn-block">
-                                            Continue with Lesson {{ lesson.order }}
-                                        </a>
-                                        {% break %}
-                                    {% endif %}
-                                {% empty %}
-                                    <p>All lessons completed! 🎉</p>
-                                {% endfor %}
+                            {% if next_lesson %}
+                                <a href="{% url 'lesson_detail' course.id next_lesson.id %}" class="btn btn-primary btn-block">
+                                    Continue with Lesson {{ next_lesson.order }}: {{ next_lesson.title }}
+                                </a>
+                            {% elif is_enrolled %}
+                                <div class="alert alert-success">
+                                    <h4>🎉 Course Completed!</h4>
+                                    <p>Congratulations! You have completed all lessons in this course.</p>
+                                </div>
+                            {% else %}
+                                <p class="text-center">Enroll in this course to start learning!</p>
                             {% endif %}
                         </div>
                     </div>

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ action }} Lesson - {{ course.title }} - Terminal LMS</title>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        .lesson-form {
+            background-color: #0a0a0a;
+            border: 1px solid #333333;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-control {
+            background-color: #1a1a1a;
+            border: 1px solid #333333;
+            color: #ffc107;
+            font-family: 'Ubuntu Mono', monospace;
+        }
+        
+        .form-control:focus {
+            background-color: #1a1a1a;
+            border-color: #32cd32;
+            box-shadow: 0 0 5px rgba(50, 205, 50, 0.3);
+            color: #ffc107;
+        }
+        
+        textarea.form-control {
+            min-height: 200px;
+            resize: vertical;
+        }
+        
+        .form-group label {
+            color: #32cd32;
+            font-weight: bold;
+            font-family: 'Ubuntu', sans-serif;
+        }
+        
+        .help-block {
+            color: #888888;
+            font-size: 12px;
+        }
+        
+        .checkbox label {
+            color: #ffc107;
+        }
+        
+        .checkbox input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        
+        .preview-section {
+            background-color: #111111;
+            border: 1px solid #333333;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .char-counter {
+            float: right;
+            font-size: 11px;
+            color: #888888;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
+        <div class="top-menu">
+            <span>instructor@lms:~$ {{ action|lower }}-lesson</span>
+            <a href="{% url 'instructor_course_detail' course.id %}" class="btn btn-default">back</a>
+            {% if lesson %}
+                <a href="{% url 'lesson_detail' course.id lesson.id %}" class="btn btn-info">preview</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="content container">
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb">
+                    <a href="{% url 'instructor_dashboard' %}">Dashboard</a> > 
+                    <a href="{% url 'instructor_course_detail' course.id %}">{{ course.title }}</a> > 
+                    <span>{{ action }} Lesson</span>
+                </nav>
+                
+                <h2>{{ action }} Lesson</h2>
+                <p><strong>Course:</strong> {{ course.title }} ({{ course.course_code }})</p>
+
+                <!-- Lesson Form -->
+                <div class="lesson-form">
+                    <form method="post" id="lesson-form">
+                        {% csrf_token %}
+                        
+                        <!-- Title Field -->
+                        <div class="form-group">
+                            <label for="title">Lesson Title *</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   value="{% if lesson %}{{ lesson.title }}{% endif %}" 
+                                   placeholder="Enter lesson title" 
+                                   maxlength="200" required>
+                            <span class="char-counter">
+                                <span id="title-count">{% if lesson %}{{ lesson.title|length }}{% else %}0{% endif %}</span>/200
+                            </span>
+                            <div class="help-block">Give your lesson a clear, descriptive title</div>
+                        </div>
+
+                        <!-- Content Field -->
+                        <div class="form-group">
+                            <label for="content">Lesson Content *</label>
+                            <textarea class="form-control" id="content" name="content" 
+                                      placeholder="Enter lesson content here. You can use markdown formatting." 
+                                      required>{% if lesson %}{{ lesson.content }}{% endif %}</textarea>
+                            <div class="help-block">
+                                Write your lesson content. Use plain text or simple markdown formatting.
+                                <br>
+                                <strong>Tips:</strong> Use **bold**, *italic*, bullet points with -, and links [text](url)
+                            </div>
+                        </div>
+
+                        <!-- Video URL Field -->
+                        <div class="form-group">
+                            <label for="video_url">Video URL (Optional)</label>
+                            <input type="url" class="form-control" id="video_url" name="video_url" 
+                                   value="{% if lesson %}{{ lesson.video_url }}{% endif %}" 
+                                   placeholder="https://www.youtube.com/watch?v=...">
+                            <div class="help-block">
+                                Add a YouTube or video link to supplement your lesson content
+                            </div>
+                        </div>
+
+                        <!-- Publication Status -->
+                        <div class="form-group">
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="is_published" 
+                                           {% if lesson and lesson.is_published %}checked{% endif %}>
+                                    Publish this lesson immediately
+                                </label>
+                                <div class="help-block">
+                                    Published lessons are visible to enrolled students. 
+                                    Uncheck to save as draft while you work on it.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-success">
+                                <i class="glyphicon glyphicon-floppy-disk"></i> 
+                                {{ action }} Lesson
+                            </button>
+                            <a href="{% url 'instructor_course_detail' course.id %}" class="btn btn-default">
+                                <i class="glyphicon glyphicon-remove"></i> Cancel
+                            </a>
+                            {% if lesson %}
+                                <a href="{% url 'lesson_detail' course.id lesson.id %}" 
+                                   class="btn btn-info" target="_blank">
+                                    <i class="glyphicon glyphicon-eye-open"></i> Preview Lesson
+                                </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-md-4">
+                <div class="sidebar">
+                    <!-- Course Info -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Course Info</h4>
+                        </div>
+                        <div class="panel-body">
+                            <p><strong>Course:</strong> {{ course.title }}</p>
+                            <p><strong>Code:</strong> {{ course.course_code }}</p>
+                            <p><strong>Status:</strong> {{ course.status|title }}</p>
+                            {% if lesson %}
+                                <p><strong>Lesson Order:</strong> #{{ lesson.order }}</p>
+                                <p><strong>Created:</strong> {{ lesson.created_date|date:"M d, Y" }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Content Guidelines -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>✍️ Content Tips</h4>
+                        </div>
+                        <div class="panel-body">
+                            <h5>Good lesson content includes:</h5>
+                            <ul class="tips-list">
+                                <li>Clear learning objectives</li>
+                                <li>Step-by-step explanations</li>
+                                <li>Practical examples</li>
+                                <li>Key takeaways summary</li>
+                                <li>Optional exercises or questions</li>
+                            </ul>
+                            
+                            <h5>Formatting options:</h5>
+                            <ul class="tips-list">
+                                <li><code>**Bold text**</code></li>
+                                <li><code>*Italic text*</code></li>
+                                <li><code>- Bullet points</code></li>
+                                <li><code>[Link](http://...)</code></li>
+                                <li><code>`Code snippets`</code></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Video Guidelines -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>🎥 Video Guidelines</h4>
+                        </div>
+                        <div class="panel-body">
+                            <p><strong>Supported platforms:</strong></p>
+                            <ul class="tips-list">
+                                <li>YouTube</li>
+                                <li>Direct video links</li>
+                            </ul>
+                            <p><strong>Tips:</strong></p>
+                            <ul class="tips-list">
+                                <li>Keep videos under 20 minutes</li>
+                                <li>Use clear audio</li>
+                                <li>Add captions when possible</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Character counter and form enhancements -->
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Character counter for title
+            $('#title').on('input', function() {
+                var length = $(this).val().length;
+                $('#title-count').text(length);
+                
+                if (length > 180) {
+                    $('#title-count').css('color', '#d9534f');
+                } else if (length > 150) {
+                    $('#title-count').css('color', '#f0ad4e');
+                } else {
+                    $('#title-count').css('color', '#888888');
+                }
+            });
+            
+            // Auto-save to localStorage (draft functionality)
+            var formData = {
+                title: $('#title'),
+                content: $('#content'),
+                video_url: $('#video_url')
+            };
+            
+            // Load saved draft
+            $.each(formData, function(key, element) {
+                var saved = localStorage.getItem('lesson_draft_' + key);
+                if (saved && !element.val()) {
+                    element.val(saved);
+                }
+            });
+            
+            // Save draft on input
+            $.each(formData, function(key, element) {
+                element.on('input', function() {
+                    localStorage.setItem('lesson_draft_' + key, $(this).val());
+                });
+            });
+            
+            // Clear draft on successful submit
+            $('#lesson-form').on('submit', function() {
+                $.each(formData, function(key, element) {
+                    localStorage.removeItem('lesson_draft_' + key);
+                });
+            });
+            
+            // Form validation
+            $('#lesson-form').on('submit', function(e) {
+                var title = $('#title').val().trim();
+                var content = $('#content').val().trim();
+                
+                if (!title) {
+                    alert('Lesson title is required.');
+                    $('#title').focus();
+                    e.preventDefault();
+                    return false;
+                }
+                
+                if (!content) {
+                    alert('Lesson content is required.');
+                    $('#content').focus();
+                    e.preventDefault();
+                    return false;
+                }
+                
+                if (title.length > 200) {
+                    alert('Lesson title is too long. Maximum 200 characters.');
+                    $('#title').focus();
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

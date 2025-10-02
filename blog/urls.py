@@ -27,4 +27,15 @@ urlpatterns = [
     path('dashboard/', views.student_dashboard, name='student_dashboard'),
     path('instructor/', views.instructor_dashboard, name='instructor_dashboard'),
     path('my-courses/', views.my_courses, name='my_courses'),
+    
+    # Phase 2: Enhanced lesson management for instructors
+    path('instructor/course/<int:course_id>/', views.instructor_course_detail, name='instructor_course_detail'),
+    path('instructor/course/<int:course_id>/lesson/create/', views.create_lesson, name='create_lesson'),
+    path('instructor/lesson/<int:lesson_id>/edit/', views.edit_lesson, name='edit_lesson'),
+    path('instructor/lesson/<int:lesson_id>/delete/', views.delete_lesson, name='delete_lesson'),
+    path('instructor/course/<int:course_id>/lessons/reorder/', views.reorder_lessons, name='reorder_lessons'),
+    
+    # Course creation for instructors
+    path('instructor/course/create/', views.create_course, name='create_course'),
+    path('instructor/course/<int:course_id>/edit/', views.edit_course, name='edit_course'),
 ]

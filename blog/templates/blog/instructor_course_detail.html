@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+{% load static %}
+{% load course_extras %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ course.title }} - Instructor Management - Terminal LMS</title>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        .lesson-management-item {
+            border: 1px solid #333333;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: #0a0a0a;
+        }
+        
+        .lesson-status-published {
+            color: #32cd32;
+        }
+        
+        .lesson-status-draft {
+            color: #ffc107;
+        }
+        
+        .completion-stats {
+            font-size: 12px;
+            color: #888888;
+        }
+        
+        .lesson-actions {
+            margin-top: 10px;
+        }
+        
+        .lesson-actions .btn {
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .sortable-lessons {
+            cursor: move;
+        }
+        
+        .sortable-lessons:hover {
+            background-color: #111111;
+        }
+        
+        .drag-handle {
+            cursor: move;
+            color: #888888;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
+        <div class="top-menu">
+            <span>instructor@lms:~$ manage {{ course.course_code }}</span>
+            <a href="{% url 'instructor_dashboard' %}" class="btn btn-default">dashboard</a>
+            <a href="{% url 'create_lesson' course.id %}" class="btn btn-success">new-lesson</a>
+        </div>
+    </div>
+
+    <div class="content container">
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Course Header -->
+                <nav class="breadcrumb">
+                    <a href="{% url 'instructor_dashboard' %}">Dashboard</a> > 
+                    <span>{{ course.title }}</span>
+                </nav>
+                
+                <h2>{{ course.title }} <small class="course-status-{{ course.status }}">{{ course.status }}</small></h2>
+                <p><strong>Course Code:</strong> {{ course.course_code }}</p>
+                
+                <!-- Course Actions -->
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4>Course Management</h4>
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <a href="{% url 'course_detail' course.id %}" class="btn btn-primary btn-block">
+                                    <i class="glyphicon glyphicon-eye-open"></i> View Course (Student View)
+                                </a>
+                                <a href="{% url 'course_students' course.id %}" class="btn btn-info btn-block">
+                                    <i class="glyphicon glyphicon-user"></i> Manage Students ({{ total_students }})
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="{% url 'edit_course' course.id %}" class="btn btn-default btn-block">
+                                    <i class="glyphicon glyphicon-cog"></i> Edit Course Details
+                                </a>
+                                <a href="{% url 'create_lesson' course.id %}" class="btn btn-success btn-block">
+                                    <i class="glyphicon glyphicon-plus"></i> Add New Lesson
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lessons Management -->
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4>
+                            <i class="glyphicon glyphicon-list"></i> 
+                            Course Lessons ({{ total_lessons }} total, {{ published_lessons }} published)
+                        </h4>
+                    </div>
+                    <div class="panel-body">
+                        {% if lessons_stats %}
+                            <form method="post" action="{% url 'reorder_lessons' course.id %}" id="reorder-form">
+                                {% csrf_token %}
+                                <div id="lessons-list">
+                                    {% for lesson_stat in lessons_stats %}
+                                    <div class="lesson-management-item sortable-lessons" data-lesson-id="{{ lesson_stat.lesson.id }}">
+                                        <input type="hidden" name="lesson_order" value="{{ lesson_stat.lesson.id }}">
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <div class="lesson-header">
+                                                    <span class="drag-handle">
+                                                        <i class="glyphicon glyphicon-resize-vertical"></i>
+                                                    </span>
+                                                    <strong>{{ lesson_stat.lesson.order }}. {{ lesson_stat.lesson.title }}</strong>
+                                                    <span class="lesson-status-{{ lesson_stat.lesson.is_published|yesno:'published,draft' }}">
+                                                        ({{ lesson_stat.lesson.is_published|yesno:'Published,Draft' }})
+                                                    </span>
+                                                </div>
+                                                <div class="lesson-meta">
+                                                    <small class="text-muted">
+                                                        Created: {{ lesson_stat.lesson.created_date|date:"M d, Y" }}
+                                                        {% if lesson_stat.lesson.video_url %}
+                                                        | <i class="glyphicon glyphicon-play-circle"></i> Video included
+                                                        {% endif %}
+                                                    </small>
+                                                </div>
+                                                {% if total_students > 0 %}
+                                                <div class="completion-stats">
+                                                    {{ lesson_stat.completed_count }}/{{ total_students }} students completed 
+                                                    ({{ lesson_stat.completion_rate|floatformat:0 }}%)
+                                                    <div class="progress" style="height: 5px; margin-top: 5px;">
+                                                        <div class="progress-bar progress-bar-success" 
+                                                             style="width: {{ lesson_stat.completion_rate }}%"></div>
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="lesson-actions text-right">
+                                                    <a href="{% url 'lesson_detail' course.id lesson_stat.lesson.id %}" 
+                                                       class="btn btn-primary btn-sm">
+                                                        <i class="glyphicon glyphicon-eye-open"></i> View
+                                                    </a>
+                                                    <a href="{% url 'edit_lesson' lesson_stat.lesson.id %}" 
+                                                       class="btn btn-default btn-sm">
+                                                        <i class="glyphicon glyphicon-edit"></i> Edit
+                                                    </a>
+                                                    <a href="{% url 'delete_lesson' lesson_stat.lesson.id %}" 
+                                                       class="btn btn-danger btn-sm">
+                                                        <i class="glyphicon glyphicon-trash"></i> Delete
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="text-center" style="margin-top: 20px;">
+                                    <button type="submit" class="btn btn-info">
+                                        <i class="glyphicon glyphicon-sort"></i> Save Lesson Order
+                                    </button>
+                                </div>
+                            </form>
+                        {% else %}
+                            <div class="alert alert-info text-center">
+                                <h4>No lessons created yet</h4>
+                                <p>Start building your course by creating the first lesson.</p>
+                                <a href="{% url 'create_lesson' course.id %}" class="btn btn-success">
+                                    <i class="glyphicon glyphicon-plus"></i> Create First Lesson
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-md-4">
+                <div class="sidebar">
+                    <!-- Course Stats -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Course Statistics</h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="stat-item">
+                                <span class="stat-number">{{ total_students }}</span>
+                                <span class="stat-label">Enrolled Students</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ total_lessons }}</span>
+                                <span class="stat-label">Total Lessons</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ published_lessons }}</span>
+                                <span class="stat-label">Published Lessons</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ course.max_students }}</span>
+                                <span class="stat-label">Max Capacity</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Course Info -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Course Details</h4>
+                        </div>
+                        <div class="panel-body">
+                            <p><strong>Duration:</strong> {{ course.duration_weeks }} weeks</p>
+                            <p><strong>Status:</strong> 
+                                <span class="course-status-{{ course.status }}">{{ course.status|title }}</span>
+                            </p>
+                            <p><strong>Created:</strong> {{ course.created_date|date:"M d, Y" }}</p>
+                            {% if course.published_date %}
+                            <p><strong>Published:</strong> {{ course.published_date|date:"M d, Y" }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Quick Tips -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>💡 Tips</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul class="tips-list">
+                                <li>Drag lessons to reorder them</li>
+                                <li>Use draft mode while creating content</li>
+                                <li>Add video URLs for multimedia lessons</li>
+                                <li>Monitor student completion rates</li>
+                                <li>Publish lessons when ready</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add sortable functionality -->
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Make lessons sortable
+            $("#lessons-list").sortable({
+                handle: ".drag-handle",
+                placeholder: "sortable-placeholder",
+                update: function(event, ui) {
+                    // Auto-submit form when order changes
+                    setTimeout(function() {
+                        $('#reorder-form').submit();
+                    }, 500);
+                }
+            });
+            
+            // Prevent form submission on page load
+            $('#reorder-form').on('submit', function(e) {
+                // Only submit if lessons were actually moved
+                var hasChanges = $(this).data('changed');
+                if (!hasChanges) {
+                    e.preventDefault();
+                }
+            });
+            
+            // Mark form as changed when sorting occurs
+            $("#lessons-list").on('sortupdate', function() {
+                $('#reorder-form').data('changed', true);
+            });
+        });
+    </script>
+</body>
+</html>

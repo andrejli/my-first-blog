@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ action }} Course - Terminal LMS</title>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        .course-form {
+            background-color: #0a0a0a;
+            border: 1px solid #333333;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-control {
+            background-color: #1a1a1a;
+            border: 1px solid #333333;
+            color: #ffc107;
+            font-family: 'Ubuntu Mono', monospace;
+        }
+        
+        .form-control:focus {
+            background-color: #1a1a1a;
+            border-color: #32cd32;
+            box-shadow: 0 0 5px rgba(50, 205, 50, 0.3);
+            color: #ffc107;
+        }
+        
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .form-group label {
+            color: #32cd32;
+            font-weight: bold;
+            font-family: 'Ubuntu', sans-serif;
+        }
+        
+        .help-block {
+            color: #888888;
+            font-size: 12px;
+        }
+        
+        .char-counter {
+            float: right;
+            font-size: 11px;
+            color: #888888;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .status-options {
+            background-color: #111111;
+            border: 1px solid #333333;
+            border-radius: 3px;
+            padding: 10px;
+            margin-top: 5px;
+        }
+        
+        .radio label {
+            color: #ffc107;
+            font-weight: normal;
+            margin-right: 20px;
+        }
+        
+        .radio input[type="radio"] {
+            margin-right: 8px;
+        }
+        
+        .validation-error {
+            color: #d9534f;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
+        <div class="top-menu">
+            <span>instructor@lms:~$ {{ action|lower }}-course</span>
+            <a href="{% url 'instructor_dashboard' %}" class="btn btn-default">dashboard</a>
+            {% if course %}
+                <a href="{% url 'instructor_course_detail' course.id %}" class="btn btn-info">back</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="content container">
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb">
+                    <a href="{% url 'instructor_dashboard' %}">Dashboard</a> > 
+                    {% if course %}
+                        <a href="{% url 'instructor_course_detail' course.id %}">{{ course.title }}</a> > 
+                    {% endif %}
+                    <span>{{ action }} Course</span>
+                </nav>
+                
+                <h2>{{ action }} Course</h2>
+                {% if course %}
+                    <p><strong>Current Status:</strong> <span class="course-status-{{ course.status }}">{{ course.status|title }}</span></p>
+                {% endif %}
+
+                <!-- Course Form -->
+                <div class="course-form">
+                    <form method="post" id="course-form">
+                        {% csrf_token %}
+                        
+                        <!-- Title Field -->
+                        <div class="form-group">
+                            <label for="title">Course Title *</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   value="{% if course %}{{ course.title }}{% endif %}" 
+                                   placeholder="Enter course title" 
+                                   maxlength="200" required>
+                            <span class="char-counter">
+                                <span id="title-count">{% if course %}{{ course.title|length }}{% else %}0{% endif %}</span>/200
+                            </span>
+                            <div class="help-block">Give your course a clear, descriptive title</div>
+                        </div>
+
+                        <!-- Course Code and Duration Row -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="course_code">Course Code *</label>
+                                <input type="text" class="form-control" id="course_code" name="course_code" 
+                                       value="{% if course %}{{ course.course_code }}{% endif %}" 
+                                       placeholder="e.g., CS101, MATH201" 
+                                       maxlength="20" required>
+                                <div class="help-block">Unique course identifier (letters and numbers)</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="duration_weeks">Duration (weeks)</label>
+                                <input type="number" class="form-control" id="duration_weeks" name="duration_weeks" 
+                                       value="{% if course %}{{ course.duration_weeks }}{% else %}4{% endif %}" 
+                                       min="1" max="52">
+                                <div class="help-block">Course duration in weeks</div>
+                            </div>
+                        </div>
+
+                        <!-- Description Field -->
+                        <div class="form-group">
+                            <label for="description">Course Description *</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      placeholder="Describe what students will learn in this course..." 
+                                      required>{% if course %}{{ course.description }}{% endif %}</textarea>
+                            <div class="help-block">
+                                Provide a comprehensive description of the course content and learning outcomes
+                            </div>
+                        </div>
+
+                        <!-- Max Students and Prerequisites Row -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="max_students">Maximum Students</label>
+                                <input type="number" class="form-control" id="max_students" name="max_students" 
+                                       value="{% if course %}{{ course.max_students }}{% else %}30{% endif %}" 
+                                       min="1" max="1000">
+                                <div class="help-block">Maximum enrollment capacity</div>
+                            </div>
+                        </div>
+
+                        <!-- Prerequisites Field -->
+                        <div class="form-group">
+                            <label for="prerequisites">Prerequisites</label>
+                            <textarea class="form-control" id="prerequisites" name="prerequisites" 
+                                      placeholder="List any prerequisites or requirements for this course..."
+                                      style="min-height: 80px;">{% if course %}{{ course.prerequisites }}{% endif %}</textarea>
+                            <div class="help-block">
+                                Describe any knowledge, skills, or courses required before taking this course
+                            </div>
+                        </div>
+
+                        <!-- Course Status -->
+                        <div class="form-group">
+                            <label>Course Status</label>
+                            <div class="status-options">
+                                <div class="radio">
+                                    <label>
+                                        <input type="radio" name="status" value="draft" 
+                                               {% if not course or course.status == 'draft' %}checked{% endif %}>
+                                        Draft - Course is being developed (not visible to students)
+                                    </label>
+                                </div>
+                                <div class="radio">
+                                    <label>
+                                        <input type="radio" name="status" value="published" 
+                                               {% if course.status == 'published' %}checked{% endif %}>
+                                        Published - Course is live and students can enroll
+                                    </label>
+                                </div>
+                                <div class="radio">
+                                    <label>
+                                        <input type="radio" name="status" value="archived" 
+                                               {% if course.status == 'archived' %}checked{% endif %}>
+                                        Archived - Course is no longer accepting new enrollments
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="help-block">
+                                <strong>Draft:</strong> Only you can see the course | 
+                                <strong>Published:</strong> Students can find and enroll | 
+                                <strong>Archived:</strong> Visible but closed to new enrollments
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-success">
+                                <i class="glyphicon glyphicon-floppy-disk"></i> 
+                                {{ action }} Course
+                            </button>
+                            <a href="{% url 'instructor_dashboard' %}" class="btn btn-default">
+                                <i class="glyphicon glyphicon-remove"></i> Cancel
+                            </a>
+                            {% if course %}
+                                <a href="{% url 'instructor_course_detail' course.id %}" 
+                                   class="btn btn-info">
+                                    <i class="glyphicon glyphicon-eye-open"></i> View Course
+                                </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-md-4">
+                <div class="sidebar">
+                    <!-- Course Planning Tips -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>📋 Course Planning Tips</h4>
+                        </div>
+                        <div class="panel-body">
+                            <h5>Essential elements:</h5>
+                            <ul class="tips-list">
+                                <li>Clear learning objectives</li>
+                                <li>Logical lesson progression</li>
+                                <li>Realistic time expectations</li>
+                                <li>Assessment methods</li>
+                                <li>Resource requirements</li>
+                            </ul>
+                            
+                            <h5>Course title tips:</h5>
+                            <ul class="tips-list">
+                                <li>Be specific and descriptive</li>
+                                <li>Include the skill level</li>
+                                <li>Mention key topics</li>
+                                <li>Keep it under 60 characters</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Status Guide -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>📊 Status Guide</h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="status-guide">
+                                <div class="status-item">
+                                    <strong class="text-warning">Draft</strong>
+                                    <p>Perfect for course development. Only you can see it.</p>
+                                </div>
+                                <div class="status-item">
+                                    <strong class="text-success">Published</strong>
+                                    <p>Live course. Students can discover and enroll.</p>
+                                </div>
+                                <div class="status-item">
+                                    <strong class="text-muted">Archived</strong>
+                                    <p>Preserved course. No new enrollments allowed.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Best Practices -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>💡 Best Practices</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul class="tips-list">
+                                <li>Start with a draft to develop content</li>
+                                <li>Test with a small group first</li>
+                                <li>Gather feedback before publishing</li>
+                                <li>Keep course codes short and memorable</li>
+                                <li>Set realistic enrollment limits</li>
+                                <li>Review prerequisites carefully</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Character counter and form enhancements -->
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Character counter for title
+            $('#title').on('input', function() {
+                var length = $(this).val().length;
+                $('#title-count').text(length);
+                
+                if (length > 180) {
+                    $('#title-count').css('color', '#d9534f');
+                } else if (length > 150) {
+                    $('#title-count').css('color', '#f0ad4e');
+                } else {
+                    $('#title-count').css('color', '#888888');
+                }
+            });
+            
+            // Course code formatting
+            $('#course_code').on('input', function() {
+                var value = $(this).val().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                $(this).val(value);
+            });
+            
+            // Form validation
+            $('#course-form').on('submit', function(e) {
+                var title = $('#title').val().trim();
+                var courseCode = $('#course_code').val().trim();
+                var description = $('#description').val().trim();
+                
+                if (!title) {
+                    alert('Course title is required.');
+                    $('#title').focus();
+                    e.preventDefault();
+                    return false;
+                }
+                
+                if (!courseCode) {
+                    alert('Course code is required.');
+                    $('#course_code').focus();
+                    e.preventDefault();
+                    return false;
+                }
+                
+                if (!description) {
+                    alert('Course description is required.');
+                    $('#description').focus();
+                    e.preventDefault();
+                    return false;
+                }
+                
+                if (title.length > 200) {
+                    alert('Course title is too long. Maximum 200 characters.');
+                    $('#title').focus();
+                    e.preventDefault();
+                    return false;
+                }
+                
+                if (courseCode.length > 20) {
+                    alert('Course code is too long. Maximum 20 characters.');
+                    $('#course_code').focus();
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

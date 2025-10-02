@@ -15,8 +15,13 @@
     <div class="page-header">
         <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
         <div class="top-menu">
-            <span>user@lms:~$ lesson {{ lesson_number }}/{{ total_lessons }}</span>
-            <a href="{% url 'course_detail' course.id %}" class="btn btn-default">back</a>
+            {% if is_instructor_preview %}
+                <span>instructor@lms:~$ preview lesson {{ lesson_number }}/{{ total_lessons }}</span>
+                <a href="{% url 'instructor_course_detail' course.id %}" class="btn btn-default">back</a>
+            {% else %}
+                <span>user@lms:~$ lesson {{ lesson_number }}/{{ total_lessons }}</span>
+                <a href="{% url 'course_detail' course.id %}" class="btn btn-default">back</a>
+            {% endif %}
         </div>
     </div>
 
@@ -37,6 +42,16 @@
                         <strong>Lesson:</strong> {{ lesson_number }} of {{ total_lessons }}
                     </p>
                 </div>
+
+                <!-- Instructor Preview Banner -->
+                {% if is_instructor_preview %}
+                <div class="alert alert-warning" style="background-color: #2a1a00; border-color: #ffc107; color: #ffc107;">
+                    <h4><i class="glyphicon glyphicon-eye-open"></i> Instructor Preview Mode</h4>
+                    <p><strong>Course Status:</strong> {{ course.status|title }} | 
+                       <strong>Lesson Status:</strong> {{ lesson.is_published|yesno:"Published,Draft" }}</p>
+                    <p><small>This is how the lesson appears to students. Only you can see this preview.</small></p>
+                </div>
+                {% endif %}
 
                 <!-- Progress Indicator -->
                 <div class="lesson-progress">
@@ -82,6 +97,8 @@
                     </div>
 
                     <!-- Completion Status -->
+                    <!-- Completion Status -->
+                    {% if not is_instructor_preview %}
                     <div class="lesson-completion">
                         {% if progress.completed %}
                             <div class="alert alert-success">
@@ -101,6 +118,21 @@
                             </div>
                         {% endif %}
                     </div>
+                    {% else %}
+                    <!-- Instructor Preview Info -->
+                    <div class="alert alert-info" style="background-color: #0a1a2a; border-color: #32cd32; color: #32cd32;">
+                        <h4><i class="glyphicon glyphicon-cog"></i> Instructor Tools</h4>
+                        <p>This lesson preview shows exactly what students will see.</p>
+                        <div style="margin-top: 10px;">
+                            <a href="{% url 'edit_lesson' lesson.id %}" class="btn btn-default">
+                                <i class="glyphicon glyphicon-edit"></i> Edit Lesson
+                            </a>
+                            <a href="{% url 'instructor_course_detail' course.id %}" class="btn btn-info">
+                                <i class="glyphicon glyphicon-list"></i> Back to Course Management
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
 
                 <!-- Navigation -->

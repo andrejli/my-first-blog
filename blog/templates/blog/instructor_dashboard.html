@@ -17,7 +17,7 @@
         <div class="top-menu">
             <span>instructor@lms:~$ dashboard → {{ user.username }}</span>
             <a href="{% url 'course_list' %}" class="btn btn-default">courses</a>
-            <a href="/admin/blog/course/add/" class="btn btn-success">new-course</a>
+            <a href="{% url 'create_course' %}" class="btn btn-success">new-course</a>
         </div>
     </div>
 
@@ -73,8 +73,8 @@
                                             <div class="course-actions">
                                                 <a href="{% url 'course_detail' stat.course.id %}" class="btn btn-primary btn-sm">view</a>
                                                 <a href="{% url 'course_students' stat.course.id %}" class="btn btn-info btn-sm">students</a>
-                                                <a href="/admin/blog/course/{{ stat.course.id }}/change/" class="btn btn-default btn-sm">edit</a>
-                                                <a href="/admin/blog/lesson/add/?course={{ stat.course.id }}" class="btn btn-success btn-sm">add-lesson</a>
+                                                <a href="{% url 'instructor_course_detail' stat.course.id %}" class="btn btn-success btn-sm">manage</a>
+                                                <a href="{% url 'edit_course' stat.course.id %}" class="btn btn-default btn-sm">edit</a>
                                             </div>
                                         </div>
                                     </div>
@@ -100,7 +100,7 @@
                             <div class="alert alert-info">
                                 <h4>No courses created yet</h4>
                                 <p>Start by creating your first course to begin teaching.</p>
-                                <a href="/admin/blog/course/add/" class="btn btn-success">Create Your First Course</a>
+                                <a href="{% url 'create_course' %}" class="btn btn-success">Create Your First Course</a>
                             </div>
                         {% endif %}
                     </div>
@@ -141,14 +141,11 @@
                             <h4>Quick Actions</h4>
                         </div>
                         <div class="panel-body">
-                            <a href="/admin/blog/course/add/" class="btn btn-success btn-block">
+                            <a href="{% url 'create_course' %}" class="btn btn-success btn-block">
                                 <i class="glyphicon glyphicon-plus"></i> Create Course
                             </a>
-                            <a href="/admin/blog/lesson/add/" class="btn btn-info btn-block">
-                                <i class="glyphicon glyphicon-file"></i> Add Lesson
-                            </a>
-                            <a href="/admin/blog/course/" class="btn btn-default btn-block">
-                                <i class="glyphicon glyphicon-cog"></i> Manage Courses
+                            <a href="{% url 'course_list' %}" class="btn btn-default btn-block">
+                                <i class="glyphicon glyphicon-list"></i> Browse All Courses
                             </a>
                             <a href="{% url 'student_dashboard' %}" class="btn btn-primary btn-block">
                                 <i class="glyphicon glyphicon-user"></i> Student View

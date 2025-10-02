@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Lesson - {{ course.title }} - Terminal LMS</title>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        .danger-zone {
+            background-color: #1a0a0a;
+            border: 2px solid #d9534f;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .lesson-preview {
+            background-color: #111111;
+            border: 1px solid #333333;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .warning-icon {
+            color: #d9534f;
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .lesson-meta {
+            color: #888888;
+            font-size: 12px;
+        }
+        
+        .consequences {
+            background-color: #0a0a0a;
+            border-left: 4px solid #d9534f;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+        
+        .consequences ul {
+            margin-bottom: 0;
+        }
+        
+        .consequences li {
+            color: #ffc107;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
+        <div class="top-menu">
+            <span>instructor@lms:~$ rm lesson</span>
+            <a href="{% url 'instructor_course_detail' course.id %}" class="btn btn-default">back</a>
+        </div>
+    </div>
+
+    <div class="content container">
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb">
+                    <a href="{% url 'instructor_dashboard' %}">Dashboard</a> > 
+                    <a href="{% url 'instructor_course_detail' course.id %}">{{ course.title }}</a> > 
+                    <span>Delete Lesson</span>
+                </nav>
+                
+                <div class="danger-zone">
+                    <div class="warning-icon">
+                        <i class="glyphicon glyphicon-warning-sign"></i>
+                    </div>
+                    
+                    <h2 class="text-center" style="color: #d9534f;">⚠️ Delete Lesson</h2>
+                    <p class="text-center" style="color: #ffc107; font-size: 18px;">
+                        You are about to permanently delete this lesson. This action cannot be undone.
+                    </p>
+                    
+                    <!-- Lesson Preview -->
+                    <div class="lesson-preview">
+                        <h4>{{ lesson.title }}</h4>
+                        <div class="lesson-meta">
+                            <strong>Course:</strong> {{ course.title }} ({{ course.course_code }})<br>
+                            <strong>Order:</strong> Lesson #{{ lesson.order }}<br>
+                            <strong>Status:</strong> {{ lesson.is_published|yesno:"Published,Draft" }}<br>
+                            <strong>Created:</strong> {{ lesson.created_date|date:"M d, Y at H:i" }}<br>
+                            {% if lesson.video_url %}
+                            <strong>Video:</strong> <a href="{{ lesson.video_url }}" target="_blank">{{ lesson.video_url|truncatechars:50 }}</a><br>
+                            {% endif %}
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <strong>Content Preview:</strong>
+                            <p style="color: #888888; font-style: italic;">
+                                {{ lesson.content|truncatewords:20|linebreaks }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Consequences Warning -->
+                    <div class="consequences">
+                        <h5 style="color: #d9534f;">
+                            <i class="glyphicon glyphicon-exclamation-sign"></i> What will happen:
+                        </h5>
+                        <ul>
+                            <li>This lesson will be permanently removed from the course</li>
+                            <li>All student progress for this lesson will be deleted</li>
+                            <li>Lesson numbers will be automatically adjusted</li>
+                            <li>Students will lose access to this content immediately</li>
+                            <li>This action cannot be undone</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Confirmation Form -->
+                    <div class="text-center" style="margin-top: 30px;">
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-lg" 
+                                    onclick="return confirm('Are you absolutely sure you want to delete this lesson? This action cannot be undone.');">
+                                <i class="glyphicon glyphicon-trash"></i> 
+                                Yes, Delete This Lesson Permanently
+                            </button>
+                        </form>
+                        
+                        <div style="margin-top: 15px;">
+                            <a href="{% url 'instructor_course_detail' course.id %}" class="btn btn-default btn-lg">
+                                <i class="glyphicon glyphicon-arrow-left"></i> No, Keep This Lesson
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-md-4">
+                <div class="sidebar">
+                    <!-- Alternative Actions -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>🤔 Consider These Alternatives</h4>
+                        </div>
+                        <div class="panel-body">
+                            <p>Instead of deleting, you could:</p>
+                            <div style="margin-bottom: 10px;">
+                                <a href="{% url 'edit_lesson' lesson.id %}" class="btn btn-default btn-block">
+                                    <i class="glyphicon glyphicon-edit"></i> Edit This Lesson
+                                </a>
+                            </div>
+                            
+                            {% if lesson.is_published %}
+                            <div style="margin-bottom: 10px;">
+                                <a href="{% url 'edit_lesson' lesson.id %}" class="btn btn-warning btn-block">
+                                    <i class="glyphicon glyphicon-eye-close"></i> Unpublish (Make Draft)
+                                </a>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="help-block">
+                                <small>
+                                    <strong>Tip:</strong> Making a lesson a draft hides it from students 
+                                    but preserves the content and progress data.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Course Impact -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>📊 Impact Assessment</h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="stat-item">
+                                <span class="stat-number">{{ course.get_enrolled_count }}</span>
+                                <span class="stat-label">Students will lose access</span>
+                            </div>
+                            
+                            {% with progress_count=lesson.progress_set.filter|length %}
+                            {% if progress_count > 0 %}
+                            <div class="stat-item">
+                                <span class="stat-number">{{ progress_count }}</span>
+                                <span class="stat-label">Progress records will be deleted</span>
+                            </div>
+                            {% endif %}
+                            {% endwith %}
+                            
+                            <div class="stat-item">
+                                <span class="stat-number">{{ lesson.order }}</span>
+                                <span class="stat-label">Current lesson position</span>
+                            </div>
+                            
+                            <div class="help-block">
+                                <small>
+                                    <strong>Note:</strong> Lessons after this one will automatically 
+                                    move up in the order.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Safety -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>🛡️ Safety Notice</h4>
+                        </div>
+                        <div class="panel-body">
+                            <p style="color: #d9534f;">
+                                <i class="glyphicon glyphicon-warning-sign"></i>
+                                <strong>This action is irreversible!</strong>
+                            </p>
+                            <p>Once deleted, you will need to recreate this lesson completely if you want it back.</p>
+                            <p>Make sure you have a backup of the content if needed.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
