@@ -1,0 +1,114 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Course Materials - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Header -->
+            <div class="page-header">
+                <h1>
+                    <i class="fa fa-files-o"></i> Course Materials
+                    <small>{{ course.course_code }} - {{ course.title }}</small>
+                </h1>
+            </div>
+
+            <!-- Course Navigation -->
+            <div class="btn-toolbar mb-3" role="toolbar">
+                <div class="btn-group" role="group">
+                    <a href="{% url 'instructor_course_detail' course.id %}" class="btn btn-default">
+                        <i class="fa fa-arrow-left"></i> Back to Course
+                    </a>
+                    <a href="{% url 'upload_material' course.id %}" class="btn btn-success">
+                        <i class="fa fa-upload"></i> Upload Material
+                    </a>
+                </div>
+            </div>
+
+            <!-- Materials List -->
+            {% if materials %}
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <i class="fa fa-list"></i> Uploaded Materials ({{ materials.count }})
+                        </h3>
+                    </div>
+                    <div class="panel-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Type</th>
+                                        <th>Lesson</th>
+                                        <th>Size</th>
+                                        <th>Required</th>
+                                        <th>Uploaded</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for material in materials %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ material.title }}</strong>
+                                            {% if material.description %}
+                                                <br><small class="text-muted">{{ material.description|truncatewords:15 }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="label label-info">{{ material.get_material_type_display }}</span>
+                                        </td>
+                                        <td>
+                                            {% if material.lesson %}
+                                                <small>{{ material.lesson.title }}</small>
+                                            {% else %}
+                                                <span class="text-muted">General Course Material</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ material.get_file_size }} MB</td>
+                                        <td>
+                                            {% if material.is_required %}
+                                                <span class="label label-warning">Required</span>
+                                            {% else %}
+                                                <span class="label label-default">Optional</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small>{{ material.uploaded_date|date:"M d, Y H:i" }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-xs">
+                                                <a href="{{ material.file.url }}" class="btn btn-primary" target="_blank">
+                                                    <i class="fa fa-download"></i> Download
+                                                </a>
+                                                <a href="{% url 'delete_material' material.id %}" class="btn btn-danger">
+                                                    <i class="fa fa-trash"></i> Delete
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="panel panel-default">
+                    <div class="panel-body text-center">
+                        <div class="terminal-output">
+                            <p class="lead">No materials uploaded yet</p>
+                            <p>Upload course materials to provide additional resources for your students.</p>
+                            <a href="{% url 'upload_material' course.id %}" class="btn btn-success btn-lg">
+                                <i class="fa fa-upload"></i> Upload First Material
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

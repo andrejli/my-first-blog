@@ -1,0 +1,87 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Delete Material - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-6 col-md-offset-3">
+            <!-- Header -->
+            <div class="page-header">
+                <h1>
+                    <i class="fa fa-trash text-danger"></i> Delete Material
+                    <small>{{ course.course_code }} - {{ course.title }}</small>
+                </h1>
+            </div>
+
+            <!-- Confirmation Panel -->
+            <div class="panel panel-danger">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        <i class="fa fa-warning"></i> Confirm Deletion
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <div class="alert alert-danger">
+                        <strong>Warning!</strong> This action cannot be undone.
+                    </div>
+
+                    <h4>Material to Delete:</h4>
+                    <div class="well">
+                        <h5><strong>{{ material.title }}</strong></h5>
+                        {% if material.description %}
+                            <p>{{ material.description }}</p>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <strong>Type:</strong> {{ material.get_material_type_display }}
+                            </div>
+                            <div class="col-sm-6">
+                                <strong>Size:</strong> {{ material.get_file_size }} MB
+                            </div>
+                        </div>
+                        
+                        {% if material.lesson %}
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <strong>Attached to:</strong> {{ material.lesson.title }}
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        {% if material.is_required %}
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <span class="label label-warning">Required Material</span>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <p><strong>This will permanently delete:</strong></p>
+                    <ul>
+                        <li>The material record from the database</li>
+                        <li>The uploaded file from the server</li>
+                        <li>Any references to this material</li>
+                    </ul>
+
+                    <!-- Action Buttons -->
+                    <div class="text-center">
+                        <form method="post" style="display: inline-block;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="fa fa-trash"></i> Yes, Delete Material
+                            </button>
+                        </form>
+                        
+                        <a href="{% url 'course_materials' course.id %}" class="btn btn-default btn-lg">
+                            <i class="fa fa-arrow-left"></i> Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

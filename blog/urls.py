@@ -38,4 +38,24 @@ urlpatterns = [
     # Course creation for instructors
     path('instructor/course/create/', views.create_course, name='create_course'),
     path('instructor/course/<int:course_id>/edit/', views.edit_course, name='edit_course'),
+    
+    # Phase 2.2: Content Upload System
+    # Course Materials
+    path('instructor/course/<int:course_id>/materials/', views.course_materials, name='course_materials'),
+    path('instructor/course/<int:course_id>/material/upload/', views.upload_material, name='upload_material'),
+    path('instructor/material/<int:material_id>/delete/', views.delete_material, name='delete_material'),
+    
+    # Assignments
+    path('instructor/course/<int:course_id>/assignments/', views.course_assignments, name='course_assignments'),
+    path('instructor/course/<int:course_id>/assignment/create/', views.create_assignment, name='create_assignment'),
+    path('instructor/assignment/<int:assignment_id>/edit/', views.edit_assignment, name='edit_assignment'),
+    path('instructor/assignment/<int:assignment_id>/delete/', views.delete_assignment, name='delete_assignment'),
+    path('instructor/assignment/<int:assignment_id>/submissions/', views.assignment_submissions, name='assignment_submissions'),
+    path('instructor/submission/<int:submission_id>/grade/', views.grade_submission, name='grade_submission'),
+    
+    # Student Assignment Views
+    path('course/<int:course_id>/assignments/', views.student_assignments, name='student_assignments'),
+    path('assignment/<int:assignment_id>/', views.assignment_detail, name='assignment_detail'),
+    path('assignment/<int:assignment_id>/submit/', views.submit_assignment, name='submit_assignment'),
+    path('submission/<int:submission_id>/edit/', views.edit_submission, name='edit_submission'),
 ]

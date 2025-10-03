@@ -1,0 +1,167 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}{% if assignment %}Edit Assignment{% else %}Create Assignment{% endif %} - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+            <!-- Header -->
+            <div class="page-header">
+                <h1>
+                    <i class="fa fa-tasks"></i> {{ action }} Assignment
+                    <small>{{ course.course_code }} - {{ course.title }}</small>
+                </h1>
+            </div>
+
+            <!-- Assignment Form -->
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        <i class="fa fa-edit"></i> Assignment Details
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <form method="post" enctype="multipart/form-data" class="form-horizontal">
+                        {% csrf_token %}
+
+                        <!-- Title -->
+                        <div class="form-group">
+                            <label for="title" class="col-sm-3 control-label">Title *</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="title" name="title" 
+                                       value="{% if assignment %}{{ assignment.title }}{% endif %}"
+                                       placeholder="Enter assignment title" required maxlength="200">
+                                <small class="help-block">Give your assignment a clear, descriptive title</small>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="form-group">
+                            <label for="description" class="col-sm-3 control-label">Description *</label>
+                            <div class="col-sm-9">
+                                <textarea class="form-control" id="description" name="description" rows="4" required
+                                          placeholder="Brief description of the assignment">{% if assignment %}{{ assignment.description }}{% endif %}</textarea>
+                                <small class="help-block">Provide a brief overview of what students need to do</small>
+                            </div>
+                        </div>
+
+                        <!-- Instructions -->
+                        <div class="form-group">
+                            <label for="instructions" class="col-sm-3 control-label">Instructions</label>
+                            <div class="col-sm-9">
+                                <textarea class="form-control" id="instructions" name="instructions" rows="6"
+                                          placeholder="Detailed instructions for completing the assignment">{% if assignment %}{{ assignment.instructions }}{% endif %}</textarea>
+                                <small class="help-block">Provide detailed step-by-step instructions</small>
+                            </div>
+                        </div>
+
+                        <!-- Due Date -->
+                        <div class="form-group">
+                            <label for="due_date" class="col-sm-3 control-label">Due Date *</label>
+                            <div class="col-sm-9">
+                                <input type="datetime-local" class="form-control" id="due_date" name="due_date" 
+                                       value="{% if assignment %}{{ assignment.due_date|date:'Y-m-d\TH:i' }}{% endif %}" required>
+                                <small class="help-block">Set the deadline for submission</small>
+                            </div>
+                        </div>
+
+                        <!-- Max Points -->
+                        <div class="form-group">
+                            <label for="max_points" class="col-sm-3 control-label">Maximum Points</label>
+                            <div class="col-sm-9">
+                                <input type="number" class="form-control" id="max_points" name="max_points" 
+                                       value="{% if assignment %}{{ assignment.max_points }}{% else %}100{% endif %}"
+                                       min="1" max="1000">
+                                <small class="help-block">Total points available for this assignment</small>
+                            </div>
+                        </div>
+
+                        <!-- File Attachment -->
+                        <div class="form-group">
+                            <label for="file_attachment" class="col-sm-3 control-label">Assignment File</label>
+                            <div class="col-sm-9">
+                                <input type="file" class="form-control" id="file_attachment" name="file_attachment">
+                                {% if assignment and assignment.file_attachment %}
+                                    <small class="help-block">
+                                        Current file: <a href="{{ assignment.file_attachment.url }}" target="_blank">{{ assignment.file_attachment.name }}</a>
+                                        <br>Upload a new file to replace it.
+                                    </small>
+                                {% else %}
+                                    <small class="help-block">Optional: Upload assignment instructions, templates, or starter files</small>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Submission Types -->
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">Submission Types</label>
+                            <div class="col-sm-9">
+                                <div class="checkbox">
+                                    <label>
+                                        <input type="checkbox" name="allow_text_submission" 
+                                               {% if not assignment or assignment.allow_text_submission %}checked{% endif %}>
+                                        Allow text submissions
+                                    </label>
+                                </div>
+                                <div class="checkbox">
+                                    <label>
+                                        <input type="checkbox" name="allow_file_submission"
+                                               {% if not assignment or assignment.allow_file_submission %}checked{% endif %}>
+                                        Allow file uploads
+                                    </label>
+                                </div>
+                                <small class="help-block">Students can submit using the allowed methods</small>
+                            </div>
+                        </div>
+
+                        <!-- Publication Status -->
+                        <div class="form-group">
+                            <div class="col-sm-offset-3 col-sm-9">
+                                <div class="checkbox">
+                                    <label>
+                                        <input type="checkbox" name="is_published" 
+                                               {% if assignment and assignment.is_published %}checked{% endif %}>
+                                        Publish assignment (make visible to students)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="form-group">
+                            <div class="col-sm-offset-3 col-sm-9">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fa fa-save"></i> {{ action }} Assignment
+                                </button>
+                                <a href="{% url 'course_assignments' course.id %}" class="btn btn-default">
+                                    <i class="fa fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Assignment Tips -->
+            <div class="panel panel-info">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        <i class="fa fa-lightbulb-o"></i> Assignment Best Practices
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <ul>
+                        <li><strong>Clear Instructions:</strong> Provide detailed, step-by-step instructions</li>
+                        <li><strong>Realistic Deadlines:</strong> Allow sufficient time for completion</li>
+                        <li><strong>Point Values:</strong> Align points with assignment complexity and course goals</li>
+                        <li><strong>File Attachments:</strong> Include templates, examples, or starter files when helpful</li>
+                        <li><strong>Submission Types:</strong> Choose appropriate submission methods for your assignment</li>
+                        <li><strong>Draft Mode:</strong> Create assignments as drafts first, then publish when ready</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

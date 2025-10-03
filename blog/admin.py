@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 from django.contrib.auth.models import User
-from .models import Post, Course, UserProfile, Enrollment, Lesson, Progress
+from .models import Post, Course, UserProfile, Enrollment, Lesson, Progress, CourseMaterial, Assignment, Submission
 
 
 # Custom form for Course to handle instructor selection
@@ -79,6 +79,43 @@ class ProgressAdmin(admin.ModelAdmin):
     list_display = ['student', 'lesson', 'completed', 'completion_date']
     list_filter = ['completed', 'lesson__course', 'completion_date']
     search_fields = ['student__username', 'lesson__title']
+
+
+# Course Material Admin
+@admin.register(CourseMaterial)
+class CourseMaterialAdmin(admin.ModelAdmin):
+    list_display = ['title', 'course', 'lesson', 'material_type', 'get_file_size', 'is_required', 'uploaded_date']
+    list_filter = ['material_type', 'is_required', 'course', 'uploaded_date']
+    search_fields = ['title', 'course__title', 'lesson__title']
+    
+    def get_file_size(self, obj):
+        return f"{obj.get_file_size()} MB"
+    get_file_size.short_description = 'File Size'
+
+
+# Assignment Admin
+@admin.register(Assignment)
+class AssignmentAdmin(admin.ModelAdmin):
+    list_display = ['title', 'course', 'due_date', 'max_points', 'is_published', 'get_submission_count']
+    list_filter = ['course', 'is_published', 'due_date', 'created_date']
+    search_fields = ['title', 'course__title', 'description']
+    
+    def get_submission_count(self, obj):
+        return obj.get_submission_count()
+    get_submission_count.short_description = 'Submissions'
+
+
+# Submission Admin
+@admin.register(Submission)
+class SubmissionAdmin(admin.ModelAdmin):
+    list_display = ['student', 'assignment', 'status', 'submitted_date', 'grade', 'is_late']
+    list_filter = ['status', 'assignment__course', 'submitted_date', 'graded_date']
+    search_fields = ['student__username', 'assignment__title']
+    
+    def is_late(self, obj):
+        return obj.is_late()
+    is_late.boolean = True
+    is_late.short_description = 'Late Submission'
 
 
 # Keep the original Post admin

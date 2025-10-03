@@ -1,0 +1,181 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Upload Material - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+            <!-- Header -->
+            <div class="page-header">
+                <h1>
+                    <i class="fa fa-upload"></i> Upload Course Material
+                    <small>{{ course.course_code }} - {{ course.title }}</small>
+                </h1>
+            </div>
+
+            <!-- Upload Form -->
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        <i class="fa fa-file"></i> Material Details
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <form method="post" enctype="multipart/form-data" class="form-horizontal">
+                        {% csrf_token %}
+
+                        <!-- Title -->
+                        <div class="form-group">
+                            <label for="title" class="col-sm-3 control-label">Title *</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="title" name="title" 
+                                       placeholder="Enter material title" required maxlength="200">
+                                <small class="help-block">Give your material a descriptive title</small>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="form-group">
+                            <label for="description" class="col-sm-3 control-label">Description</label>
+                            <div class="col-sm-9">
+                                <textarea class="form-control" id="description" name="description" rows="3"
+                                          placeholder="Optional description of the material"></textarea>
+                                <small class="help-block">Briefly describe what this material contains</small>
+                            </div>
+                        </div>
+
+                        <!-- File Upload -->
+                        <div class="form-group">
+                            <label for="file" class="col-sm-3 control-label">File *</label>
+                            <div class="col-sm-9">
+                                <input type="file" class="form-control" id="file" name="file" required>
+                                <small class="help-block">
+                                    Maximum file size: 10MB. Supported formats: PDF, DOC, PPT, images, videos, etc.
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Material Type -->
+                        <div class="form-group">
+                            <label for="material_type" class="col-sm-3 control-label">Type</label>
+                            <div class="col-sm-9">
+                                <select class="form-control" id="material_type" name="material_type">
+                                    <option value="other">Other</option>
+                                    <option value="pdf">PDF Document</option>
+                                    <option value="doc">Word Document</option>
+                                    <option value="ppt">Presentation</option>
+                                    <option value="image">Image</option>
+                                    <option value="video">Video</option>
+                                    <option value="audio">Audio</option>
+                                </select>
+                                <small class="help-block">Select the type of material</small>
+                            </div>
+                        </div>
+
+                        <!-- Attach to Lesson -->
+                        <div class="form-group">
+                            <label for="lesson_id" class="col-sm-3 control-label">Attach to Lesson</label>
+                            <div class="col-sm-9">
+                                <select class="form-control" id="lesson_id" name="lesson_id">
+                                    <option value="">General Course Material</option>
+                                    {% for lesson in lessons %}
+                                        <option value="{{ lesson.id }}">{{ lesson.order }}. {{ lesson.title }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="help-block">Optionally attach this material to a specific lesson</small>
+                            </div>
+                        </div>
+
+                        <!-- Required -->
+                        <div class="form-group">
+                            <div class="col-sm-offset-3 col-sm-9">
+                                <div class="checkbox">
+                                    <label>
+                                        <input type="checkbox" id="is_required" name="is_required">
+                                        Mark as required for course completion
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="form-group">
+                            <div class="col-sm-offset-3 col-sm-9">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fa fa-upload"></i> Upload Material
+                                </button>
+                                <a href="{% url 'course_materials' course.id %}" class="btn btn-default">
+                                    <i class="fa fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Upload Guidelines -->
+            <div class="panel panel-info">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        <i class="fa fa-info-circle"></i> Upload Guidelines
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <ul>
+                        <li>Maximum file size is <strong>10 MB</strong></li>
+                        <li>Supported formats: PDF, DOC, DOCX, PPT, PPTX, images (JPG, PNG, GIF), videos (MP4, MOV), audio files</li>
+                        <li>Use descriptive titles to help students understand the content</li>
+                        <li>Mark materials as "required" if they are essential for course completion</li>
+                        <li>Attach materials to specific lessons when relevant</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-detect file type based on file extension
+document.getElementById('file').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const materialTypeSelect = document.getElementById('material_type');
+    
+    if (file) {
+        const extension = file.name.split('.').pop().toLowerCase();
+        
+        // Auto-select material type based on file extension
+        switch(extension) {
+            case 'pdf':
+                materialTypeSelect.value = 'pdf';
+                break;
+            case 'doc':
+            case 'docx':
+                materialTypeSelect.value = 'doc';
+                break;
+            case 'ppt':
+            case 'pptx':
+                materialTypeSelect.value = 'ppt';
+                break;
+            case 'jpg':
+            case 'jpeg':
+            case 'png':
+            case 'gif':
+                materialTypeSelect.value = 'image';
+                break;
+            case 'mp4':
+            case 'mov':
+            case 'avi':
+                materialTypeSelect.value = 'video';
+                break;
+            case 'mp3':
+            case 'wav':
+                materialTypeSelect.value = 'audio';
+                break;
+            default:
+                materialTypeSelect.value = 'other';
+        }
+    }
+});
+</script>
+{% endblock %}

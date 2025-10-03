@@ -1,6 +1,22 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
+import os
+
+
+def course_material_upload_path(instance, filename):
+    """Generate upload path for course materials"""
+    return f'course_materials/{instance.course.course_code}/{filename}'
+
+
+def assignment_upload_path(instance, filename):
+    """Generate upload path for assignment files"""
+    return f'assignments/{instance.course.course_code}/{filename}'
+
+
+def submission_upload_path(instance, filename):
+    """Generate upload path for assignment submissions"""
+    return f'submissions/{instance.assignment.course.course_code}/{instance.assignment.id}/{instance.student.username}/{filename}'
 
 
 # User Profile Models
@@ -95,6 +111,110 @@ class Lesson(models.Model):
     
     def __str__(self):
         return f"{self.course.course_code} - Lesson {self.order}: {self.title}"
+
+
+class CourseMaterial(models.Model):
+    """File attachments for courses and lessons"""
+    MATERIAL_TYPES = [
+        ('pdf', 'PDF Document'),
+        ('doc', 'Word Document'),
+        ('ppt', 'Presentation'),
+        ('image', 'Image'),
+        ('video', 'Video'),
+        ('audio', 'Audio'),
+        ('other', 'Other'),
+    ]
+    
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, null=True, blank=True, help_text="Optional: attach to specific lesson")
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    file = models.FileField(upload_to=course_material_upload_path)
+    material_type = models.CharField(max_length=20, choices=MATERIAL_TYPES, default='other')
+    uploaded_date = models.DateTimeField(default=timezone.now)
+    is_required = models.BooleanField(default=False, help_text="Required for course completion")
+    
+    def __str__(self):
+        return f"{self.course.course_code} - {self.title}"
+    
+    def get_file_size(self):
+        """Return file size in MB"""
+        if self.file:
+            return round(self.file.size / (1024 * 1024), 2)
+        return 0
+    
+    def get_file_extension(self):
+        """Return file extension"""
+        if self.file:
+            return os.path.splitext(self.file.name)[1].lower()
+        return ''
+
+
+class Assignment(models.Model):
+    """Course assignments that students can submit"""
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    instructions = models.TextField(blank=True, help_text="Detailed assignment instructions")
+    due_date = models.DateTimeField()
+    max_points = models.PositiveIntegerField(default=100)
+    file_attachment = models.FileField(upload_to=assignment_upload_path, blank=True, help_text="Optional assignment file")
+    allow_file_submission = models.BooleanField(default=True)
+    allow_text_submission = models.BooleanField(default=True)
+    created_date = models.DateTimeField(default=timezone.now)
+    is_published = models.BooleanField(default=False)
+    
+    class Meta:
+        ordering = ['course', 'due_date']
+    
+    def __str__(self):
+        return f"{self.course.course_code} - {self.title}"
+    
+    def is_overdue(self):
+        """Check if assignment is past due date"""
+        return timezone.now() > self.due_date
+    
+    def get_submission_count(self):
+        """Get number of submissions"""
+        return self.submission_set.count()
+
+
+class Submission(models.Model):
+    """Student submissions for assignments"""
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('submitted', 'Submitted'),
+        ('graded', 'Graded'),
+        ('returned', 'Returned'),
+    ]
+    
+    student = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'userprofile__role': 'student'})
+    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE)
+    text_submission = models.TextField(blank=True)
+    file_submission = models.FileField(upload_to=submission_upload_path, blank=True)
+    submitted_date = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    grade = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    feedback = models.TextField(blank=True)
+    graded_date = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        unique_together = ['student', 'assignment']
+    
+    def submit(self):
+        """Mark submission as submitted"""
+        self.status = 'submitted'
+        self.submitted_date = timezone.now()
+        self.save()
+    
+    def is_late(self):
+        """Check if submission was late"""
+        if self.submitted_date and self.assignment.due_date:
+            return self.submitted_date > self.assignment.due_date
+        return False
+    
+    def __str__(self):
+        return f"{self.student.username} - {self.assignment.title} ({self.status})"
 
 
 class Progress(models.Model):
