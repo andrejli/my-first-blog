@@ -152,6 +152,82 @@
                         {% endif %}
                     </div>
                 </div>
+
+                <!-- Course Assignments -->
+                {% if user.is_authenticated and is_enrolled and assignments %}
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4><i class="glyphicon glyphicon-tasks"></i> Assignments</h4>
+                    </div>
+                    <div class="panel-body">
+                        <div class="assignment-list">
+                            {% for assignment in assignments %}
+                            <div class="assignment-item panel panel-default">
+                                <div class="panel-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <h5><strong>{{ assignment.title }}</strong></h5>
+                                            <p class="text-muted">{{ assignment.description|truncatewords:20 }}</p>
+                                            
+                                            <div class="assignment-meta">
+                                                <span class="label label-info">{{ assignment.max_points }} points</span>
+                                                
+                                                {% if assignment.is_overdue %}
+                                                    <span class="label label-danger">Overdue</span>
+                                                {% else %}
+                                                    <span class="label label-success">Open</span>
+                                                {% endif %}
+                                                
+                                                {% with user_submissions|get_item:assignment.id as submission %}
+                                                    {% if submission %}
+                                                        {% if submission.status == 'submitted' %}
+                                                            <span class="label label-warning">Submitted</span>
+                                                        {% elif submission.status == 'graded' %}
+                                                            <span class="label label-primary">Graded: {{ submission.grade }}/{{ assignment.max_points }}</span>
+                                                        {% else %}
+                                                            <span class="label label-default">Draft</span>
+                                                        {% endif %}
+                                                    {% else %}
+                                                        <span class="label label-default">Not Started</span>
+                                                    {% endif %}
+                                                {% endwith %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 text-right">
+                                            <p><strong>Due:</strong><br>{{ assignment.due_date|date:"M d, Y" }}<br><small>{{ assignment.due_date|time:"H:i" }}</small></p>
+                                            
+                                            <div class="btn-group-vertical btn-group-sm">
+                                                <a href="{% url 'assignment_detail' assignment.id %}" class="btn btn-primary">
+                                                    <i class="glyphicon glyphicon-eye-open"></i> View Details
+                                                </a>
+                                                
+                                                {% with user_submissions|get_item:assignment.id as submission %}
+                                                    {% if submission and submission.status == 'draft' %}
+                                                        <a href="{% url 'edit_submission' submission.id %}" class="btn btn-warning">
+                                                            <i class="glyphicon glyphicon-edit"></i> Continue Draft
+                                                        </a>
+                                                    {% elif not submission and not assignment.is_overdue %}
+                                                        <a href="{% url 'submit_assignment' assignment.id %}" class="btn btn-success">
+                                                            <i class="glyphicon glyphicon-upload"></i> Start Assignment
+                                                        </a>
+                                                    {% endif %}
+                                                {% endwith %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="text-center">
+                            <a href="{% url 'student_assignments' course.id %}" class="btn btn-default">
+                                <i class="glyphicon glyphicon-list"></i> View All Assignments
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
 
             <!-- Sidebar -->

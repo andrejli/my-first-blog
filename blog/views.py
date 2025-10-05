@@ -101,6 +101,8 @@ def course_detail(request, course_id):
     enrollment = None
     user_progress = {}
     next_lesson = None
+    assignments = []
+    user_submissions = {}
     
     if request.user.is_authenticated:
         try:
@@ -117,6 +119,17 @@ def course_detail(request, course_id):
                     next_lesson = lesson
                     break
             
+            # Get course assignments for enrolled students
+            assignments = Assignment.objects.filter(course=course, is_published=True).order_by('-due_date')
+            
+            # Get user's submissions for these assignments
+            for assignment in assignments:
+                try:
+                    submission = Submission.objects.get(student=request.user, assignment=assignment)
+                    user_submissions[assignment.id] = submission
+                except Submission.DoesNotExist:
+                    user_submissions[assignment.id] = None
+            
         except Enrollment.DoesNotExist:
             pass
     
@@ -129,6 +142,8 @@ def course_detail(request, course_id):
         'next_lesson': next_lesson,
         'total_lessons': lessons.count(),
         'completed_lessons': sum(user_progress.values()) if user_progress else 0,
+        'assignments': assignments,
+        'user_submissions': user_submissions,
     }
     
     return render(request, 'blog/course_detail.html', context)

@@ -1,0 +1,118 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Assignments - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Header -->
+            <div class="page-header">
+                <h1>
+                    <i class="fa fa-tasks"></i> Course Assignments
+                    <small>{{ course.course_code }} - {{ course.title }}</small>
+                </h1>
+            </div>
+
+            <!-- Back to Course -->
+            <div class="btn-toolbar mb-3" role="toolbar">
+                <div class="btn-group" role="group">
+                    <a href="{% url 'course_detail' course.id %}" class="btn btn-default">
+                        <i class="fa fa-arrow-left"></i> Back to Course
+                    </a>
+                </div>
+            </div>
+
+            <!-- Assignments List -->
+            {% if assignments %}
+                {% for assignment in assignments %}
+                <div class="panel {% if assignment.is_overdue %}panel-danger{% else %}panel-default{% endif %}">
+                    <div class="panel-heading">
+                        <h4>
+                            {{ assignment.title }}
+                            <small class="pull-right">{{ assignment.max_points }} points</small>
+                        </h4>
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <p>{{ assignment.description }}</p>
+                                
+                                {% if assignment.instructions %}
+                                    <div class="well well-sm">
+                                        <strong>Instructions:</strong><br>
+                                        {{ assignment.instructions|linebreaks }}
+                                    </div>
+                                {% endif %}
+                                
+                                {% if assignment.file_attachment %}
+                                    <p>
+                                        <i class="fa fa-paperclip"></i> 
+                                        <a href="{{ assignment.file_attachment.url }}" target="_blank">
+                                            Download Assignment File
+                                        </a>
+                                    </p>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <div class="assignment-info">
+                                    <p><strong>Due Date:</strong><br>{{ assignment.due_date|date:"M d, Y H:i" }}</p>
+                                    
+                                    {% with submissions|get_item:assignment.id as submission %}
+                                        <p><strong>Status:</strong><br>
+                                        {% if submission %}
+                                            {% if submission.status == 'submitted' %}
+                                                <span class="label label-warning">Submitted</span>
+                                                <br><small>{{ submission.submitted_date|date:"M d, Y H:i" }}</small>
+                                            {% elif submission.status == 'graded' %}
+                                                <span class="label label-primary">Graded</span>
+                                                <br><strong>Grade: {{ submission.grade }}/{{ assignment.max_points }}</strong>
+                                                {% if submission.feedback %}
+                                                    <br><small>{{ submission.feedback|truncatewords:10 }}</small>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="label label-default">Draft</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="label label-default">Not Started</span>
+                                        {% endif %}
+                                        </p>
+                                    {% endwith %}
+                                    
+                                    <div class="btn-group-vertical btn-group-sm">
+                                        <a href="{% url 'assignment_detail' assignment.id %}" class="btn btn-primary">
+                                            <i class="fa fa-eye"></i> View Details
+                                        </a>
+                                        
+                                        {% with submissions|get_item:assignment.id as submission %}
+                                            {% if submission and submission.status == 'draft' %}
+                                                <a href="{% url 'edit_submission' submission.id %}" class="btn btn-warning">
+                                                    <i class="fa fa-edit"></i> Continue Draft
+                                                </a>
+                                            {% elif not submission and not assignment.is_overdue %}
+                                                <a href="{% url 'submit_assignment' assignment.id %}" class="btn btn-success">
+                                                    <i class="fa fa-upload"></i> Start Assignment
+                                                </a>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="panel panel-default">
+                    <div class="panel-body text-center">
+                        <div class="terminal-output">
+                            <p class="lead">No assignments available yet</p>
+                            <p>Check back later for assignments from your instructor.</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
