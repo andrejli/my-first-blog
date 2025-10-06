@@ -1,0 +1,217 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Submit Assignment - {{ assignment.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'course_detail' course.id %}">{{ course.title }}</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'assignment_detail' assignment.id %}">{{ assignment.title }}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Submit</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">
+                        {% if submission.status == 'draft' %}
+                            Submit Assignment: {{ assignment.title }}
+                        {% else %}
+                            Complete Assignment: {{ assignment.title }}
+                        {% endif %}
+                    </h3>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Assignment Info -->
+                    <div class="alert alert-info">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Due Date:</strong>
+                                {% if assignment.due_date %}
+                                    {{ assignment.due_date|date:"M j, Y g:i A" }}
+                                    {% if assignment.is_overdue %}
+                                        <span class="badge bg-danger ms-1">Overdue</span>
+                                    {% endif %}
+                                {% else %}
+                                    No due date
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Points:</strong> {{ assignment.points|default:"Ungraded" }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Assignment Description -->
+                    {% if assignment.description %}
+                    <div class="mb-4">
+                        <h5>Instructions:</h5>
+                        <div class="border p-3 bg-light rounded">
+                            {{ assignment.description|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Assignment Attachment -->
+                    {% if assignment.attachment %}
+                    <div class="mb-4">
+                        <h5>Assignment Files:</h5>
+                        <a href="{{ assignment.attachment.url }}" class="btn btn-outline-primary" target="_blank">
+                            <i class="fas fa-download"></i> Download Assignment File
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Submission Form -->
+                    <form method="post" enctype="multipart/form-data" id="submissionForm">
+                        {% csrf_token %}
+                        
+                        <!-- Text Submission -->
+                        {% if assignment.allow_text_submission %}
+                        <div class="mb-4">
+                            <h5>
+                                <i class="fas fa-edit"></i> Text Submission
+                                {% if not assignment.allow_file_submission %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </h5>
+                            <textarea 
+                                name="text_submission" 
+                                class="form-control" 
+                                rows="10" 
+                                placeholder="Enter your assignment submission here..."
+                                {% if not assignment.allow_file_submission %}required{% endif %}
+                            >{{ submission.text_submission|default:"" }}</textarea>
+                            <div class="form-text">
+                                {% if assignment.allow_file_submission %}
+                                    You can submit text, a file, or both.
+                                {% else %}
+                                    Text submission is required.
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- File Submission -->
+                        {% if assignment.allow_file_submission %}
+                        <div class="mb-4">
+                            <h5>
+                                <i class="fas fa-upload"></i> File Submission
+                                {% if not assignment.allow_text_submission %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </h5>
+                            
+                            {% if submission.file_submission %}
+                            <div class="alert alert-success mb-3">
+                                <i class="fas fa-file"></i> Current file: 
+                                <a href="{{ submission.file_submission.url }}" target="_blank">
+                                    {{ submission.file_submission.name|slice:"20:" }}
+                                </a>
+                                <br>
+                                <small>Upload a new file to replace it.</small>
+                            </div>
+                            {% endif %}
+                            
+                            <input 
+                                type="file" 
+                                name="file_submission" 
+                                class="form-control"
+                                {% if not assignment.allow_text_submission and not submission.file_submission %}required{% endif %}
+                                accept=".pdf,.doc,.docx,.txt,.zip,.jpg,.png"
+                            >
+                            <div class="form-text">
+                                Maximum file size: 10MB. 
+                                {% if assignment.allow_text_submission %}
+                                    You can submit text, a file, or both.
+                                {% else %}
+                                    File submission is required.
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Submission Warning for Late Work -->
+                        {% if assignment.is_overdue %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Late Submission:</strong> This assignment is past the due date. 
+                            Late submissions may receive reduced credit.
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Current Status -->
+                        {% if submission.status == 'draft' %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Draft Status:</strong> Your work is saved as a draft. 
+                            Click "Submit Assignment" to officially submit it for grading.
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'assignment_detail' assignment.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Assignment
+                            </a>
+                            
+                            <div>
+                                {% if submission.status == 'draft' %}
+                                <button type="submit" name="action" value="save_draft" class="btn btn-outline-primary me-2">
+                                    <i class="fas fa-save"></i> Save Draft
+                                </button>
+                                {% endif %}
+                                
+                                <button type="submit" name="action" value="submit" class="btn btn-success" id="submitBtn">
+                                    <i class="fas fa-paper-plane"></i> Submit Assignment
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Submission Guidelines -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Submission Guidelines</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Make sure to review your work before submitting</li>
+                        <li>Once submitted, you cannot make changes to your assignment</li>
+                        <li>If you submit a file, ensure it opens properly before uploading</li>
+                        <li>Contact your instructor if you experience technical difficulties</li>
+                        {% if assignment.due_date %}
+                        <li>Assignments submitted after the due date may receive reduced credit</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('submissionForm').addEventListener('submit', function(e) {
+    const submitBtn = document.getElementById('submitBtn');
+    const action = e.submitter.value;
+    
+    if (action === 'submit') {
+        if (!confirm('Are you sure you want to submit this assignment? You cannot make changes after submission.')) {
+            e.preventDefault();
+            return false;
+        }
+        
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+        submitBtn.disabled = true;
+    }
+});
+</script>
+{% endblock %}

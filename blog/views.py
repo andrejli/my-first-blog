@@ -1179,14 +1179,16 @@ def submit_assignment(request, assignment_id):
     )
     
     if request.method == 'POST':
+        action = request.POST.get('action', 'submit')
         text_submission = request.POST.get('text_submission', '').strip() if assignment.allow_text_submission else ''
         file_submission = request.FILES.get('file_submission') if assignment.allow_file_submission else None
         
         errors = []
         
-        # Validate submission
-        if not text_submission and not file_submission:
-            errors.append('Please provide either text or file submission.')
+        # Validate submission only if submitting (not for drafts)
+        if action == 'submit':
+            if not text_submission and not file_submission:
+                errors.append('Please provide either text or file submission.')
         
         if file_submission and file_submission.size > 10 * 1024 * 1024:
             errors.append('File size must be less than 10MB.')
@@ -1198,10 +1200,16 @@ def submit_assignment(request, assignment_id):
             submission.text_submission = text_submission
             if file_submission:
                 submission.file_submission = file_submission
-            submission.submit()
             
-            messages.success(request, f'Assignment "{assignment.title}" submitted successfully!')
-            return redirect('assignment_detail', assignment_id=assignment_id)
+            if action == 'submit':
+                submission.submit()
+                messages.success(request, f'Assignment "{assignment.title}" submitted successfully!')
+                return redirect('assignment_detail', assignment_id=assignment_id)
+            else:
+                # Save as draft
+                submission.save()
+                messages.success(request, 'Draft saved successfully!')
+                return redirect('assignment_detail', assignment_id=assignment_id)
     
     context = {
         'assignment': assignment,
