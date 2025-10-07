@@ -251,3 +251,195 @@ class Post(models.Model):
     def __str__(self):
         return self.title
 
+
+# Quiz System Models
+class Quiz(models.Model):
+    """Quiz model for assessments"""
+    QUIZ_TYPES = [
+        ('practice', 'Practice Quiz'),
+        ('graded', 'Graded Quiz'),
+        ('exam', 'Exam'),
+    ]
+    
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='quizzes')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    quiz_type = models.CharField(max_length=20, choices=QUIZ_TYPES, default='practice')
+    
+    # Timing and attempts
+    time_limit = models.PositiveIntegerField(null=True, blank=True, help_text="Time limit in minutes")
+    max_attempts = models.PositiveIntegerField(default=1, help_text="Maximum attempts allowed")
+    
+    # Availability
+    available_from = models.DateTimeField(null=True, blank=True)
+    available_until = models.DateTimeField(null=True, blank=True)
+    
+    # Settings
+    shuffle_questions = models.BooleanField(default=False)
+    show_correct_answers = models.BooleanField(default=True, help_text="Show correct answers after completion")
+    immediate_feedback = models.BooleanField(default=False, help_text="Show feedback immediately after each question")
+    
+    # Grading
+    points = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
+    passing_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="Minimum percentage to pass")
+    
+    # Status
+    is_published = models.BooleanField(default=False)
+    created_date = models.DateTimeField(default=timezone.now)
+    updated_date = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['course', 'title']
+    
+    def __str__(self):
+        return f"{self.course.course_code} - {self.title}"
+    
+    @property
+    def total_questions(self):
+        return self.questions.count()
+    
+    @property
+    def is_available(self):
+        now = timezone.now()
+        if self.available_from and now < self.available_from:
+            return False
+        if self.available_until and now > self.available_until:
+            return False
+        return True
+
+
+class Question(models.Model):
+    """Individual quiz question"""
+    QUESTION_TYPES = [
+        ('multiple_choice', 'Multiple Choice'),
+        ('true_false', 'True/False'),
+        ('short_answer', 'Short Answer'),
+    ]
+    
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
+    question_text = models.TextField()
+    question_type = models.CharField(max_length=20, choices=QUESTION_TYPES)
+    points = models.DecimalField(max_digits=5, decimal_places=2, default=1.00)
+    order = models.PositiveIntegerField(default=0)
+    
+    # Optional explanation
+    explanation = models.TextField(blank=True, help_text="Explanation shown after answering")
+    
+    created_date = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        ordering = ['quiz', 'order', 'id']
+    
+    def __str__(self):
+        return f"{self.quiz.title} - Q{self.order}: {self.question_text[:50]}..."
+
+
+class Answer(models.Model):
+    """Answer choices for multiple choice and true/false questions"""
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='answers')
+    answer_text = models.CharField(max_length=500)
+    is_correct = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+    
+    class Meta:
+        ordering = ['question', 'order', 'id']
+    
+    def __str__(self):
+        correct_indicator = "✓" if self.is_correct else "✗"
+        return f"{correct_indicator} {self.answer_text}"
+
+
+class QuizAttempt(models.Model):
+    """Student's attempt at taking a quiz"""
+    STATUS_CHOICES = [
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+        ('timed_out', 'Timed Out'),
+    ]
+    
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='attempts')
+    
+    # Attempt info
+    attempt_number = models.PositiveIntegerField(default=1)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='in_progress')
+    
+    # Timing
+    started_at = models.DateTimeField(default=timezone.now)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    time_taken = models.DurationField(null=True, blank=True)
+    
+    # Scoring
+    score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    total_points = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
+    percentage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-started_at']
+        unique_together = ['student', 'quiz', 'attempt_number']
+    
+    def __str__(self):
+        return f"{self.student.username} - {self.quiz.title} (Attempt {self.attempt_number})"
+    
+    def complete_attempt(self):
+        """Mark attempt as completed and calculate score"""
+        if self.status == 'completed':
+            return
+        
+        self.completed_at = timezone.now()
+        self.time_taken = self.completed_at - self.started_at
+        self.status = 'completed'
+        
+        # Calculate score
+        responses = self.responses.all()
+        total_score = sum(response.points_earned for response in responses)
+        self.score = total_score
+        self.total_points = sum(response.question.points for response in responses)
+        
+        if self.total_points > 0:
+            self.percentage = (self.score / self.total_points) * 100
+        else:
+            self.percentage = 0
+        
+        self.save()
+    
+    @property
+    def is_passed(self):
+        if not self.quiz.passing_score or not self.percentage:
+            return None
+        return self.percentage >= self.quiz.passing_score
+
+
+class QuizResponse(models.Model):
+    """Student's response to a specific question"""
+    attempt = models.ForeignKey(QuizAttempt, on_delete=models.CASCADE, related_name='responses')
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    
+    # Response data
+    selected_answer = models.ForeignKey(Answer, on_delete=models.CASCADE, null=True, blank=True)  # For MC/TF
+    text_answer = models.TextField(blank=True)  # For short answer
+    
+    # Grading
+    is_correct = models.BooleanField(null=True, blank=True)  # Auto-graded for MC/TF
+    points_earned = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    feedback = models.TextField(blank=True)  # Manual feedback for short answers
+    
+    answered_at = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        unique_together = ['attempt', 'question']
+    
+    def __str__(self):
+        return f"{self.attempt.student.username} - {self.question.question_text[:30]}..."
+    
+    def auto_grade(self):
+        """Auto-grade multiple choice and true/false questions"""
+        if self.question.question_type in ['multiple_choice', 'true_false']:
+            if self.selected_answer and self.selected_answer.is_correct:
+                self.is_correct = True
+                self.points_earned = self.question.points
+            else:
+                self.is_correct = False
+                self.points_earned = 0
+            self.save()
+

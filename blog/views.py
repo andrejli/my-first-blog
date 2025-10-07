@@ -347,11 +347,26 @@ def instructor_dashboard(request):
     # Get instructor's courses
     courses = Course.objects.filter(instructor=request.user).order_by('-created_date')
     
+    # Get pending submissions across all courses
+    from blog.models import Submission
+    pending_submissions = Submission.objects.filter(
+        assignment__course__instructor=request.user,
+        status='submitted'
+    ).select_related('student', 'assignment', 'assignment__course').order_by('-submitted_date')[:10]
+    
     # Calculate stats for each course
     course_stats = []
     for course in courses:
         enrolled_count = course.get_enrolled_count()
         total_lessons = Lesson.objects.filter(course=course, is_published=True).count()
+        
+        # Get assignment stats for this course
+        course_assignments = Assignment.objects.filter(course=course)
+        total_assignments = course_assignments.count()
+        pending_grading = Submission.objects.filter(
+            assignment__course=course,
+            status='submitted'
+        ).count()
         
         # Get recent enrollments
         recent_enrollments = Enrollment.objects.filter(
@@ -363,14 +378,18 @@ def instructor_dashboard(request):
             'course': course,
             'enrolled_count': enrolled_count,
             'total_lessons': total_lessons,
+            'total_assignments': total_assignments,
+            'pending_grading': pending_grading,
             'recent_enrollments': recent_enrollments,
             'capacity_percentage': (enrolled_count / course.max_students * 100) if course.max_students > 0 else 0,
         })
     
     context = {
         'course_stats': course_stats,
+        'pending_submissions': pending_submissions,
         'total_courses': courses.count(),
         'total_students': sum(stat['enrolled_count'] for stat in course_stats),
+        'total_pending_grading': sum(stat['pending_grading'] for stat in course_stats),
     }
     
     return render(request, 'blog/instructor_dashboard.html', context)
@@ -1250,3 +1269,222 @@ def edit_submission(request, submission_id):
     }
     
     return render(request, 'blog/edit_submission.html', context)
+
+
+# Quiz Management Views
+
+@instructor_required
+def course_quizzes(request, course_id):
+    """View all quizzes for a course"""
+    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    quizzes = course.quizzes.all().order_by('-created_date')
+    
+    context = {
+        'course': course,
+        'quizzes': quizzes,
+    }
+    
+    return render(request, 'blog/course_quizzes.html', context)
+
+
+@instructor_required
+def create_quiz(request, course_id):
+    """Create a new quiz"""
+    from blog.models import Quiz
+    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    
+    if request.method == 'POST':
+        # Get form data
+        title = request.POST.get('title', '').strip()
+        description = request.POST.get('description', '').strip()
+        quiz_type = request.POST.get('quiz_type', 'practice')
+        time_limit = request.POST.get('time_limit')
+        max_attempts = request.POST.get('max_attempts', 1)
+        points = request.POST.get('points', 0)
+        passing_score = request.POST.get('passing_score')
+        
+        # Boolean fields
+        shuffle_questions = request.POST.get('shuffle_questions') == 'on'
+        show_correct_answers = request.POST.get('show_correct_answers') == 'on'
+        immediate_feedback = request.POST.get('immediate_feedback') == 'on'
+        
+        errors = []
+        
+        # Validation
+        if not title:
+            errors.append('Quiz title is required.')
+        
+        if Quiz.objects.filter(course=course, title=title).exists():
+            errors.append('A quiz with this title already exists in this course.')
+        
+        try:
+            max_attempts = int(max_attempts) if max_attempts else 1
+            if max_attempts < 1:
+                errors.append('Maximum attempts must be at least 1.')
+        except ValueError:
+            errors.append('Invalid maximum attempts value.')
+        
+        try:
+            points = float(points) if points else 0
+            if points < 0:
+                errors.append('Points cannot be negative.')
+        except ValueError:
+            errors.append('Invalid points value.')
+        
+        if time_limit:
+            try:
+                time_limit = int(time_limit)
+                if time_limit < 1:
+                    errors.append('Time limit must be at least 1 minute.')
+            except ValueError:
+                errors.append('Invalid time limit value.')
+        else:
+            time_limit = None
+        
+        if passing_score:
+            try:
+                passing_score = float(passing_score)
+                if passing_score < 0 or passing_score > 100:
+                    errors.append('Passing score must be between 0 and 100.')
+            except ValueError:
+                errors.append('Invalid passing score value.')
+        else:
+            passing_score = None
+        
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+        else:
+            # Create quiz
+            quiz = Quiz.objects.create(
+                course=course,
+                title=title,
+                description=description,
+                quiz_type=quiz_type,
+                time_limit=time_limit,
+                max_attempts=max_attempts,
+                points=points,
+                passing_score=passing_score,
+                shuffle_questions=shuffle_questions,
+                show_correct_answers=show_correct_answers,
+                immediate_feedback=immediate_feedback,
+            )
+            
+            messages.success(request, f'Quiz "{title}" created successfully!')
+            return redirect('quiz_detail', quiz_id=quiz.id)
+    
+    context = {
+        'course': course,
+    }
+    
+    return render(request, 'blog/create_quiz.html', context)
+
+
+@instructor_required  
+def quiz_detail(request, quiz_id):
+    """View quiz details and manage questions"""
+    from blog.models import Quiz
+    quiz = get_object_or_404(Quiz, id=quiz_id, course__instructor=request.user)
+    questions = quiz.questions.all().order_by('order', 'id')
+    
+    context = {
+        'quiz': quiz,
+        'questions': questions,
+        'course': quiz.course,
+    }
+    
+    return render(request, 'blog/quiz_detail.html', context)
+
+
+@instructor_required
+def edit_quiz(request, quiz_id):
+    """Edit quiz settings"""
+    from blog.models import Quiz
+    quiz = get_object_or_404(Quiz, id=quiz_id, course__instructor=request.user)
+    
+    if request.method == 'POST':
+        # Get form data
+        title = request.POST.get('title', '').strip()
+        description = request.POST.get('description', '').strip()
+        quiz_type = request.POST.get('quiz_type', 'practice')
+        time_limit = request.POST.get('time_limit')
+        max_attempts = request.POST.get('max_attempts', 1)
+        points = request.POST.get('points', 0)
+        passing_score = request.POST.get('passing_score')
+        
+        # Boolean fields
+        shuffle_questions = request.POST.get('shuffle_questions') == 'on'
+        show_correct_answers = request.POST.get('show_correct_answers') == 'on'
+        immediate_feedback = request.POST.get('immediate_feedback') == 'on'
+        is_published = request.POST.get('is_published') == 'on'
+        
+        errors = []
+        
+        # Validation
+        if not title:
+            errors.append('Quiz title is required.')
+        
+        if Quiz.objects.filter(course=quiz.course, title=title).exclude(id=quiz.id).exists():
+            errors.append('A quiz with this title already exists in this course.')
+        
+        try:
+            max_attempts = int(max_attempts) if max_attempts else 1
+            if max_attempts < 1:
+                errors.append('Maximum attempts must be at least 1.')
+        except ValueError:
+            errors.append('Invalid maximum attempts value.')
+        
+        try:
+            points = float(points) if points else 0
+            if points < 0:
+                errors.append('Points cannot be negative.')
+        except ValueError:
+            errors.append('Invalid points value.')
+        
+        if time_limit:
+            try:
+                time_limit = int(time_limit)
+                if time_limit < 1:
+                    errors.append('Time limit must be at least 1 minute.')
+            except ValueError:
+                errors.append('Invalid time limit value.')
+        else:
+            time_limit = None
+        
+        if passing_score:
+            try:
+                passing_score = float(passing_score)
+                if passing_score < 0 or passing_score > 100:
+                    errors.append('Passing score must be between 0 and 100.')
+            except ValueError:
+                errors.append('Invalid passing score value.')
+        else:
+            passing_score = None
+        
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+        else:
+            # Update quiz
+            quiz.title = title
+            quiz.description = description
+            quiz.quiz_type = quiz_type
+            quiz.time_limit = time_limit
+            quiz.max_attempts = max_attempts
+            quiz.points = points
+            quiz.passing_score = passing_score
+            quiz.shuffle_questions = shuffle_questions
+            quiz.show_correct_answers = show_correct_answers
+            quiz.immediate_feedback = immediate_feedback
+            quiz.is_published = is_published
+            quiz.save()
+            
+            messages.success(request, f'Quiz "{title}" updated successfully!')
+            return redirect('quiz_detail', quiz_id=quiz.id)
+    
+    context = {
+        'quiz': quiz,
+        'course': quiz.course,
+    }
+    
+    return render(request, 'blog/edit_quiz.html', context)

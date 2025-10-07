@@ -1,0 +1,245 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}{{ assignment.title }} - Submissions{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 bg-light">
+            <div class="p-3">
+                <h6 class="text-muted">Course</h6>
+                <a href="{% url 'course_detail' course.id %}" class="text-decoration-none">
+                    <h5>{{ course.title }}</h5>
+                </a>
+                
+                <hr>
+                
+                <h6 class="text-muted">Assignment Info</h6>
+                <div class="small">
+                    <p><strong>Due Date:</strong><br>
+                    {% if assignment.due_date %}
+                        {{ assignment.due_date|date:"M j, Y g:i A" }}
+                    {% else %}
+                        No due date
+                    {% endif %}
+                    </p>
+                    
+                    <p><strong>Points:</strong> {{ assignment.points|default:"Ungraded" }}</p>
+                    
+                    <p><strong>Submission Types:</strong><br>
+                    {% if assignment.allow_text_submission and assignment.allow_file_submission %}
+                        Text & File
+                    {% elif assignment.allow_text_submission %}
+                        Text Only
+                    {% elif assignment.allow_file_submission %}
+                        File Only
+                    {% else %}
+                        No submission
+                    {% endif %}
+                    </p>
+                </div>
+                
+                <hr>
+                
+                <!-- Quick Stats -->
+                <h6 class="text-muted">Submission Stats</h6>
+                <div class="small">
+                    <p><strong>Total:</strong> {{ submissions.count }}</p>
+                    <p><strong>Submitted:</strong> {{ submissions|length }}</p>
+                    <p><strong>Graded:</strong> 
+                        {% with graded_count=submissions|filter_by_status:"graded"|length %}
+                            {{ graded_count }}
+                        {% endwith %}
+                    </p>
+                    <p><strong>Pending:</strong> 
+                        {% with pending_count=submissions|filter_by_status:"submitted"|length %}
+                            {{ pending_count }}
+                        {% endwith %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="p-4">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h1>{{ assignment.title }} - Submissions</h1>
+                        <p class="text-muted">{{ course.title }}</p>
+                    </div>
+                    
+                    <div>
+                        <a href="{% url 'instructor_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Assignment Description -->
+                {% if assignment.description %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Assignment Instructions</h5>
+                    </div>
+                    <div class="card-body">
+                        {{ assignment.description|linebreaks }}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Submissions List -->
+                {% if submissions %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Student Submissions ({{ submissions.count }})</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Status</th>
+                                        <th>Submitted</th>
+                                        <th>Grade</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for submission in submissions %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-3">
+                                                    <i class="fas fa-user-circle fs-4 text-muted"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold">{{ submission.student.get_full_name|default:submission.student.username }}</div>
+                                                    <small class="text-muted">{{ submission.student.username }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if submission.status == 'submitted' %}
+                                                <span class="badge bg-warning">Needs Grading</span>
+                                            {% elif submission.status == 'graded' %}
+                                                <span class="badge bg-success">Graded</span>
+                                            {% elif submission.status == 'draft' %}
+                                                <span class="badge bg-secondary">Draft</span>
+                                            {% else %}
+                                                <span class="badge bg-light text-dark">{{ submission.status|title }}</span>
+                                            {% endif %}
+                                            
+                                            {% if assignment.due_date and submission.submitted_date and submission.submitted_date > assignment.due_date %}
+                                                <br><small class="text-danger">Late</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if submission.submitted_date %}
+                                                <div>{{ submission.submitted_date|date:"M j, Y" }}</div>
+                                                <small class="text-muted">{{ submission.submitted_date|date:"g:i A" }}</small>
+                                            {% else %}
+                                                <span class="text-muted">Not submitted</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if submission.grade is not None %}
+                                                <div class="fw-bold text-success">
+                                                    {{ submission.grade }}/{{ assignment.points }}
+                                                </div>
+                                                {% if submission.graded_date %}
+                                                    <small class="text-muted">{{ submission.graded_date|date:"M j" }}</small>
+                                                {% endif %}
+                                            {% elif submission.status == 'submitted' %}
+                                                <span class="text-warning">Pending</span>
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if submission.status == 'submitted' or submission.status == 'graded' %}
+                                                <a href="{% url 'grade_submission' submission.id %}" class="btn btn-primary btn-sm">
+                                                    {% if submission.status == 'graded' %}
+                                                        <i class="fas fa-edit"></i> Review
+                                                    {% else %}
+                                                        <i class="fas fa-check"></i> Grade
+                                                    {% endif %}
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">No submission</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Grading Summary -->
+                {% with submitted_count=submissions|filter_by_status:"submitted"|length graded_count=submissions|filter_by_status:"graded"|length %}
+                {% if submitted_count > 0 or graded_count > 0 %}
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="card bg-warning bg-opacity-10 border-warning">
+                            <div class="card-body text-center">
+                                <h3 class="text-warning">{{ submitted_count }}</h3>
+                                <p class="mb-0">Pending Grading</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-success bg-opacity-10 border-success">
+                            <div class="card-body text-center">
+                                <h3 class="text-success">{{ graded_count }}</h3>
+                                <p class="mb-0">Graded</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endwith %}
+                
+                {% else %}
+                <!-- No Submissions -->
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-inbox fs-1 text-muted mb-3"></i>
+                        <h4>No Submissions Yet</h4>
+                        <p class="text-muted">
+                            Students haven't submitted any work for this assignment yet.
+                            {% if assignment.due_date %}
+                                <br>Due date: {{ assignment.due_date|date:"M j, Y g:i A" }}
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom CSS for better status styling -->
+<style>
+.badge {
+    font-size: 0.8rem;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.fs-4 {
+    font-size: 1.5rem;
+}
+
+.bg-opacity-10 {
+    background-color: rgba(var(--bs-warning-rgb), 0.1) !important;
+}
+</style>
+{% endblock %}

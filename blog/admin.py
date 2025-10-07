@@ -1,7 +1,11 @@
 from django.contrib import admin
 from django import forms
 from django.contrib.auth.models import User
-from .models import Post, Course, UserProfile, Enrollment, Lesson, Progress, CourseMaterial, Assignment, Submission
+from .models import (
+    Post, Course, UserProfile, Enrollment, Lesson, Progress, 
+    CourseMaterial, Assignment, Submission,
+    Quiz, Question, Answer, QuizAttempt, QuizResponse
+)
 
 
 # Custom form for Course to handle instructor selection
@@ -120,4 +124,83 @@ class SubmissionAdmin(admin.ModelAdmin):
 
 # Keep the original Post admin
 admin.site.register(Post)
+
+
+# Quiz System Admin
+
+class AnswerInline(admin.TabularInline):
+    model = Answer
+    extra = 2
+    fields = ['answer_text', 'is_correct', 'order']
+
+
+@admin.register(Question)
+class QuestionAdmin(admin.ModelAdmin):
+    list_display = ['quiz', 'question_type', 'truncated_text', 'points', 'order']
+    list_filter = ['question_type', 'quiz__course', 'quiz']
+    search_fields = ['question_text', 'quiz__title']
+    inlines = [AnswerInline]
+    
+    def truncated_text(self, obj):
+        return obj.question_text[:50] + "..." if len(obj.question_text) > 50 else obj.question_text
+    truncated_text.short_description = 'Question Text'
+
+
+@admin.register(Quiz)
+class QuizAdmin(admin.ModelAdmin):
+    list_display = ['title', 'course', 'quiz_type', 'total_questions', 'points', 'is_published']
+    list_filter = ['quiz_type', 'is_published', 'course', 'created_date']
+    search_fields = ['title', 'description', 'course__title']
+    readonly_fields = ['created_date', 'updated_date']
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('course', 'title', 'description', 'quiz_type')
+        }),
+        ('Timing & Attempts', {
+            'fields': ('time_limit', 'max_attempts', 'available_from', 'available_until'),
+            'classes': ('collapse',)
+        }),
+        ('Settings', {
+            'fields': ('shuffle_questions', 'show_correct_answers', 'immediate_feedback'),
+            'classes': ('collapse',)
+        }),
+        ('Grading', {
+            'fields': ('points', 'passing_score'),
+            'classes': ('collapse',)
+        }),
+        ('Publication', {
+            'fields': ('is_published', 'created_date', 'updated_date'),
+        }),
+    )
+
+
+@admin.register(QuizAttempt)
+class QuizAttemptAdmin(admin.ModelAdmin):
+    list_display = ['student', 'quiz', 'attempt_number', 'status', 'score', 'percentage', 'started_at', 'completed_at']
+    list_filter = ['status', 'quiz__course', 'started_at']
+    search_fields = ['student__username', 'quiz__title']
+    readonly_fields = ['started_at', 'completed_at', 'time_taken']
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('student', 'quiz', 'quiz__course')
+
+
+@admin.register(QuizResponse)
+class QuizResponseAdmin(admin.ModelAdmin):
+    list_display = ['attempt_student', 'question_text', 'is_correct', 'points_earned', 'answered_at']
+    list_filter = ['is_correct', 'question__question_type', 'attempt__quiz__course']
+    search_fields = ['attempt__student__username', 'question__question_text']
+    
+    def attempt_student(self, obj):
+        return obj.attempt.student.username
+    attempt_student.short_description = 'Student'
+    
+    def question_text(self, obj):
+        return obj.question.question_text[:50] + "..." if len(obj.question.question_text) > 50 else obj.question.question_text
+    question_text.short_description = 'Question'
+
+
+# Register remaining models without custom admin
+admin.site.register(Answer)
 

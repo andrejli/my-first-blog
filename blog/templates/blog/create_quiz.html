@@ -1,0 +1,194 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Create Quiz - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'instructor_dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'instructor_course_detail' course.id %}">{{ course.title }}</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'course_quizzes' course.id %}">Quizzes</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Create Quiz</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-question-circle"></i> Create New Quiz
+                    </h3>
+                    <p class="text-muted mb-0">{{ course.title }}</p>
+                </div>
+                
+                <div class="card-body">
+                    <form method="post" id="quizForm">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Information -->
+                        <fieldset class="mb-4">
+                            <legend class="h5">Basic Information</legend>
+                            
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Quiz Title <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="title" name="title" required 
+                                       placeholder="Enter quiz title..." maxlength="200">
+                                <div class="form-text">Give your quiz a clear, descriptive title</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="4" 
+                                          placeholder="Describe what this quiz covers..."></textarea>
+                                <div class="form-text">Optional description or instructions for students</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="quiz_type" class="form-label">Quiz Type</label>
+                                <select class="form-select" id="quiz_type" name="quiz_type">
+                                    <option value="practice">Practice Quiz</option>
+                                    <option value="graded">Graded Quiz</option>
+                                    <option value="exam">Exam</option>
+                                </select>
+                                <div class="form-text">Choose the type of quiz</div>
+                            </div>
+                        </fieldset>
+                        
+                        <!-- Timing & Attempts -->
+                        <fieldset class="mb-4">
+                            <legend class="h5">Timing & Attempts</legend>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="time_limit" class="form-label">Time Limit (minutes)</label>
+                                        <input type="number" class="form-control" id="time_limit" name="time_limit" 
+                                               min="1" placeholder="No time limit">
+                                        <div class="form-text">Leave blank for no time limit</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="max_attempts" class="form-label">Maximum Attempts</label>
+                                        <input type="number" class="form-control" id="max_attempts" name="max_attempts" 
+                                               min="1" value="1" required>
+                                        <div class="form-text">Number of times students can take this quiz</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                        
+                        <!-- Grading -->
+                        <fieldset class="mb-4">
+                            <legend class="h5">Grading</legend>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="points" class="form-label">Total Points</label>
+                                        <input type="number" class="form-control" id="points" name="points" 
+                                               min="0" step="0.1" value="0" placeholder="0">
+                                        <div class="form-text">Total points possible for this quiz</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="passing_score" class="form-label">Passing Score (%)</label>
+                                        <input type="number" class="form-control" id="passing_score" name="passing_score" 
+                                               min="0" max="100" step="0.1" placeholder="No passing requirement">
+                                        <div class="form-text">Minimum percentage to pass (optional)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                        
+                        <!-- Settings -->
+                        <fieldset class="mb-4">
+                            <legend class="h5">Quiz Settings</legend>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="shuffle_questions" name="shuffle_questions">
+                                    <label class="form-check-label" for="shuffle_questions">
+                                        Shuffle Questions
+                                    </label>
+                                    <div class="form-text">Present questions in random order for each student</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="show_correct_answers" name="show_correct_answers" checked>
+                                    <label class="form-check-label" for="show_correct_answers">
+                                        Show Correct Answers
+                                    </label>
+                                    <div class="form-text">Show correct answers after quiz completion</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="immediate_feedback" name="immediate_feedback">
+                                    <label class="form-check-label" for="immediate_feedback">
+                                        Immediate Feedback
+                                    </label>
+                                    <div class="form-text">Show feedback immediately after each question</div>
+                                </div>
+                            </div>
+                        </fieldset>
+                        
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'course_quizzes' course.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Quizzes
+                            </a>
+                            
+                            <button type="submit" class="btn btn-success" id="submitBtn">
+                                <i class="fas fa-plus"></i> Create Quiz
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Next Steps Info -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">What happens next?</h6>
+                </div>
+                <div class="card-body">
+                    <ol class="mb-0">
+                        <li>Your quiz will be created as a draft</li>
+                        <li>Add questions to your quiz</li>
+                        <li>Preview and test your quiz</li>
+                        <li>Publish when ready for students</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('quizForm').addEventListener('submit', function(e) {
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Quiz...';
+    submitBtn.disabled = true;
+});
+
+// Form validation
+document.getElementById('title').addEventListener('input', function() {
+    if (this.value.trim().length < 3) {
+        this.setCustomValidity('Quiz title must be at least 3 characters long');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+</script>
+{% endblock %}

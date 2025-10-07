@@ -1,0 +1,26 @@
+{
+  "categories": [
+    {
+      "name": "Electronics",
+      "items": [
+        {"name": "Retro Keyboard", "price": "$50"},
+        {"name": "Amber Monitor", "price": "$150"},
+        {"name": "Classic Mouse", "price": "$25"}
+      ]
+    },
+    {
+      "name": "Accessories",
+      "items": [
+        {"name": "Amber Keycap Set", "price": "$30"},
+        {"name": "USB-C Cable", "price": "$10"}
+      ]
+    },
+    {
+      "name": "Books",
+      "items": [
+        {"name": "Assembly Language Mastery", "price": "$25"},
+        {"name": "Retro Computing Guide", "price": "$40"}
+      ]
+    }
+  ]
+}

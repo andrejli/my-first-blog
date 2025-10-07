@@ -11,6 +11,11 @@ def get_item(dictionary, key):
     return None
 
 @register.filter
+def filter_by_status(submissions, status):
+    """Filter submissions by status"""
+    return [sub for sub in submissions if sub.status == status]
+
+@register.filter
 def mul(value, arg):
     """Multiply value by arg"""
     try:

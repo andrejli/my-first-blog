@@ -53,6 +53,15 @@
                                             <i class="glyphicon glyphicon-list"></i>
                                             {{ stat.total_lessons }} lesson{% if stat.total_lessons != 1 %}s{% endif %}
                                         </p>
+                                        {% if stat.total_assignments > 0 %}
+                                        <p class="course-assignments">
+                                            <i class="glyphicon glyphicon-file"></i>
+                                            {{ stat.total_assignments }} assignment{% if stat.total_assignments != 1 %}s{% endif %}
+                                            {% if stat.pending_grading > 0 %}
+                                            <span class="badge badge-warning">{{ stat.pending_grading }} pending</span>
+                                            {% endif %}
+                                        </p>
+                                        {% endif %}
                                     </div>
                                     <div class="col-md-5">
                                         <div class="course-stats">
@@ -73,6 +82,14 @@
                                             <div class="course-actions">
                                                 <a href="{% url 'course_detail' stat.course.id %}" class="btn btn-primary btn-sm">view</a>
                                                 <a href="{% url 'course_students' stat.course.id %}" class="btn btn-info btn-sm">students</a>
+                                                {% if stat.total_assignments > 0 %}
+                                                <a href="{% url 'course_assignments' stat.course.id %}" class="btn btn-warning btn-sm">
+                                                    assignments
+                                                    {% if stat.pending_grading > 0 %}
+                                                    <span class="badge badge-danger">{{ stat.pending_grading }}</span>
+                                                    {% endif %}
+                                                </a>
+                                                {% endif %}
                                                 <a href="{% url 'instructor_course_detail' stat.course.id %}" class="btn btn-success btn-sm">manage</a>
                                                 <a href="{% url 'edit_course' stat.course.id %}" class="btn btn-default btn-sm">edit</a>
                                             </div>
@@ -110,6 +127,38 @@
             <!-- Sidebar -->
             <div class="col-md-4">
                 <div class="sidebar">
+                    <!-- Pending Grading Alert -->
+                    {% if total_pending_grading > 0 %}
+                    <div class="panel panel-warning">
+                        <div class="panel-heading">
+                            <h4><i class="glyphicon glyphicon-exclamation-sign"></i> Pending Grading</h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="alert alert-warning">
+                                <strong>{{ total_pending_grading }}</strong> assignment{{ total_pending_grading|pluralize }} need{{ total_pending_grading|pluralize:"s," }} grading
+                            </div>
+                            {% for submission in pending_submissions|slice:":5" %}
+                            <div class="pending-submission-item">
+                                <div class="submission-info">
+                                    <strong>{{ submission.assignment.title }}</strong>
+                                    <small class="text-muted">{{ submission.assignment.course.title }}</small>
+                                </div>
+                                <div class="student-info">
+                                    {{ submission.student.get_full_name|default:submission.student.username }}
+                                    <small class="text-muted">{{ submission.submitted_date|timesince }} ago</small>
+                                </div>
+                                <a href="{% url 'grade_submission' submission.id %}" class="btn btn-xs btn-warning">Grade Now</a>
+                            </div>
+                            {% endfor %}
+                            {% if pending_submissions|length > 5 %}
+                            <div class="text-center">
+                                <small class="text-muted">... and {{ pending_submissions|length|add:"-5" }} more</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     <!-- Teaching Stats -->
                     <div class="panel panel-default">
                         <div class="panel-heading">
@@ -310,6 +359,42 @@
             font-weight: bold;
             color: #32cd32;
             font-family: 'Ubuntu Mono', monospace;
+        }
+        
+        /* Pending Submissions Styling */
+        .pending-submission-item {
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .pending-submission-item .submission-info {
+            font-weight: bold;
+            color: #ffc107;
+            margin-bottom: 4px;
+        }
+        
+        .pending-submission-item .student-info {
+            color: #cccccc;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+        
+        .badge-warning {
+            background-color: #f39c12;
+            color: #fff;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 5px;
+        }
+        
+        .course-assignments {
+            color: #e74c3c;
+            font-size: 13px;
+            margin-bottom: 5px;
         }
         
         .stat-item .stat-label {

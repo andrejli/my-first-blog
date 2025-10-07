@@ -1,0 +1,301 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Grade Submission - {{ assignment.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'instructor_dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'course_detail' course.id %}">{{ course.title }}</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'assignment_submissions' assignment.id %}">{{ assignment.title }} Submissions</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Grade Submission</li>
+                    </ol>
+                </nav>
+            </div>
+            
+            <!-- Student & Assignment Info -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-user"></i> Student Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <h6>{{ submission.student.get_full_name|default:submission.student.username }}</h6>
+                            <p class="text-muted mb-2">{{ submission.student.username }}</p>
+                            
+                            <div class="small">
+                                <p><strong>Submitted:</strong> 
+                                {% if submission.submitted_date %}
+                                    {{ submission.submitted_date|date:"M j, Y g:i A" }}
+                                    {% if assignment.due_date and submission.submitted_date > assignment.due_date %}
+                                        <span class="badge bg-danger ms-1">Late</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">Not submitted</span>
+                                {% endif %}
+                                </p>
+                                
+                                <p><strong>Status:</strong>
+                                {% if submission.status == 'submitted' %}
+                                    <span class="badge bg-warning">Needs Grading</span>
+                                {% elif submission.status == 'graded' %}
+                                    <span class="badge bg-success">Graded</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ submission.status|title }}</span>
+                                {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-clipboard-list"></i> Assignment Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <h6>{{ assignment.title }}</h6>
+                            <div class="small">
+                                <p><strong>Course:</strong> {{ course.title }}</p>
+                                <p><strong>Points:</strong> {{ assignment.points|default:"Ungraded" }}</p>
+                                <p><strong>Due Date:</strong> 
+                                {% if assignment.due_date %}
+                                    {{ assignment.due_date|date:"M j, Y g:i A" }}
+                                {% else %}
+                                    No due date
+                                {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Assignment Instructions -->
+            {% if assignment.description %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <button class="btn btn-link p-0 text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#instructionsCollapse">
+                        <h5 class="mb-0">
+                            <i class="fas fa-info-circle"></i> Assignment Instructions
+                            <i class="fas fa-chevron-down ms-2 small"></i>
+                        </h5>
+                    </button>
+                </div>
+                <div class="collapse" id="instructionsCollapse">
+                    <div class="card-body">
+                        {{ assignment.description|linebreaks }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Student Submission -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-alt"></i> Student Submission
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if submission.text_submission or submission.file_submission %}
+                        <!-- Text Submission -->
+                        {% if submission.text_submission %}
+                        <div class="mb-4">
+                            <h6>Text Submission:</h6>
+                            <div class="border p-3 bg-light rounded">
+                                {{ submission.text_submission|linebreaks }}
+                            </div>
+                            <small class="text-muted">
+                                Character count: {{ submission.text_submission|length }}
+                            </small>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- File Submission -->
+                        {% if submission.file_submission %}
+                        <div class="mb-3">
+                            <h6>File Submission:</h6>
+                            <div class="d-flex align-items-center">
+                                <a href="{{ submission.file_submission.url }}" class="btn btn-outline-primary me-2" target="_blank">
+                                    <i class="fas fa-download"></i> Download File
+                                </a>
+                                <div class="small text-muted">
+                                    {{ submission.file_submission.name|slice:"20:" }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-exclamation-triangle fs-1 text-warning mb-3"></i>
+                            <h5>No Submission Content</h5>
+                            <p class="text-muted">The student hasn't provided any submission content yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Grading Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-star"></i> Grading
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="gradingForm">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="grade" class="form-label">
+                                        Grade {% if assignment.points %}(out of {{ assignment.points }} points){% endif %}
+                                    </label>
+                                    <input 
+                                        type="number" 
+                                        class="form-control" 
+                                        id="grade" 
+                                        name="grade" 
+                                        value="{{ submission.grade|default:'' }}"
+                                        {% if assignment.points %}max="{{ assignment.points }}"{% endif %}
+                                        min="0"
+                                        step="0.1"
+                                        placeholder="Enter grade"
+                                    >
+                                    {% if assignment.points %}
+                                    <div class="form-text">
+                                        Enter a value between 0 and {{ assignment.points }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="feedback" class="form-label">Feedback (Optional)</label>
+                                    <textarea 
+                                        class="form-control" 
+                                        id="feedback" 
+                                        name="feedback" 
+                                        rows="4" 
+                                        placeholder="Provide feedback to the student..."
+                                    >{{ submission.feedback|default:"" }}</textarea>
+                                    <div class="form-text">
+                                        Character count: <span id="feedbackCount">{{ submission.feedback|length|default:0 }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Previous Grade Info -->
+                        {% if submission.status == 'graded' and submission.graded_date %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Previously Graded:</strong> {{ submission.graded_date|date:"M j, Y g:i A" }}
+                            {% if submission.grade is not None %}
+                                with a grade of {{ submission.grade }}/{{ assignment.points }}
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'assignment_submissions' assignment.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Submissions
+                            </a>
+                            
+                            <div>
+                                <button type="submit" class="btn btn-success me-2" id="gradeBtn">
+                                    <i class="fas fa-check"></i> 
+                                    {% if submission.status == 'graded' %}
+                                        Update Grade
+                                    {% else %}
+                                        Submit Grade
+                                    {% endif %}
+                                </button>
+                                
+                                {% if submission.status == 'graded' %}
+                                <a href="{% url 'assignment_submissions' assignment.id %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-list"></i> View All Submissions
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Grading Guidelines -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Grading Guidelines</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="mb-0 small">
+                                <li>Review the assignment instructions above</li>
+                                <li>Check if the student met all requirements</li>
+                                <li>Provide constructive feedback when possible</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="mb-0 small">
+                                <li>Grades can be updated after initial submission</li>
+                                <li>Students will see your feedback immediately</li>
+                                <li>Late submissions are marked automatically</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Character counter for feedback
+const feedbackArea = document.getElementById('feedback');
+const feedbackCount = document.getElementById('feedbackCount');
+
+if (feedbackArea && feedbackCount) {
+    feedbackArea.addEventListener('input', function() {
+        feedbackCount.textContent = this.value.length;
+    });
+}
+
+// Form submission handling
+document.getElementById('gradingForm').addEventListener('submit', function(e) {
+    const gradeBtn = document.getElementById('gradeBtn');
+    gradeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    gradeBtn.disabled = true;
+});
+
+// Grade validation
+const gradeInput = document.getElementById('grade');
+const maxPoints = {{ assignment.points|default:100 }};
+
+gradeInput.addEventListener('input', function() {
+    const value = parseFloat(this.value);
+    if (value < 0) {
+        this.setCustomValidity('Grade cannot be negative');
+    } else if (value > maxPoints) {
+        this.setCustomValidity(`Grade cannot exceed ${maxPoints} points`);
+    } else {
+        this.setCustomValidity('');
+    }
+});
+</script>
+{% endblock %}

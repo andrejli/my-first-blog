@@ -58,4 +58,10 @@ urlpatterns = [
     path('assignment/<int:assignment_id>/', views.assignment_detail, name='assignment_detail'),
     path('assignment/<int:assignment_id>/submit/', views.submit_assignment, name='submit_assignment'),
     path('submission/<int:submission_id>/edit/', views.edit_submission, name='edit_submission'),
+    
+    # Quiz Management Views
+    path('instructor/course/<int:course_id>/quizzes/', views.course_quizzes, name='course_quizzes'),
+    path('instructor/course/<int:course_id>/quiz/create/', views.create_quiz, name='create_quiz'),
+    path('instructor/quiz/<int:quiz_id>/', views.quiz_detail, name='quiz_detail'),
+    path('instructor/quiz/<int:quiz_id>/edit/', views.edit_quiz, name='edit_quiz'),
 ]

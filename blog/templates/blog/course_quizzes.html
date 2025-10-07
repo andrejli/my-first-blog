@@ -1,0 +1,154 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Quizzes - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 bg-light">
+            <div class="p-3">
+                <h6 class="text-muted">Course</h6>
+                <a href="{% url 'instructor_course_detail' course.id %}" class="text-decoration-none">
+                    <h5>{{ course.title }}</h5>
+                </a>
+                <p class="text-muted">{{ course.course_code }}</p>
+                
+                <hr>
+                
+                <h6 class="text-muted">Quick Actions</h6>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'create_quiz' course.id %}" class="btn btn-success btn-sm">
+                        <i class="fas fa-plus"></i> Create Quiz
+                    </a>
+                    <a href="{% url 'instructor_course_detail' course.id %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-arrow-left"></i> Back to Course
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="p-4">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h1>Quizzes</h1>
+                        <p class="text-muted">{{ course.title }}</p>
+                    </div>
+                    
+                    <a href="{% url 'create_quiz' course.id %}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Create Quiz
+                    </a>
+                </div>
+                
+                <!-- Quizzes List -->
+                {% if quizzes %}
+                <div class="row">
+                    {% for quiz in quizzes %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">{{ quiz.title }}</h5>
+                                {% if quiz.is_published %}
+                                    <span class="badge bg-success">Published</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Draft</span>
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+                                {% if quiz.description %}
+                                    <p class="card-text">{{ quiz.description|truncatewords:20 }}</p>
+                                {% else %}
+                                    <p class="card-text text-muted">No description provided</p>
+                                {% endif %}
+                                
+                                <div class="small text-muted">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <strong>Type:</strong> {{ quiz.get_quiz_type_display }}
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Questions:</strong> {{ quiz.total_questions }}
+                                        </div>
+                                    </div>
+                                    <div class="row mt-1">
+                                        <div class="col-6">
+                                            <strong>Points:</strong> {{ quiz.points|default:"N/A" }}
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Time:</strong> 
+                                            {% if quiz.time_limit %}
+                                                {{ quiz.time_limit }} min
+                                            {% else %}
+                                                No limit
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <small class="text-muted">
+                                        Created: {{ quiz.created_date|date:"M j, Y" }}
+                                        {% if quiz.updated_date != quiz.created_date %}
+                                            | Updated: {{ quiz.updated_date|date:"M j, Y" }}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="btn-group w-100" role="group">
+                                    <a href="{% url 'quiz_detail' quiz.id %}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                    <a href="{% url 'edit_quiz' quiz.id %}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    {% if quiz.total_questions > 0 %}
+                                        {% if quiz.is_published %}
+                                            <button class="btn btn-outline-warning btn-sm" onclick="togglePublish({{ quiz.id }}, false)">
+                                                <i class="fas fa-eye-slash"></i> Unpublish
+                                            </button>
+                                        {% else %}
+                                            <button class="btn btn-outline-success btn-sm" onclick="togglePublish({{ quiz.id }}, true)">
+                                                <i class="fas fa-eye"></i> Publish
+                                            </button>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="btn btn-outline-secondary btn-sm disabled">
+                                            <i class="fas fa-exclamation-triangle"></i> No questions
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% else %}
+                <!-- No Quizzes -->
+                <div class="text-center py-5">
+                    <i class="fas fa-question-circle fa-5x text-muted mb-4"></i>
+                    <h3>No Quizzes Yet</h3>
+                    <p class="text-muted mb-4">
+                        Create your first quiz to start assessing your students' knowledge.
+                    </p>
+                    <a href="{% url 'create_quiz' course.id %}" class="btn btn-success btn-lg">
+                        <i class="fas fa-plus"></i> Create Your First Quiz
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePublish(quizId, publish) {
+    // This would be implemented later with AJAX
+    alert(`Quiz ${publish ? 'publish' : 'unpublish'} functionality will be implemented in the edit quiz page for now.`);
+}
+</script>
+{% endblock %}

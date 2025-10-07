@@ -1,0 +1,276 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}{{ quiz.title }} - Quiz Detail{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 bg-light">
+            <div class="p-3">
+                <h6 class="text-muted">Course</h6>
+                <a href="{% url 'instructor_course_detail' quiz.course.id %}" class="text-decoration-none">
+                    <h5>{{ quiz.course.title }}</h5>
+                </a>
+                <p class="text-muted">{{ quiz.course.course_code }}</p>
+                
+                <hr>
+                
+                <h6 class="text-muted">Quiz Info</h6>
+                <div class="mb-2">
+                    <strong>Status:</strong>
+                    {% if quiz.is_published %}
+                        <span class="badge bg-success">Published</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Draft</span>
+                    {% endif %}
+                </div>
+                <div class="mb-2">
+                    <strong>Type:</strong> {{ quiz.get_quiz_type_display }}
+                </div>
+                <div class="mb-2">
+                    <strong>Questions:</strong> {{ quiz.total_questions }}
+                </div>
+                <div class="mb-2">
+                    <strong>Points:</strong> {{ quiz.points|default:"N/A" }}
+                </div>
+                <div class="mb-2">
+                    <strong>Time Limit:</strong> 
+                    {% if quiz.time_limit %}
+                        {{ quiz.time_limit }} minutes
+                    {% else %}
+                        No limit
+                    {% endif %}
+                </div>
+                
+                <hr>
+                
+                <h6 class="text-muted">Quick Actions</h6>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'edit_quiz' quiz.id %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-edit"></i> Edit Quiz
+                    </a>
+                    <a href="{% url 'course_quizzes' quiz.course.id %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-arrow-left"></i> All Quizzes
+                    </a>
+                    <a href="{% url 'instructor_course_detail' quiz.course.id %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-home"></i> Course Home
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="p-4">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h1>{{ quiz.title }}</h1>
+                        <p class="text-muted">{{ quiz.course.title }}</p>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <a href="{% url 'edit_quiz' quiz.id %}" class="btn btn-primary">
+                            <i class="fas fa-edit"></i> Edit Quiz
+                        </a>
+                        {% if quiz.total_questions > 0 %}
+                            {% if quiz.is_published %}
+                                <button class="btn btn-warning" onclick="alert('Unpublish functionality coming soon')">
+                                    <i class="fas fa-eye-slash"></i> Unpublish
+                                </button>
+                            {% else %}
+                                <button class="btn btn-success" onclick="alert('Publish functionality coming soon')">
+                                    <i class="fas fa-eye"></i> Publish
+                                </button>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Quiz Overview -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Quiz Overview</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if quiz.description %}
+                                    <p class="card-text">{{ quiz.description|linebreaks }}</p>
+                                {% else %}
+                                    <p class="text-muted">No description provided for this quiz.</p>
+                                {% endif %}
+                                
+                                <div class="row mt-3">
+                                    <div class="col-md-3">
+                                        <strong>Quiz Type:</strong><br>
+                                        <span class="badge bg-info">{{ quiz.get_quiz_type_display }}</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>Total Questions:</strong><br>
+                                        <span class="badge bg-primary">{{ quiz.total_questions }}</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>Total Points:</strong><br>
+                                        <span class="badge bg-success">{{ quiz.points|default:"N/A" }}</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>Time Limit:</strong><br>
+                                        {% if quiz.time_limit %}
+                                            <span class="badge bg-warning">{{ quiz.time_limit }} min</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">No limit</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quiz Settings -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Timing & Attempts</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <strong>Time Limit:</strong> 
+                                    {% if quiz.time_limit %}
+                                        {{ quiz.time_limit }} minutes
+                                    {% else %}
+                                        No time limit
+                                    {% endif %}
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Attempts Allowed:</strong> 
+                                    {% if quiz.attempts_allowed %}
+                                        {{ quiz.attempts_allowed }}
+                                    {% else %}
+                                        Unlimited
+                                    {% endif %}
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Shuffle Questions:</strong> 
+                                    {% if quiz.shuffle_questions %}
+                                        <span class="text-success">Yes</span>
+                                    {% else %}
+                                        <span class="text-muted">No</span>
+                                    {% endif %}
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Shuffle Answers:</strong> 
+                                    {% if quiz.shuffle_answers %}
+                                        <span class="text-success">Yes</span>
+                                    {% else %}
+                                        <span class="text-muted">No</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Feedback & Grading</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <strong>Show Correct Answers:</strong> 
+                                    {% if quiz.show_correct_answers %}
+                                        <span class="text-success">Yes</span>
+                                    {% else %}
+                                        <span class="text-muted">No</span>
+                                    {% endif %}
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Show Results Immediately:</strong> 
+                                    {% if quiz.show_results_immediately %}
+                                        <span class="text-success">Yes</span>
+                                    {% else %}
+                                        <span class="text-muted">No</span>
+                                    {% endif %}
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Allow Review:</strong> 
+                                    {% if quiz.allow_review %}
+                                        <span class="text-success">Yes</span>
+                                    {% else %}
+                                        <span class="text-muted">No</span>
+                                    {% endif %}
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Passing Score:</strong> 
+                                    {% if quiz.passing_score %}
+                                        {{ quiz.passing_score }}%
+                                    {% else %}
+                                        Not set
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Questions Section -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Questions ({{ quiz.total_questions }})</h5>
+                        <button class="btn btn-success btn-sm" onclick="alert('Add question functionality coming soon')">
+                            <i class="fas fa-plus"></i> Add Question
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        {% if quiz.total_questions > 0 %}
+                            <!-- This will be populated with actual questions later -->
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                Question management interface will be implemented in the next phase.
+                                This quiz has {{ quiz.total_questions }} question{{ quiz.total_questions|pluralize }}.
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
+                                <h5>No Questions Yet</h5>
+                                <p class="text-muted">Add questions to make this quiz available to students.</p>
+                                <button class="btn btn-success" onclick="alert('Add question functionality coming soon')">
+                                    <i class="fas fa-plus"></i> Add Your First Question
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Quiz Statistics (if published) -->
+                {% if quiz.is_published %}
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Quiz Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-chart-bar"></i>
+                            Student attempt statistics and performance analytics will be available here once students start taking the quiz.
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Metadata -->
+                <div class="mt-4">
+                    <small class="text-muted">
+                        Created: {{ quiz.created_date|date:"F j, Y \a\t g:i A" }}
+                        {% if quiz.updated_date != quiz.created_date %}
+                            | Last updated: {{ quiz.updated_date|date:"F j, Y \a\t g:i A" }}
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

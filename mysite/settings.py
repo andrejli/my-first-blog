@@ -25,7 +25,13 @@ SECRET_KEY = 'test-lms-development-key-not-for-production-use-only'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '::1',
+    'testserver',  # For Django testing
+    '*',  # Allow all hosts for development (remove in production)
+]
 
 
 # Application definition
