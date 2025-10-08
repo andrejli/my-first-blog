@@ -64,4 +64,21 @@ urlpatterns = [
     path('instructor/course/<int:course_id>/quiz/create/', views.create_quiz, name='create_quiz'),
     path('instructor/quiz/<int:quiz_id>/', views.quiz_detail, name='quiz_detail'),
     path('instructor/quiz/<int:quiz_id>/edit/', views.edit_quiz, name='edit_quiz'),
+    path('instructor/quiz/<int:quiz_id>/toggle-publish/', views.toggle_quiz_publish, name='toggle_quiz_publish'),
+    
+    # Question Management Views
+    path('instructor/quiz/<int:quiz_id>/question/add/', views.add_question, name='add_question'),
+    path('instructor/question/<int:question_id>/edit/', views.edit_question, name='edit_question'),
+    path('instructor/question/<int:question_id>/delete/', views.delete_question, name='delete_question'),
+    path('instructor/quiz/<int:quiz_id>/questions/reorder/', views.reorder_questions, name='reorder_questions'),
+    
+    # Student Quiz Taking Views
+    path('course/<int:course_id>/quizzes/', views.quiz_list_for_students, name='student_quiz_list'),
+    path('quiz/<int:quiz_id>/start/', views.start_quiz, name='start_quiz'),
+    path('quiz/attempt/<int:attempt_id>/', views.take_quiz, name='take_quiz'),
+    path('quiz/results/<int:attempt_id>/', views.quiz_results, name='quiz_results'),
+    
+    # Instructor Quiz Grading Views
+    path('instructor/quiz/<int:quiz_id>/attempts/', views.quiz_attempts, name='quiz_attempts'),
+    path('instructor/quiz/attempt/<int:attempt_id>/grade/', views.grade_quiz_attempt, name='grade_quiz_attempt'),
 ]

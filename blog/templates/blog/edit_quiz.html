@@ -1,6 +1,6 @@
 {% extends 'blog/base.html' %}
 
-{% block title %}Create Quiz - {{ course.title }}{% endblock %}
+{% block title %}Edit Quiz - {{ quiz.title }}{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -12,7 +12,8 @@
                         <li class="breadcrumb-item"><a href="{% url 'instructor_dashboard' %}">Dashboard</a></li>
                         <li class="breadcrumb-item"><a href="{% url 'instructor_course_detail' course.id %}">{{ course.title }}</a></li>
                         <li class="breadcrumb-item"><a href="{% url 'course_quizzes' course.id %}">Quizzes</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Create Quiz</li>
+                        <li class="breadcrumb-item"><a href="{% url 'quiz_detail' quiz.id %}">{{ quiz.title }}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Edit</li>
                     </ol>
                 </nav>
             </div>
@@ -20,7 +21,7 @@
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title mb-0">
-                        <i class="fas fa-question-circle"></i> Create New Quiz
+                        <i class="fas fa-edit"></i> Edit Quiz
                     </h3>
                     <p class="text-muted mb-0">{{ course.title }}</p>
                 </div>
@@ -36,29 +37,29 @@
                             <div class="mb-3">
                                 <label for="title" class="form-label">Quiz Title <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="title" name="title" required 
-                                       placeholder="Enter quiz title..." maxlength="200">
+                                       value="{{ quiz.title }}" placeholder="Enter quiz title..." maxlength="200">
                                 <div class="form-text">Give your quiz a clear, descriptive title</div>
                             </div>
                             
                             <div class="mb-3">
                                 <label for="description" class="form-label">Description</label>
                                 <textarea class="form-control" id="description" name="description" rows="4" 
-                                          placeholder="Describe what this quiz covers..."></textarea>
+                                          placeholder="Describe what this quiz covers...">{{ quiz.description }}</textarea>
                                 <div class="form-text">Optional description or instructions for students</div>
                             </div>
                             
                             <div class="mb-3">
                                 <label for="quiz_type" class="form-label">Quiz Type</label>
                                 <select class="form-select" id="quiz_type" name="quiz_type">
-                                    <option value="practice">Practice Quiz</option>
-                                    <option value="graded">Graded Quiz</option>
-                                    <option value="exam">Exam</option>
+                                    <option value="practice" {% if quiz.quiz_type == 'practice' %}selected{% endif %}>Practice Quiz</option>
+                                    <option value="graded" {% if quiz.quiz_type == 'graded' %}selected{% endif %}>Graded Quiz</option>
+                                    <option value="exam" {% if quiz.quiz_type == 'exam' %}selected{% endif %}>Exam</option>
                                 </select>
-                                <div class="form-text">Choose the type of quiz</div>
+                                <div class="form-text">Choose the type of assessment</div>
                             </div>
                         </fieldset>
                         
-                        <!-- Timing & Attempts -->
+                        <!-- Timing and Attempts -->
                         <fieldset class="mb-4">
                             <legend class="h5">Timing & Attempts</legend>
                             
@@ -67,8 +68,8 @@
                                     <div class="mb-3">
                                         <label for="time_limit" class="form-label">Time Limit (minutes)</label>
                                         <input type="number" class="form-control" id="time_limit" name="time_limit" 
-                                               min="1" placeholder="No time limit">
-                                        <div class="form-text">Leave blank for no time limit</div>
+                                               value="{{ quiz.time_limit }}" min="1" placeholder="No time limit">
+                                        <div class="form-text">Leave empty for no time limit</div>
                                     </div>
                                 </div>
                                 
@@ -76,7 +77,7 @@
                                     <div class="mb-3">
                                         <label for="max_attempts" class="form-label">Maximum Attempts</label>
                                         <input type="number" class="form-control" id="max_attempts" name="max_attempts" 
-                                               min="1" value="1" required>
+                                               value="{{ quiz.max_attempts }}" min="1" required>
                                         <div class="form-text">Number of times students can take this quiz</div>
                                     </div>
                                 </div>
@@ -92,8 +93,8 @@
                                     <div class="mb-3">
                                         <label for="points" class="form-label">Total Points</label>
                                         <input type="number" class="form-control" id="points" name="points" 
-                                               min="0" step="0.1" value="0" placeholder="0">
-                                        <div class="form-text">Total points possible for this quiz</div>
+                                               value="{{ quiz.points }}" min="0" step="0.1" placeholder="Auto-calculated">
+                                        <div class="form-text">Leave empty to auto-calculate from questions</div>
                                     </div>
                                 </div>
                                 
@@ -101,7 +102,7 @@
                                     <div class="mb-3">
                                         <label for="passing_score" class="form-label">Passing Score (%)</label>
                                         <input type="number" class="form-control" id="passing_score" name="passing_score" 
-                                               min="0" max="100" step="0.1" placeholder="No passing requirement">
+                                               value="{{ quiz.passing_score }}" min="0" max="100" step="0.1" placeholder="No passing requirement">
                                         <div class="form-text">Minimum percentage to pass (optional)</div>
                                     </div>
                                 </div>
@@ -114,7 +115,8 @@
                             
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="shuffle_questions" name="shuffle_questions">
+                                    <input class="form-check-input" type="checkbox" id="shuffle_questions" name="shuffle_questions" 
+                                           {% if quiz.shuffle_questions %}checked{% endif %}>
                                     <label class="form-check-label" for="shuffle_questions">
                                         Shuffle Questions
                                     </label>
@@ -124,7 +126,8 @@
                             
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="show_correct_answers" name="show_correct_answers" checked>
+                                    <input class="form-check-input" type="checkbox" id="show_correct_answers" name="show_correct_answers" 
+                                           {% if quiz.show_correct_answers %}checked{% endif %}>
                                     <label class="form-check-label" for="show_correct_answers">
                                         Show Correct Answers
                                     </label>
@@ -134,7 +137,8 @@
                             
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="immediate_feedback" name="immediate_feedback">
+                                    <input class="form-check-input" type="checkbox" id="immediate_feedback" name="immediate_feedback" 
+                                           {% if quiz.immediate_feedback %}checked{% endif %}>
                                     <label class="form-check-label" for="immediate_feedback">
                                         Immediate Feedback
                                     </label>
@@ -144,43 +148,46 @@
                             
                             <div class="mb-3">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="is_published" name="is_published">
+                                    <input class="form-check-input" type="checkbox" id="is_published" name="is_published" 
+                                           {% if quiz.is_published %}checked{% endif %}>
                                     <label class="form-check-label" for="is_published">
                                         <strong>Publish Quiz</strong>
                                     </label>
-                                    <div class="form-text">Make this quiz available to students immediately</div>
+                                    <div class="form-text">Make this quiz available to students</div>
                                 </div>
                             </div>
                         </fieldset>
                         
                         <!-- Form Actions -->
                         <div class="d-flex justify-content-between">
-                            <a href="{% url 'course_quizzes' course.id %}" class="btn btn-outline-secondary">
-                                <i class="fas fa-arrow-left"></i> Back to Quizzes
+                            <a href="{% url 'quiz_detail' quiz.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Quiz
                             </a>
                             
                             <button type="submit" class="btn btn-success" id="submitBtn">
-                                <i class="fas fa-plus"></i> Create Quiz
+                                <i class="fas fa-save"></i> Update Quiz
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
             
-            <!-- Next Steps Info -->
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h6 class="card-title mb-0">What happens next?</h6>
-                </div>
-                <div class="card-body">
-                    <ol class="mb-0">
-                        <li>Your quiz will be created as a draft</li>
-                        <li>Add questions to your quiz</li>
-                        <li>Preview and test your quiz</li>
-                        <li>Publish when ready for students</li>
-                    </ol>
-                </div>
+            <!-- Publishing Info -->
+            {% if quiz.is_published %}
+            <div class="alert alert-info mt-4">
+                <h6 class="alert-heading">
+                    <i class="fas fa-info-circle"></i> Quiz is Published
+                </h6>
+                <p class="mb-0">This quiz is currently available to students. Changes will be immediately visible.</p>
             </div>
+            {% else %}
+            <div class="alert alert-warning mt-4">
+                <h6 class="alert-heading">
+                    <i class="fas fa-exclamation-triangle"></i> Quiz is in Draft Mode
+                </h6>
+                <p class="mb-0">This quiz is not yet available to students. Check "Publish Quiz" above to make it available.</p>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -188,7 +195,7 @@
 <script>
 document.getElementById('quizForm').addEventListener('submit', function(e) {
     const submitBtn = document.getElementById('submitBtn');
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Quiz...';
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating Quiz...';
     submitBtn.disabled = true;
 });
 

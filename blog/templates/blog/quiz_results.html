@@ -1,0 +1,428 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Quiz Results - {{ quiz.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .result-card {
+        border-left: 4px solid #28a745;
+    }
+    
+    .result-card.warning {
+        border-left-color: #ffc107;
+    }
+    
+    .result-card.danger {
+        border-left-color: #dc3545;
+    }
+    
+    .score-circle {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin: 0 auto;
+    }
+    
+    .score-excellent {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+    
+    .score-good {
+        background: linear-gradient(135deg, #17a2b8, #6f42c1);
+        color: white;
+    }
+    
+    .score-warning {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+        color: white;
+    }
+    
+    .score-danger {
+        background: linear-gradient(135deg, #dc3545, #e83e8c);
+        color: white;
+    }
+    
+    .question-review {
+        border-left: 4px solid #dee2e6;
+    }
+    
+    .question-review.correct {
+        border-left-color: #28a745;
+        background-color: #f8fff9;
+    }
+    
+    .question-review.incorrect {
+        border-left-color: #dc3545;
+        background-color: #fff8f8;
+    }
+    
+    .question-review.pending {
+        border-left-color: #ffc107;
+        background-color: #fffbf0;
+    }
+    
+    .answer-option {
+        padding: 8px 12px;
+        margin: 4px 0;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .answer-correct {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+    }
+    
+    .answer-incorrect {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+    }
+    
+    .answer-selected {
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 bg-light">
+            <div class="p-3">
+                <h6 class="text-muted">Quiz</h6>
+                <h5>{{ quiz.title }}</h5>
+                <p class="text-muted">{{ quiz.course.title }}</p>
+                
+                <hr>
+                
+                <!-- Quick Stats -->
+                <h6 class="text-muted">Quick Stats</h6>
+                <div class="small">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Score:</span>
+                        <strong>{{ attempt.score|floatformat:1 }}%</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Correct:</span>
+                        <strong>{{ stats.correct_count }}/{{ stats.total_count }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Duration:</span>
+                        <strong>
+                            {% if attempt.completed_at and attempt.started_at %}
+                                {% with duration=attempt.completed_at|timeuntil:attempt.started_at %}
+                                    {{ duration }}
+                                {% endwith %}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </strong>
+                    </div>
+                    {% if quiz.passing_score %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Status:</span>
+                        <strong class="{% if attempt.score >= quiz.passing_score %}text-success{% else %}text-danger{% endif %}">
+                            {% if attempt.score >= quiz.passing_score %}Passed{% else %}Failed{% endif %}
+                        </strong>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <hr>
+                
+                <h6 class="text-muted">Actions</h6>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'student_quiz_list' quiz.course.id %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-list"></i> Back to Quizzes
+                    </a>
+                    <a href="{% url 'course_detail' quiz.course.id %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-home"></i> Course Home
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="p-4">
+                <!-- Header -->
+                <div class="text-center mb-5">
+                    <h1>Quiz Results</h1>
+                    <p class="text-muted">{{ quiz.title }} - {{ attempt.started_at|date:"M j, Y g:i A" }}</p>
+                </div>
+                
+                <!-- Score Display -->
+                <div class="row mb-5">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="score-circle 
+                                {% if attempt.score >= 90 %}score-excellent
+                                {% elif attempt.score >= 80 %}score-good
+                                {% elif attempt.score >= 70 %}score-warning
+                                {% else %}score-danger
+                                {% endif %}">
+                                {{ attempt.score|floatformat:0 }}%
+                            </div>
+                            <h5 class="mt-3">Overall Score</h5>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card result-card 
+                            {% if quiz.passing_score and attempt.score >= quiz.passing_score %}
+                                border-success
+                            {% elif quiz.passing_score %}
+                                danger
+                            {% else %}
+                                {% if attempt.score >= 70 %}border-success{% else %}warning{% endif %}
+                            {% endif %}">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    {% if quiz.passing_score and attempt.score >= quiz.passing_score %}
+                                        <i class="fas fa-check-circle text-success"></i> Congratulations! You passed!
+                                    {% elif quiz.passing_score %}
+                                        <i class="fas fa-times-circle text-danger"></i> You didn't pass this time
+                                    {% else %}
+                                        <i class="fas fa-info-circle text-info"></i> Quiz Completed
+                                    {% endif %}
+                                </h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-1"><strong>Your Score:</strong> {{ attempt.score|floatformat:1 }}%</p>
+                                        <p class="mb-1"><strong>Correct Answers:</strong> {{ stats.correct_count }} out of {{ stats.total_count }}</p>
+                                        {% if quiz.passing_score %}
+                                            <p class="mb-1"><strong>Passing Score:</strong> {{ quiz.passing_score }}%</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        {% if attempt.completed_at and attempt.started_at %}
+                                            <p class="mb-1"><strong>Time Taken:</strong> 
+                                                {% with duration=attempt.completed_at|timeuntil:attempt.started_at %}
+                                                    {{ duration }}
+                                                {% endwith %}
+                                            </p>
+                                        {% endif %}
+                                        {% if quiz.time_limit %}
+                                            <p class="mb-1"><strong>Time Limit:</strong> {{ quiz.time_limit }} minutes</p>
+                                        {% endif %}
+                                        {% if stats.pending_count > 0 %}
+                                            <p class="mb-1 text-warning">
+                                                <strong>Pending Review:</strong> {{ stats.pending_count }} question{{ stats.pending_count|pluralize }}
+                                            </p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% if quiz.passing_score and attempt.score < quiz.passing_score %}
+                                    <div class="mt-3">
+                                        <p class="text-muted mb-0">
+                                            Don't worry! You can review your answers below and try again if your instructor allows multiple attempts.
+                                        </p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Question Review -->
+                <h3 class="mb-4">Question Review</h3>
+                
+                {% for response in quiz_responses %}
+                {% with question=response.question %}
+                <div class="card question-review mb-4 
+                    {% if response.is_correct %}correct
+                    {% elif response.is_correct == False %}incorrect
+                    {% else %}pending
+                    {% endif %}">
+                    <div class="card-header d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">
+                                Question {{ forloop.counter }}: {{ question.text }}
+                                {% if question.points %}
+                                    <small class="text-muted">({{ question.points }} point{{ question.points|pluralize }})</small>
+                                {% endif %}
+                            </h6>
+                            <small class="text-muted">{{ question.get_question_type_display }}</small>
+                        </div>
+                        <div class="text-end">
+                            {% if response.is_correct %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check"></i> Correct
+                                </span>
+                            {% elif response.is_correct == False %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-times"></i> Incorrect
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-clock"></i> Pending Review
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if question.question_type == 'MC' %}
+                            <!-- Multiple Choice Review -->
+                            {% for answer in question.answer_set.all %}
+                            <div class="answer-option
+                                {% if answer.is_correct %}answer-correct{% endif %}
+                                {% if response.selected_answer == answer %}answer-selected{% endif %}
+                                {% if response.selected_answer == answer and not answer.is_correct %}answer-incorrect{% endif %}">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        {% if response.selected_answer == answer %}
+                                            {% if answer.is_correct %}
+                                                <i class="fas fa-check-circle text-success"></i>
+                                            {% else %}
+                                                <i class="fas fa-times-circle text-danger"></i>
+                                            {% endif %}
+                                        {% elif answer.is_correct %}
+                                            <i class="fas fa-arrow-right text-success"></i>
+                                        {% else %}
+                                            <i class="far fa-circle text-muted"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        {{ answer.text }}
+                                        {% if response.selected_answer == answer %}
+                                            <span class="badge bg-primary ms-2">Your Answer</span>
+                                        {% endif %}
+                                        {% if answer.is_correct %}
+                                            <span class="badge bg-success ms-2">Correct Answer</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                        {% elif question.question_type == 'TF' %}
+                            <!-- True/False Review -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="answer-option
+                                        {% if question.correct_answer == 'True' %}answer-correct{% endif %}
+                                        {% if response.answer_text == 'True' %}answer-selected{% endif %}
+                                        {% if response.answer_text == 'True' and question.correct_answer != 'True' %}answer-incorrect{% endif %}">
+                                        <div class="d-flex align-items-center">
+                                            {% if response.answer_text == 'True' %}
+                                                {% if question.correct_answer == 'True' %}
+                                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                                {% else %}
+                                                    <i class="fas fa-times-circle text-danger me-2"></i>
+                                                {% endif %}
+                                            {% elif question.correct_answer == 'True' %}
+                                                <i class="fas fa-arrow-right text-success me-2"></i>
+                                            {% else %}
+                                                <i class="far fa-circle text-muted me-2"></i>
+                                            {% endif %}
+                                            <strong>True</strong>
+                                            {% if response.answer_text == 'True' %}
+                                                <span class="badge bg-primary ms-2">Your Answer</span>
+                                            {% endif %}
+                                            {% if question.correct_answer == 'True' %}
+                                                <span class="badge bg-success ms-2">Correct</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="answer-option
+                                        {% if question.correct_answer == 'False' %}answer-correct{% endif %}
+                                        {% if response.answer_text == 'False' %}answer-selected{% endif %}
+                                        {% if response.answer_text == 'False' and question.correct_answer != 'False' %}answer-incorrect{% endif %}">
+                                        <div class="d-flex align-items-center">
+                                            {% if response.answer_text == 'False' %}
+                                                {% if question.correct_answer == 'False' %}
+                                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                                {% else %}
+                                                    <i class="fas fa-times-circle text-danger me-2"></i>
+                                                {% endif %}
+                                            {% elif question.correct_answer == 'False' %}
+                                                <i class="fas fa-arrow-right text-success me-2"></i>
+                                            {% else %}
+                                                <i class="far fa-circle text-muted me-2"></i>
+                                            {% endif %}
+                                            <strong>False</strong>
+                                            {% if response.answer_text == 'False' %}
+                                                <span class="badge bg-primary ms-2">Your Answer</span>
+                                            {% endif %}
+                                            {% if question.correct_answer == 'False' %}
+                                                <span class="badge bg-success ms-2">Correct</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        {% elif question.question_type == 'SA' %}
+                            <!-- Short Answer Review -->
+                            <div class="mb-3">
+                                <h6>Your Answer:</h6>
+                                <div class="p-3 bg-light border rounded">
+                                    {% if response.answer_text %}
+                                        {{ response.answer_text|linebreaks }}
+                                    {% else %}
+                                        <em class="text-muted">No answer provided</em>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            {% if response.instructor_feedback %}
+                            <div class="mb-3">
+                                <h6>Instructor Feedback:</h6>
+                                <div class="p-3 bg-info bg-opacity-10 border border-info rounded">
+                                    {{ response.instructor_feedback|linebreaks }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if response.points_awarded is not None %}
+                            <div class="mb-3">
+                                <h6>Points Awarded:</h6>
+                                <span class="badge bg-primary">
+                                    {{ response.points_awarded }} / {{ question.points|default:1 }} points
+                                </span>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-clock me-2"></i>
+                                This question is awaiting manual grading by your instructor.
+                            </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endwith %}
+                {% endfor %}
+                
+                <!-- Summary Actions -->
+                <div class="text-center mt-5">
+                    <a href="{% url 'student_quiz_list' quiz.course.id %}" class="btn btn-primary me-3">
+                        <i class="fas fa-list"></i> Back to Quizzes
+                    </a>
+                    <a href="{% url 'course_detail' quiz.course.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-home"></i> Course Home
+                    </a>
+                    
+                    {% comment %}
+                    <!-- Optional: Allow retake if permitted -->
+                    {% if can_retake %}
+                    <a href="{% url 'start_quiz' quiz.id %}" class="btn btn-success ms-3">
+                        <i class="fas fa-redo"></i> Retake Quiz
+                    </a>
+                    {% endif %}
+                    {% endcomment %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

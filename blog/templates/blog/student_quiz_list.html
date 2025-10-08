@@ -1,0 +1,174 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Quizzes - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 bg-light">
+            <div class="p-3">
+                <h6 class="text-muted">Course</h6>
+                <a href="{% url 'course_detail' course.id %}" class="text-decoration-none">
+                    <h5>{{ course.title }}</h5>
+                </a>
+                <p class="text-muted">{{ course.course_code }}</p>
+                
+                <hr>
+                
+                <h6 class="text-muted">Quick Actions</h6>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'course_detail' course.id %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-arrow-left"></i> Back to Course
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="p-4">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h1>Available Quizzes</h1>
+                        <p class="text-muted">{{ course.title }}</p>
+                    </div>
+                </div>
+                
+                <!-- Quizzes List -->
+                {% if quiz_data %}
+                <div class="row">
+                    {% for data in quiz_data %}
+                    {% with quiz=data.quiz %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">{{ quiz.title }}</h5>
+                                <div>
+                                    <span class="badge bg-info me-1">{{ quiz.get_quiz_type_display }}</span>
+                                    {% if not data.is_available %}
+                                        <span class="badge bg-warning">Not Available</span>
+                                    {% elif data.can_attempt %}
+                                        <span class="badge bg-success">Available</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Max Attempts</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                {% if quiz.description %}
+                                    <p class="card-text">{{ quiz.description|truncatewords:20 }}</p>
+                                {% else %}
+                                    <p class="card-text text-muted">No description provided</p>
+                                {% endif %}
+                                
+                                <!-- Quiz Info -->
+                                <div class="small text-muted mb-3">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <strong>Questions:</strong> {{ quiz.total_questions }}
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Points:</strong> {{ quiz.points|default:"N/A" }}
+                                        </div>
+                                    </div>
+                                    <div class="row mt-1">
+                                        <div class="col-6">
+                                            <strong>Time Limit:</strong> 
+                                            {% if quiz.time_limit %}
+                                                {{ quiz.time_limit }} min
+                                            {% else %}
+                                                No limit
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Attempts:</strong> 
+                                            {{ data.total_attempts }}{% if quiz.max_attempts %}/{{ quiz.max_attempts }}{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Attempt History -->
+                                {% if data.last_attempt %}
+                                <div class="mt-3 p-3 bg-light rounded">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <strong>Last Attempt:</strong><br>
+                                            <small class="text-muted">{{ data.last_attempt.started_at|date:"M j, Y g:i A" }}</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            {% if data.best_score is not None %}
+                                                <strong>Best Score:</strong><br>
+                                                <span class="badge bg-primary">{{ data.best_score|floatformat:1 }}%</span>
+                                                {% if quiz.passing_score and data.best_score >= quiz.passing_score %}
+                                                    <span class="badge bg-success ms-1">Passed</span>
+                                                {% elif quiz.passing_score %}
+                                                    <span class="badge bg-warning ms-1">Below Passing</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">No completed attempts</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="card-footer">
+                                {% if not data.is_available %}
+                                    <button class="btn btn-secondary w-100" disabled>
+                                        <i class="fas fa-lock"></i> Not Available
+                                    </button>
+                                {% elif quiz.total_questions == 0 %}
+                                    <button class="btn btn-secondary w-100" disabled>
+                                        <i class="fas fa-exclamation-triangle"></i> No Questions
+                                    </button>
+                                {% elif not data.can_attempt %}
+                                    <div class="d-grid">
+                                        <button class="btn btn-secondary" disabled>
+                                            <i class="fas fa-ban"></i> Maximum Attempts Reached
+                                        </button>
+                                        {% if data.last_attempt %}
+                                        <a href="{% url 'quiz_results' data.last_attempt.id %}" class="btn btn-outline-primary btn-sm mt-2">
+                                            <i class="fas fa-eye"></i> View Last Results
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <div class="d-grid">
+                                        <a href="{% url 'start_quiz' quiz.id %}" class="btn btn-primary">
+                                            <i class="fas fa-play"></i> 
+                                            {% if data.total_attempts == 0 %}Start Quiz{% else %}Take Again{% endif %}
+                                        </a>
+                                        {% if data.last_attempt %}
+                                        <a href="{% url 'quiz_results' data.last_attempt.id %}" class="btn btn-outline-secondary btn-sm mt-2">
+                                            <i class="fas fa-eye"></i> View Last Results
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endwith %}
+                    {% endfor %}
+                </div>
+                
+                {% else %}
+                <!-- No Quizzes -->
+                <div class="text-center py-5">
+                    <i class="fas fa-question-circle fa-5x text-muted mb-4"></i>
+                    <h3>No Quizzes Available</h3>
+                    <p class="text-muted mb-4">
+                        Your instructor hasn't published any quizzes for this course yet.
+                    </p>
+                    <a href="{% url 'course_detail' course.id %}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left"></i> Back to Course
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

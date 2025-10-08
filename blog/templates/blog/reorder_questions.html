@@ -1,0 +1,179 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Reorder Questions - {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 bg-light">
+            <div class="p-3">
+                <h6 class="text-muted">Quiz</h6>
+                <a href="{% url 'quiz_detail' quiz.id %}" class="text-decoration-none">
+                    <h5>{{ quiz.title }}</h5>
+                </a>
+                <p class="text-muted">{{ quiz.course.course_code }}</p>
+                
+                <hr>
+                
+                <h6 class="text-muted">Quick Actions</h6>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'quiz_detail' quiz.id %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-arrow-left"></i> Back to Quiz
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="p-4">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h1>Reorder Questions</h1>
+                        <p class="text-muted">{{ quiz.title }}</p>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Drag and drop questions to reorder them. Changes will be saved when you click "Save Order".
+                </div>
+                
+                <!-- Reorder Form -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Question Order</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if questions %}
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            <div id="question-list" class="sortable-list">
+                                {% for question in questions %}
+                                <div class="question-item mb-3 p-3 border rounded" data-question-id="{{ question.id }}">
+                                    <input type="hidden" name="question_order" value="{{ question.id }}">
+                                    
+                                    <div class="d-flex align-items-start">
+                                        <div class="drag-handle me-3 mt-1" style="cursor: move;">
+                                            <i class="fas fa-grip-vertical text-muted"></i>
+                                        </div>
+                                        
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <span class="badge bg-primary me-2">Q{{ forloop.counter }}</span>
+                                                    <span class="badge bg-info me-2">{{ question.get_question_type_display }}</span>
+                                                    <span class="badge bg-success">{{ question.points }} pts</span>
+                                                </div>
+                                                <div>
+                                                    <a href="{% url 'edit_question' question.id %}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-edit"></i> Edit
+                                                    </a>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="question-text">
+                                                {{ question.question_text|truncatewords:15 }}
+                                            </div>
+                                            
+                                            {% if question.question_type != 'short_answer' %}
+                                            <div class="mt-2">
+                                                <small class="text-muted">
+                                                    Answers: 
+                                                    {% for answer in question.answers.all %}
+                                                        {% if answer.is_correct %}<strong>{{ answer.answer_text|truncatewords:3 }}</strong>{% else %}{{ answer.answer_text|truncatewords:3 }}{% endif %}{% if not forloop.last %}, {% endif %}
+                                                    {% endfor %}
+                                                </small>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="d-flex justify-content-between mt-4">
+                                <a href="{% url 'quiz_detail' quiz.id %}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Order
+                                </button>
+                            </div>
+                        </form>
+                        
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
+                            <h5>No Questions Yet</h5>
+                            <p class="text-muted">Add questions to this quiz before reordering them.</p>
+                            <a href="{% url 'add_question' quiz.id %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add Question
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.question-item {
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+}
+
+.question-item:hover {
+    background-color: #e9ecef;
+}
+
+.question-item.sortable-chosen {
+    background-color: #e3f2fd;
+    transform: scale(1.02);
+}
+
+.question-item.sortable-ghost {
+    opacity: 0.4;
+}
+
+.drag-handle {
+    color: #6c757d;
+}
+
+.drag-handle:hover {
+    color: #495057;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const questionList = document.getElementById('question-list');
+    
+    if (questionList) {
+        const sortable = Sortable.create(questionList, {
+            handle: '.drag-handle',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            onEnd: function() {
+                // Update hidden inputs with new order
+                const items = questionList.querySelectorAll('.question-item');
+                items.forEach((item, index) => {
+                    const input = item.querySelector('input[name="question_order"]');
+                    if (input) {
+                        // Move the input to maintain order in form data
+                        questionList.appendChild(input);
+                    }
+                });
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

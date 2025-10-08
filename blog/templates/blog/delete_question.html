@@ -1,0 +1,124 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Delete Question - {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 bg-light">
+            <div class="p-3">
+                <h6 class="text-muted">Quiz</h6>
+                <a href="{% url 'quiz_detail' quiz.id %}" class="text-decoration-none">
+                    <h5>{{ quiz.title }}</h5>
+                </a>
+                <p class="text-muted">{{ quiz.course.course_code }}</p>
+                
+                <hr>
+                
+                <h6 class="text-muted">Quick Actions</h6>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'quiz_detail' quiz.id %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-arrow-left"></i> Back to Quiz
+                    </a>
+                    <a href="{% url 'edit_question' question.id %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-edit"></i> Edit Question
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="p-4">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h1>Delete Question</h1>
+                        <p class="text-muted">{{ quiz.title }}</p>
+                    </div>
+                </div>
+                
+                <!-- Delete Confirmation -->
+                <div class="card border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exclamation-triangle"></i> Confirm Deletion
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-warning"></i>
+                            <strong>Warning:</strong> This action cannot be undone. Deleting this question will also remove any student responses to it.
+                        </div>
+                        
+                        <!-- Question Preview -->
+                        <div class="card bg-light mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0">Question to be deleted:</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <strong>Type:</strong> 
+                                    <span class="badge bg-info">{{ question.get_question_type_display }}</span>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <strong>Points:</strong> {{ question.points }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <strong>Question:</strong>
+                                    <div class="mt-2 p-3 border rounded">
+                                        {{ question.question_text|linebreaks }}
+                                    </div>
+                                </div>
+                                
+                                {% if question.question_type != 'short_answer' %}
+                                <div class="mb-3">
+                                    <strong>Answer Choices:</strong>
+                                    <ul class="list-unstyled mt-2">
+                                        {% for answer in question.answers.all %}
+                                        <li class="mb-1">
+                                            {% if answer.is_correct %}
+                                                <span class="badge bg-success me-2">✓</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary me-2">✗</span>
+                                            {% endif %}
+                                            {{ answer.answer_text }}
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endif %}
+                                
+                                {% if question.explanation %}
+                                <div class="mb-3">
+                                    <strong>Explanation:</strong>
+                                    <div class="mt-2 p-2 bg-white border rounded">
+                                        {{ question.explanation|linebreaks }}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Confirmation Form -->
+                        <form method="post" class="d-flex justify-content-between">
+                            {% csrf_token %}
+                            
+                            <a href="{% url 'quiz_detail' quiz.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Delete Question
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

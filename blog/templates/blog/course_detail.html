@@ -228,6 +228,108 @@
                     </div>
                 </div>
                 {% endif %}
+
+                <!-- Course Quizzes -->
+                {% if user.is_authenticated and is_enrolled and quizzes %}
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4><i class="glyphicon glyphicon-education"></i> Quizzes</h4>
+                    </div>
+                    <div class="panel-body">
+                        <div class="quiz-list">
+                            {% for quiz in quizzes %}
+                            {% with quiz_attempts|get_item:quiz.id as attempt_data %}
+                            <div class="quiz-item panel panel-default">
+                                <div class="panel-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <h5><strong>{{ quiz.title }}</strong></h5>
+                                            <p class="text-muted">{{ quiz.description|truncatewords:20 }}</p>
+                                            
+                                            <div class="quiz-meta">
+                                                <span class="label label-info">{{ quiz.total_questions }} question{{ quiz.total_questions|pluralize }}</span>
+                                                
+                                                {% if quiz.points %}
+                                                    <span class="label label-default">{{ quiz.points }} points</span>
+                                                {% endif %}
+                                                
+                                                {% if quiz.time_limit %}
+                                                    <span class="label label-warning">{{ quiz.time_limit }} min limit</span>
+                                                {% endif %}
+                                                
+                                                {% if not attempt_data.is_available %}
+                                                    <span class="label label-danger">Not Available</span>
+                                                {% elif attempt_data.can_attempt %}
+                                                    <span class="label label-success">Available</span>
+                                                {% else %}
+                                                    <span class="label label-default">Max Attempts Reached</span>
+                                                {% endif %}
+                                                
+                                                {% if attempt_data.best_score is not None %}
+                                                    <span class="label 
+                                                        {% if attempt_data.best_score >= 90 %}label-success
+                                                        {% elif attempt_data.best_score >= 70 %}label-warning
+                                                        {% else %}label-danger
+                                                        {% endif %}">
+                                                        Best: {{ attempt_data.best_score|floatformat:1 }}%
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 text-right">
+                                            <p>
+                                                <strong>Attempts:</strong> {{ attempt_data.total_attempts }}{% if quiz.max_attempts %}/{{ quiz.max_attempts }}{% endif %}<br>
+                                                {% if attempt_data.last_attempt %}
+                                                    <small>Last: {{ attempt_data.last_attempt.started_at|date:"M d, Y" }}</small>
+                                                {% endif %}
+                                            </p>
+                                            
+                                            <div class="btn-group-vertical btn-group-sm">
+                                                {% if quiz.total_questions == 0 %}
+                                                    <button class="btn btn-default" disabled>
+                                                        <i class="glyphicon glyphicon-exclamation-sign"></i> No Questions
+                                                    </button>
+                                                {% elif not attempt_data.is_available %}
+                                                    <button class="btn btn-default" disabled>
+                                                        <i class="glyphicon glyphicon-lock"></i> Not Available
+                                                    </button>
+                                                {% elif not attempt_data.can_attempt %}
+                                                    <button class="btn btn-default" disabled>
+                                                        <i class="glyphicon glyphicon-ban-circle"></i> Max Attempts
+                                                    </button>
+                                                    {% if attempt_data.last_attempt %}
+                                                    <a href="{% url 'quiz_results' attempt_data.last_attempt.id %}" class="btn btn-info">
+                                                        <i class="glyphicon glyphicon-eye-open"></i> View Results
+                                                    </a>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <a href="{% url 'start_quiz' quiz.id %}" class="btn btn-success">
+                                                        <i class="glyphicon glyphicon-play"></i> 
+                                                        {% if attempt_data.total_attempts == 0 %}Start Quiz{% else %}Take Again{% endif %}
+                                                    </a>
+                                                    {% if attempt_data.last_attempt %}
+                                                    <a href="{% url 'quiz_results' attempt_data.last_attempt.id %}" class="btn btn-info">
+                                                        <i class="glyphicon glyphicon-eye-open"></i> Last Results
+                                                    </a>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endwith %}
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="text-center">
+                            <a href="{% url 'student_quiz_list' course.id %}" class="btn btn-default">
+                                <i class="glyphicon glyphicon-list"></i> View All Quizzes
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
 
             <!-- Sidebar -->

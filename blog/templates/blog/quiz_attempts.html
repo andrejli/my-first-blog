@@ -1,0 +1,313 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Quiz Attempts - {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 bg-light">
+            <div class="p-3">
+                <h6 class="text-muted">Quiz Management</h6>
+                <h5>{{ quiz.title }}</h5>
+                <p class="text-muted">{{ quiz.course.title }}</p>
+                
+                <hr>
+                
+                <!-- Quiz Stats -->
+                <h6 class="text-muted">Quiz Statistics</h6>
+                <div class="small">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Attempts:</span>
+                        <strong>{{ attempts.count }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Completed:</span>
+                        <strong>{{ completed_count }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>In Progress:</span>
+                        <strong>{{ in_progress_count }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Avg Score:</span>
+                        <strong>{{ average_score|floatformat:1 }}%</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Pending Review:</span>
+                        <strong class="text-warning">{{ pending_review_count }}</strong>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <h6 class="text-muted">Quick Actions</h6>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'instructor_dashboard' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="{% url 'edit_quiz' quiz.id %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-edit"></i> Edit Quiz
+                    </a>
+                    <a href="{% url 'manage_questions' quiz.id %}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-question-circle"></i> Manage Questions
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="p-4">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h1>Quiz Attempts</h1>
+                        <p class="text-muted">{{ quiz.title }} - {{ quiz.course.title }}</p>
+                    </div>
+                    <div>
+                        <!-- Export Options -->
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fas fa-download"></i> Export
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="exportToCSV()">
+                                    <i class="fas fa-file-csv"></i> Export to CSV
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="window.print()">
+                                    <i class="fas fa-print"></i> Print Summary
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Filter and Search -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form method="get" class="row g-3">
+                            <div class="col-md-4">
+                                <label for="search" class="form-label">Search Students</label>
+                                <input type="text" class="form-control" id="search" name="search" 
+                                       value="{{ request.GET.search }}" placeholder="Student name or email">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="">All Attempts</option>
+                                    <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Completed</option>
+                                    <option value="in_progress" {% if request.GET.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                    <option value="pending_review" {% if request.GET.status == 'pending_review' %}selected{% endif %}>Pending Review</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="sort" class="form-label">Sort By</label>
+                                <select class="form-select" id="sort" name="sort">
+                                    <option value="-started_at" {% if request.GET.sort == '-started_at' %}selected{% endif %}>Latest First</option>
+                                    <option value="started_at" {% if request.GET.sort == 'started_at' %}selected{% endif %}>Oldest First</option>
+                                    <option value="-score" {% if request.GET.sort == '-score' %}selected{% endif %}>Highest Score</option>
+                                    <option value="score" {% if request.GET.sort == 'score' %}selected{% endif %}>Lowest Score</option>
+                                    <option value="student__last_name" {% if request.GET.sort == 'student__last_name' %}selected{% endif %}>Student Name</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-search"></i> Filter
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Attempts Table -->
+                {% if attempts %}
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Started</th>
+                                    <th>Completed</th>
+                                    <th>Duration</th>
+                                    <th>Score</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for attempt in attempts %}
+                                <tr>
+                                    <td>
+                                        <div>
+                                            <strong>{{ attempt.student.get_full_name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ attempt.student.email }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small>{{ attempt.started_at|date:"M j, Y" }}</small>
+                                        <br>
+                                        <small class="text-muted">{{ attempt.started_at|time:"g:i A" }}</small>
+                                    </td>
+                                    <td>
+                                        {% if attempt.completed_at %}
+                                            <small>{{ attempt.completed_at|date:"M j, Y" }}</small>
+                                            <br>
+                                            <small class="text-muted">{{ attempt.completed_at|time:"g:i A" }}</small>
+                                        {% else %}
+                                            <em class="text-muted">In progress</em>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if attempt.completed_at %}
+                                            {% with duration=attempt.completed_at|timeuntil:attempt.started_at %}
+                                                {{ duration }}
+                                            {% endwith %}
+                                        {% else %}
+                                            <em class="text-muted">-</em>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if attempt.score is not None %}
+                                            <span class="badge 
+                                                {% if attempt.score >= 90 %}bg-success
+                                                {% elif attempt.score >= 80 %}bg-info
+                                                {% elif attempt.score >= 70 %}bg-warning
+                                                {% else %}bg-danger
+                                                {% endif %}">
+                                                {{ attempt.score|floatformat:1 }}%
+                                            </span>
+                                            {% if quiz.passing_score %}
+                                                <br>
+                                                <small class="{% if attempt.score >= quiz.passing_score %}text-success{% else %}text-danger{% endif %}">
+                                                    {% if attempt.score >= quiz.passing_score %}Passed{% else %}Failed{% endif %}
+                                                </small>
+                                            {% endif %}
+                                        {% else %}
+                                            <em class="text-muted">Not scored</em>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if not attempt.completed_at %}
+                                            <span class="badge bg-warning">In Progress</span>
+                                        {% elif attempt.has_pending_responses %}
+                                            <span class="badge bg-info">Pending Review</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            {% if attempt.completed_at %}
+                                                <a href="{% url 'quiz_results' attempt.id %}" 
+                                                   class="btn btn-outline-primary" 
+                                                   title="View Results">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                {% if attempt.has_pending_responses %}
+                                                    <a href="{% url 'grade_quiz_attempt' attempt.id %}" 
+                                                       class="btn btn-outline-warning" 
+                                                       title="Grade Attempt">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                {% endif %}
+                                            {% else %}
+                                                <button class="btn btn-outline-secondary" disabled title="Attempt in progress">
+                                                    <i class="fas fa-clock"></i>
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <nav aria-label="Attempts pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">Last</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+                {% else %}
+                <!-- No Attempts -->
+                <div class="text-center py-5">
+                    <i class="fas fa-clipboard-list fa-5x text-muted mb-4"></i>
+                    <h3>No Quiz Attempts Yet</h3>
+                    <p class="text-muted mb-4">
+                        Students haven't started taking this quiz yet.
+                    </p>
+                    <div>
+                        <a href="{% url 'edit_quiz' quiz.id %}" class="btn btn-primary me-2">
+                            <i class="fas fa-edit"></i> Edit Quiz
+                        </a>
+                        <a href="{% url 'instructor_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportToCSV() {
+    // Create CSV content
+    let csv = 'Student Name,Email,Started,Completed,Duration,Score,Status\n';
+    
+    {% for attempt in attempts %}
+    csv += '"{{ attempt.student.get_full_name }}","{{ attempt.student.email }}",';
+    csv += '"{{ attempt.started_at|date:"M j, Y g:i A" }}",';
+    csv += '"{% if attempt.completed_at %}{{ attempt.completed_at|date:"M j, Y g:i A" }}{% else %}In Progress{% endif %}",';
+    csv += '"{% if attempt.completed_at %}{% with duration=attempt.completed_at|timeuntil:attempt.started_at %}{{ duration }}{% endwith %}{% else %}-{% endif %}",';
+    csv += '"{% if attempt.score is not None %}{{ attempt.score|floatformat:1 }}%{% else %}Not scored{% endif %}",';
+    csv += '"{% if not attempt.completed_at %}In Progress{% elif attempt.has_pending_responses %}Pending Review{% else %}Completed{% endif %}"\n';
+    {% endfor %}
+    
+    // Download CSV
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', '{{ quiz.title|slugify }}_attempts.csv');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+</script>
+{% endblock %}

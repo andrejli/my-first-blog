@@ -76,14 +76,24 @@
                         </a>
                         {% if quiz.total_questions > 0 %}
                             {% if quiz.is_published %}
-                                <button class="btn btn-warning" onclick="alert('Unpublish functionality coming soon')">
-                                    <i class="fas fa-eye-slash"></i> Unpublish
-                                </button>
+                                <form method="post" action="{% url 'toggle_quiz_publish' quiz.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-warning" onclick="return confirm('Are you sure you want to unpublish this quiz? Students will no longer be able to access it.')">
+                                        <i class="fas fa-eye-slash"></i> Unpublish
+                                    </button>
+                                </form>
                             {% else %}
-                                <button class="btn btn-success" onclick="alert('Publish functionality coming soon')">
-                                    <i class="fas fa-eye"></i> Publish
-                                </button>
+                                <form method="post" action="{% url 'toggle_quiz_publish' quiz.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success" onclick="return confirm('Are you sure you want to publish this quiz? Students will be able to see and take it.')">
+                                        <i class="fas fa-eye"></i> Publish
+                                    </button>
+                                </form>
                             {% endif %}
+                        {% else %}
+                            <button class="btn btn-secondary" disabled title="Add questions before publishing">
+                                <i class="fas fa-eye"></i> Publish
+                            </button>
                         {% endif %}
                     </div>
                 </div>
@@ -161,14 +171,6 @@
                                         <span class="text-muted">No</span>
                                     {% endif %}
                                 </div>
-                                <div class="mb-2">
-                                    <strong>Shuffle Answers:</strong> 
-                                    {% if quiz.shuffle_answers %}
-                                        <span class="text-success">Yes</span>
-                                    {% else %}
-                                        <span class="text-muted">No</span>
-                                    {% endif %}
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -220,26 +222,127 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Questions ({{ quiz.total_questions }})</h5>
-                        <button class="btn btn-success btn-sm" onclick="alert('Add question functionality coming soon')">
-                            <i class="fas fa-plus"></i> Add Question
-                        </button>
+                        <div class="btn-group">
+                            <a href="{% url 'add_question' quiz.id %}" class="btn btn-success btn-sm">
+                                <i class="fas fa-plus"></i> Add Question
+                            </a>
+                            {% if quiz.total_questions > 1 %}
+                            <a href="{% url 'reorder_questions' quiz.id %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-sort"></i> Reorder
+                            </a>
+                            {% endif %}
+                        </div>
                     </div>
                     <div class="card-body">
-                        {% if quiz.total_questions > 0 %}
-                            <!-- This will be populated with actual questions later -->
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle"></i>
-                                Question management interface will be implemented in the next phase.
-                                This quiz has {{ quiz.total_questions }} question{{ quiz.total_questions|pluralize }}.
+                        {% if questions %}
+                            <div class="question-list">
+                                {% for question in questions %}
+                                <div class="question-item mb-3 p-3 border rounded">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="badge bg-primary me-2">Q{{ forloop.counter }}</span>
+                                                <span class="badge bg-info me-2">{{ question.get_question_type_display }}</span>
+                                                <span class="badge bg-success me-2">{{ question.points }} pts</span>
+                                                {% if question.explanation %}
+                                                <span class="badge bg-secondary me-2">
+                                                    <i class="fas fa-info-circle"></i> Has Explanation
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <div class="question-text mb-2">
+                                                <strong>{{ question.question_text }}</strong>
+                                            </div>
+                                            
+                                            {% if question.question_type != 'short_answer' %}
+                                            <div class="answer-choices">
+                                                <small class="text-muted d-block mb-1">Answer Choices:</small>
+                                                <ul class="list-unstyled mb-0">
+                                                    {% for answer in question.answers.all %}
+                                                    <li class="mb-1">
+                                                        {% if answer.is_correct %}
+                                                            <span class="badge bg-success me-2">✓</span>
+                                                        {% else %}
+                                                            <span class="badge bg-light text-dark me-2">○</span>
+                                                        {% endif %}
+                                                        {{ answer.answer_text }}
+                                                    </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                            {% else %}
+                                            <div class="text-muted">
+                                                <small><i class="fas fa-pen"></i> Short answer question - manual grading required</small>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            {% if question.explanation %}
+                                            <div class="explanation mt-2 p-2 bg-light rounded">
+                                                <small class="text-muted"><strong>Explanation:</strong> {{ question.explanation }}</small>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="question-actions ms-3">
+                                            <div class="btn-group-vertical">
+                                                <a href="{% url 'edit_question' question.id %}" class="btn btn-sm btn-outline-primary mb-1">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                                <a href="{% url 'delete_question' question.id %}" class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- Question Summary -->
+                            <div class="mt-3 p-3 bg-light rounded">
+                                <div class="row text-center">
+                                    <div class="col-md-3">
+                                        <strong>Total Questions</strong><br>
+                                        <span class="badge bg-primary fs-6">{{ quiz.total_questions }}</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>Total Points</strong><br>
+                                        <span class="badge bg-success fs-6">
+                                            {% widthratio questions|length 1 1 as total_points %}
+                                            {% for question in questions %}
+                                                {% if forloop.first %}{% widthratio question.points 1 1 as total_points %}{% else %}{% widthratio total_points|add:question.points 1 1 as total_points %}{% endif %}
+                                            {% endfor %}
+                                            {{ questions|length|yesno:"Total,0" }}
+                                        </span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>Question Types</strong><br>
+                                        <div class="small">
+                                            {% regroup questions by question_type as question_groups %}
+                                            {% for group in question_groups %}
+                                            <span class="badge bg-info me-1">{{ group.grouper|title }}: {{ group.list|length }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>Status</strong><br>
+                                        {% if quiz.is_published %}
+                                            <span class="badge bg-success fs-6">Published</span>
+                                        {% else %}
+                                            <span class="badge bg-warning fs-6">Draft</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </div>
                         {% else %}
                             <div class="text-center py-4">
                                 <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
                                 <h5>No Questions Yet</h5>
                                 <p class="text-muted">Add questions to make this quiz available to students.</p>
-                                <button class="btn btn-success" onclick="alert('Add question functionality coming soon')">
+                                <a href="{% url 'add_question' quiz.id %}" class="btn btn-success">
                                     <i class="fas fa-plus"></i> Add Your First Question
-                                </button>
+                                </a>
                             </div>
                         {% endif %}
                     </div>

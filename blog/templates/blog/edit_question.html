@@ -1,0 +1,207 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Edit Question - {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 bg-light">
+            <div class="p-3">
+                <h6 class="text-muted">Quiz</h6>
+                <a href="{% url 'quiz_detail' quiz.id %}" class="text-decoration-none">
+                    <h5>{{ quiz.title }}</h5>
+                </a>
+                <p class="text-muted">{{ quiz.course.course_code }}</p>
+                
+                <hr>
+                
+                <h6 class="text-muted">Quick Actions</h6>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'quiz_detail' quiz.id %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-arrow-left"></i> Back to Quiz
+                    </a>
+                    <a href="{% url 'delete_question' question.id %}" class="btn btn-outline-danger btn-sm">
+                        <i class="fas fa-trash"></i> Delete Question
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="p-4">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h1>Edit Question</h1>
+                        <p class="text-muted">{{ quiz.title }}</p>
+                    </div>
+                </div>
+                
+                <!-- Edit Question Form -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Question Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            <!-- Basic Question Info -->
+                            <fieldset class="mb-4">
+                                <legend class="h6">Basic Information</legend>
+                                
+                                <div class="mb-3">
+                                    <label for="question_text" class="form-label">Question Text *</label>
+                                    <textarea class="form-control" id="question_text" name="question_text" 
+                                              rows="3" required>{{ question.question_text }}</textarea>
+                                    <div class="form-text">Write a clear and concise question</div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="question_type" class="form-label">Question Type *</label>
+                                            <select class="form-select" id="question_type" name="question_type" 
+                                                    onchange="toggleAnswerOptions()" required>
+                                                <option value="multiple_choice" {% if question.question_type == 'multiple_choice' %}selected{% endif %}>Multiple Choice</option>
+                                                <option value="true_false" {% if question.question_type == 'true_false' %}selected{% endif %}>True/False</option>
+                                                <option value="short_answer" {% if question.question_type == 'short_answer' %}selected{% endif %}>Short Answer</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="points" class="form-label">Points *</label>
+                                            <input type="number" class="form-control" id="points" name="points" 
+                                                   min="0.1" step="0.1" value="{{ question.points }}" required>
+                                            <div class="form-text">Points awarded for correct answer</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="explanation" class="form-label">Explanation (Optional)</label>
+                                    <textarea class="form-control" id="explanation" name="explanation" 
+                                              rows="2" placeholder="Provide an explanation that will be shown after answering">{{ question.explanation }}</textarea>
+                                    <div class="form-text">This explanation will be shown to students after they answer</div>
+                                </div>
+                            </fieldset>
+                            
+                            <!-- Multiple Choice Options -->
+                            <fieldset id="mc_options" class="mb-4">
+                                <legend class="h6">Answer Choices</legend>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    Enter 2-5 answer choices and check the box next to the correct answer(s).
+                                </div>
+                                
+                                <div id="answer_choices">
+                                    {% for i in "12345" %}
+                                    {% with forloop.counter as choice_num %}
+                                    <div class="mb-3 answer-choice">
+                                        <div class="input-group">
+                                            <div class="input-group-text">
+                                                <input type="checkbox" name="correct_{{ choice_num }}" id="correct_{{ choice_num }}" class="form-check-input"
+                                                       {% if answers|length >= choice_num and answers|slice:forloop.counter0:forloop.counter|first.is_correct %}checked{% endif %}>
+                                            </div>
+                                            <input type="text" class="form-control" name="answer_{{ choice_num }}" id="answer_{{ choice_num }}" 
+                                                   placeholder="Answer choice {{ choice_num }}{% if choice_num > 2 %} (optional){% endif %}"
+                                                   value="{% if answers|length >= choice_num %}{{ answers|slice:forloop.counter0:forloop.counter|first.answer_text }}{% endif %}"
+                                                   {% if choice_num <= 2 %}required{% endif %}>
+                                            <label class="input-group-text" for="correct_{{ choice_num }}">Correct</label>
+                                        </div>
+                                    </div>
+                                    {% endwith %}
+                                    {% endfor %}
+                                </div>
+                            </fieldset>
+                            
+                            <!-- True/False Options -->
+                            <fieldset id="tf_options" class="mb-4" style="display: none;">
+                                <legend class="h6">Correct Answer</legend>
+                                
+                                <div class="mb-3">
+                                    {% with correct_tf=answers|first %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tf_correct" 
+                                               id="tf_true" value="true" 
+                                               {% if correct_tf.answer_text == 'True' and correct_tf.is_correct %}checked{% endif %}>
+                                        <label class="form-check-label" for="tf_true">
+                                            True
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tf_correct" 
+                                               id="tf_false" value="false"
+                                               {% if correct_tf.answer_text == 'False' and correct_tf.is_correct %}checked{% endif %}>
+                                        <label class="form-check-label" for="tf_false">
+                                            False
+                                        </label>
+                                    </div>
+                                    {% endwith %}
+                                </div>
+                            </fieldset>
+                            
+                            <!-- Short Answer Info -->
+                            <fieldset id="sa_options" class="mb-4" style="display: none;">
+                                <legend class="h6">Short Answer Information</legend>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    Short answer questions will need to be graded manually by the instructor.
+                                </div>
+                            </fieldset>
+                            
+                            <!-- Form Actions -->
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'quiz_detail' quiz.id %}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Update Question
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleAnswerOptions() {
+    const questionType = document.getElementById('question_type').value;
+    const mcOptions = document.getElementById('mc_options');
+    const tfOptions = document.getElementById('tf_options');
+    const saOptions = document.getElementById('sa_options');
+    
+    // Hide all option sections
+    mcOptions.style.display = 'none';
+    tfOptions.style.display = 'none';
+    saOptions.style.display = 'none';
+    
+    // Clear required attributes
+    document.querySelectorAll('#mc_options input[required]').forEach(input => {
+        input.removeAttribute('required');
+    });
+    
+    // Show relevant section and set required attributes
+    if (questionType === 'multiple_choice') {
+        mcOptions.style.display = 'block';
+        document.getElementById('answer_1').setAttribute('required', '');
+        document.getElementById('answer_2').setAttribute('required', '');
+    } else if (questionType === 'true_false') {
+        tfOptions.style.display = 'block';
+    } else if (questionType === 'short_answer') {
+        saOptions.style.display = 'block';
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleAnswerOptions();
+});
+</script>
+{% endblock %}

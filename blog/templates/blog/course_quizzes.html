@@ -147,8 +147,28 @@
 
 <script>
 function togglePublish(quizId, publish) {
-    // This would be implemented later with AJAX
-    alert(`Quiz ${publish ? 'publish' : 'unpublish'} functionality will be implemented in the edit quiz page for now.`);
+    const action = publish ? 'publish' : 'unpublish';
+    const message = publish ? 
+        'Are you sure you want to publish this quiz? Students will be able to see and take it.' :
+        'Are you sure you want to unpublish this quiz? Students will no longer be able to access it.';
+    
+    if (confirm(message)) {
+        // Create a form and submit it
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/instructor/quiz/${quizId}/toggle-publish/`;
+        
+        // Add CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
 }
 </script>
 {% endblock %}
