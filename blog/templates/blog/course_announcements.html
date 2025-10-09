@@ -1,0 +1,252 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block title %}{{ course.course_code }} - Announcements{% endblock %}
+
+{% block extra_css %}
+<style>
+.announcement-card {
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: box-shadow 0.3s ease;
+}
+
+.announcement-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.announcement-header {
+    padding: 15px 20px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: between;
+    align-items: center;
+}
+
+.announcement-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: #2c3e50;
+}
+
+.announcement-meta {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.announcement-content {
+    padding: 20px;
+    line-height: 1.6;
+}
+
+.priority-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.priority-low { background-color: #e3f2fd; color: #1565c0; }
+.priority-normal { background-color: #f3e5f5; color: #7b1fa2; }
+.priority-high { background-color: #fff3e0; color: #f57c00; }
+.priority-urgent { background-color: #ffebee; color: #c62828; }
+
+.pinned-badge {
+    background-color: #ffd700;
+    color: #b8860b;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.announcement-actions {
+    padding: 15px 20px;
+    background-color: #f8f9fa;
+    border-top: 1px solid #ddd;
+    display: flex;
+    gap: 10px;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.875rem;
+}
+
+.no-announcements {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+}
+
+.create-announcement-btn {
+    margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+    .announcement-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .announcement-meta {
+        flex-wrap: wrap;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3">Course Announcements</h1>
+                    <p class="text-muted mb-0">
+                        <strong>{{ course.course_code }}:</strong> {{ course.title }}
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'course_detail' course.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Course
+                    </a>
+                    {% if is_instructor %}
+                        <a href="{% url 'create_announcement' course.id %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Announcement
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Announcements List -->
+            {% if announcements %}
+                {% for announcement in announcements %}
+                    <div class="announcement-card">
+                        <div class="announcement-header">
+                            <div class="flex-grow-1">
+                                <h3 class="announcement-title">
+                                    {% if announcement.is_pinned %}
+                                        <i class="fas fa-thumbtack text-warning"></i>
+                                    {% endif %}
+                                    <a href="{% url 'announcement_detail' announcement.id %}" class="text-decoration-none">
+                                        {{ announcement.title }}
+                                    </a>
+                                </h3>
+                                <div class="announcement-meta">
+                                    <span>
+                                        <i class="fas fa-user"></i>
+                                        {{ announcement.author.get_full_name|default:announcement.author.username }}
+                                    </span>
+                                    <span>
+                                        <i class="fas fa-calendar"></i>
+                                        {{ announcement.created_date|date:"M d, Y" }}
+                                    </span>
+                                    <span>
+                                        <i class="fas fa-clock"></i>
+                                        {{ announcement.created_date|date:"g:i A" }}
+                                    </span>
+                                    {% if announcement.is_pinned %}
+                                        <span class="pinned-badge">
+                                            <i class="fas fa-thumbtack"></i> Pinned
+                                        </span>
+                                    {% endif %}
+                                    <span class="priority-badge priority-{{ announcement.priority }}">
+                                        {{ announcement.get_priority_display }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="announcement-content">
+                            <p>{{ announcement.content|truncatewords:30|linebreaksbr }}</p>
+                            {% if announcement.content|length > 200 %}
+                                <a href="{% url 'announcement_detail' announcement.id %}" class="text-primary">
+                                    Read more <i class="fas fa-arrow-right"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+
+                        {% if is_instructor %}
+                            <div class="announcement-actions">
+                                <a href="{% url 'announcement_detail' announcement.id %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                <a href="{% url 'edit_announcement' announcement.id %}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <a href="{% url 'delete_announcement' announcement.id %}" class="btn btn-outline-danger btn-sm">
+                                    <i class="fas fa-trash"></i> Delete
+                                </a>
+                                
+                                <!-- Status indicators -->
+                                {% if not announcement.is_published %}
+                                    <span class="badge bg-warning text-dark">Draft</span>
+                                {% endif %}
+                                {% if announcement.is_scheduled %}
+                                    <span class="badge bg-info">
+                                        Scheduled for {{ announcement.scheduled_for|date:"M d, Y g:i A" }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-announcements">
+                    <i class="fas fa-bullhorn fa-3x text-muted mb-3"></i>
+                    <h4>No Announcements Yet</h4>
+                    <p class="text-muted">
+                        {% if is_instructor %}
+                            Get started by creating your first course announcement.
+                        {% else %}
+                            Your instructor hasn't posted any announcements yet.
+                        {% endif %}
+                    </p>
+                    {% if is_instructor %}
+                        <a href="{% url 'create_announcement' course.id %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create First Announcement
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Auto-refresh announcements every 5 minutes for students
+    {% if not is_instructor %}
+        setInterval(function() {
+            // Only refresh if the page is visible
+            if (!document.hidden) {
+                location.reload();
+            }
+        }, 300000); // 5 minutes
+    {% endif %}
+    
+    // Smooth scroll to announcements when coming from notifications
+    if (window.location.hash) {
+        const target = $(window.location.hash);
+        if (target.length) {
+            $('html, body').animate({
+                scrollTop: target.offset().top - 100
+            }, 500);
+        }
+    }
+});
+</script>
+{% endblock %}

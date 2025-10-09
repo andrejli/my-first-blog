@@ -81,4 +81,11 @@ urlpatterns = [
     # Instructor Quiz Grading Views
     path('instructor/quiz/<int:quiz_id>/attempts/', views.quiz_attempts, name='quiz_attempts'),
     path('instructor/quiz/attempt/<int:attempt_id>/grade/', views.grade_quiz_attempt, name='grade_quiz_attempt'),
+    
+    # Phase 4: Course Announcements - ACTIVATED
+    path('course/<int:course_id>/announcements/', views.course_announcements, name='course_announcements'),
+    path('course/<int:course_id>/announcement/create/', views.create_announcement, name='create_announcement'),
+    path('announcement/<int:announcement_id>/', views.announcement_detail, name='announcement_detail'),
+    path('announcement/<int:announcement_id>/edit/', views.edit_announcement, name='edit_announcement'),
+    path('announcement/<int:announcement_id>/delete/', views.delete_announcement, name='delete_announcement'),
 ]

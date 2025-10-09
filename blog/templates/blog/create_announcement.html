@@ -1,0 +1,449 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block title %}Create Announcement - {{ course.course_code }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.form-section {
+    background: white;
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.form-section h3 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    font-size: 1.25rem;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-control:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+}
+
+.priority-options {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.priority-option {
+    flex: 1;
+    min-width: 120px;
+}
+
+.priority-option input[type="radio"] {
+    display: none;
+}
+
+.priority-option label {
+    display: block;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.priority-option input[type="radio"]:checked + label {
+    border-color: #3498db;
+    background-color: #e3f2fd;
+    color: #1565c0;
+}
+
+.priority-low label { border-left: 4px solid #2196f3; }
+.priority-normal label { border-left: 4px solid #9c27b0; }
+.priority-high label { border-left: 4px solid #ff9800; }
+.priority-urgent label { border-left: 4px solid #f44336; }
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    transition: background-color 0.3s ease;
+}
+
+.checkbox-item:hover {
+    background-color: #f8f9fa;
+}
+
+.checkbox-item input[type="checkbox"] {
+    margin-right: 12px;
+    transform: scale(1.2);
+}
+
+.checkbox-item label {
+    margin: 0;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.checkbox-item .text-muted {
+    font-size: 0.9rem;
+    margin-top: 4px;
+}
+
+.datetime-input {
+    position: relative;
+}
+
+.datetime-input input {
+    padding-right: 40px;
+}
+
+.datetime-input .fas {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    pointer-events: none;
+}
+
+.btn-group {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 30px;
+}
+
+.preview-section {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.preview-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.preview-meta {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 15px;
+}
+
+.preview-content {
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+@media (max-width: 768px) {
+    .priority-options {
+        flex-direction: column;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn-group .btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="form-container">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3">Create Announcement</h1>
+                <p class="text-muted mb-0">
+                    <strong>{{ course.course_code }}:</strong> {{ course.title }}
+                </p>
+            </div>
+            <a href="{% url 'course_announcements' course.id %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Announcements
+            </a>
+        </div>
+
+        <form method="post" id="announcementForm">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="form-section">
+                <h3><i class="fas fa-bullhorn"></i> Announcement Details</h3>
+                
+                <div class="form-group">
+                    <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
+                    <input 
+                        type="text" 
+                        class="form-control" 
+                        id="title" 
+                        name="title" 
+                        value="{{ title }}"
+                        required 
+                        maxlength="200"
+                        placeholder="Enter announcement title..."
+                    >
+                    <div class="form-text">Keep it clear and concise (max 200 characters)</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="content" class="form-label">Content <span class="text-danger">*</span></label>
+                    <textarea 
+                        class="form-control" 
+                        id="content" 
+                        name="content" 
+                        rows="8" 
+                        required
+                        placeholder="Write your announcement content here..."
+                    >{{ content }}</textarea>
+                    <div class="form-text">Use clear, professional language. You can include formatting with line breaks.</div>
+                </div>
+            </div>
+
+            <!-- Priority Selection -->
+            <div class="form-section">
+                <h3><i class="fas fa-exclamation-triangle"></i> Priority Level</h3>
+                
+                <div class="priority-options">
+                    <div class="priority-option priority-low">
+                        <input type="radio" id="priority_low" name="priority" value="low" 
+                               {% if priority == 'low' or not priority %}checked{% endif %}>
+                        <label for="priority_low">
+                            <i class="fas fa-info-circle"></i><br>
+                            Low<br>
+                            <small class="text-muted">General information</small>
+                        </label>
+                    </div>
+                    <div class="priority-option priority-normal">
+                        <input type="radio" id="priority_normal" name="priority" value="normal" 
+                               {% if priority == 'normal' %}checked{% endif %}>
+                        <label for="priority_normal">
+                            <i class="fas fa-bell"></i><br>
+                            Normal<br>
+                            <small class="text-muted">Standard announcement</small>
+                        </label>
+                    </div>
+                    <div class="priority-option priority-high">
+                        <input type="radio" id="priority_high" name="priority" value="high" 
+                               {% if priority == 'high' %}checked{% endif %}>
+                        <label for="priority_high">
+                            <i class="fas fa-exclamation"></i><br>
+                            High<br>
+                            <small class="text-muted">Important notice</small>
+                        </label>
+                    </div>
+                    <div class="priority-option priority-urgent">
+                        <input type="radio" id="priority_urgent" name="priority" value="urgent" 
+                               {% if priority == 'urgent' %}checked{% endif %}>
+                        <label for="priority_urgent">
+                            <i class="fas fa-exclamation-triangle"></i><br>
+                            Urgent<br>
+                            <small class="text-muted">Requires immediate attention</small>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="form-section">
+                <h3><i class="fas fa-cogs"></i> Publication Settings</h3>
+                
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="is_published" name="is_published" 
+                               {% if is_published %}checked{% endif %}>
+                        <div>
+                            <label for="is_published">Publish immediately</label>
+                            <div class="text-muted">Students will be able to see this announcement right away</div>
+                        </div>
+                    </div>
+                    
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="is_pinned" name="is_pinned" 
+                               {% if is_pinned %}checked{% endif %}>
+                        <div>
+                            <label for="is_pinned">Pin to top</label>
+                            <div class="text-muted">This announcement will appear at the top of the list</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group mt-3">
+                    <label for="scheduled_for" class="form-label">Schedule for later (optional)</label>
+                    <div class="datetime-input">
+                        <input 
+                            type="datetime-local" 
+                            class="form-control" 
+                            id="scheduled_for" 
+                            name="scheduled_for"
+                            value="{{ scheduled_for }}"
+                        >
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="form-text">Leave empty to publish according to the "Publish immediately" setting above</div>
+                </div>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="form-section" id="previewSection" style="display: none;">
+                <h3><i class="fas fa-eye"></i> Preview</h3>
+                <div class="preview-section">
+                    <div class="preview-title" id="previewTitle">Your announcement title</div>
+                    <div class="preview-meta" id="previewMeta">
+                        <i class="fas fa-user"></i> {{ request.user.get_full_name|default:request.user.username }}
+                        <span class="mx-2">•</span>
+                        <span id="previewPriority">Normal Priority</span>
+                        <span class="mx-2">•</span>
+                        <span id="previewDate">{{ "now"|date:"M d, Y g:i A" }}</span>
+                    </div>
+                    <div class="preview-content" id="previewContent">Your announcement content will appear here...</div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-secondary" id="previewBtn">
+                    <i class="fas fa-eye"></i> Preview
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> Create Announcement
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Character counter for title
+    $('#title').on('input', function() {
+        const remaining = 200 - this.value.length;
+        const counter = $(this).siblings('.form-text');
+        counter.text(`Keep it clear and concise (${remaining} characters remaining)`);
+        
+        if (remaining < 20) {
+            counter.addClass('text-warning');
+        } else {
+            counter.removeClass('text-warning');
+        }
+    });
+
+    // Real-time preview functionality
+    function updatePreview() {
+        const title = $('#title').val() || 'Your announcement title';
+        const content = $('#content').val() || 'Your announcement content will appear here...';
+        const priority = $('input[name="priority"]:checked').val() || 'normal';
+        
+        $('#previewTitle').text(title);
+        $('#previewContent').text(content);
+        $('#previewPriority').text(priority.charAt(0).toUpperCase() + priority.slice(1) + ' Priority');
+    }
+
+    // Preview button toggle
+    $('#previewBtn').click(function() {
+        const previewSection = $('#previewSection');
+        if (previewSection.is(':visible')) {
+            previewSection.slideUp();
+            $(this).html('<i class="fas fa-eye"></i> Preview');
+        } else {
+            updatePreview();
+            previewSection.slideDown();
+            $(this).html('<i class="fas fa-eye-slash"></i> Hide Preview');
+        }
+    });
+
+    // Update preview on input changes
+    $('#title, #content, input[name="priority"]').on('input change', function() {
+        if ($('#previewSection').is(':visible')) {
+            updatePreview();
+        }
+    });
+
+    // Form validation
+    $('#announcementForm').on('submit', function(e) {
+        const title = $('#title').val().trim();
+        const content = $('#content').val().trim();
+        
+        if (!title || !content) {
+            e.preventDefault();
+            alert('Please fill in both title and content fields.');
+            return false;
+        }
+        
+        // Check if scheduled date is in the past
+        const scheduledFor = $('#scheduled_for').val();
+        if (scheduledFor) {
+            const scheduledDate = new Date(scheduledFor);
+            const now = new Date();
+            
+            if (scheduledDate <= now) {
+                e.preventDefault();
+                alert('Scheduled date must be in the future.');
+                return false;
+            }
+        }
+        
+        // Confirm submission
+        const isPublished = $('#is_published').is(':checked');
+        const isPinned = $('#is_pinned').is(':checked');
+        
+        let confirmMessage = 'Are you sure you want to create this announcement?';
+        
+        if (isPublished && !scheduledFor) {
+            confirmMessage += '\n\nThis will be published immediately and students will see it right away.';
+        } else if (scheduledFor) {
+            confirmMessage += '\n\nThis will be published on ' + new Date(scheduledFor).toLocaleString() + '.';
+        }
+        
+        if (isPinned) {
+            confirmMessage += '\n\nIt will be pinned to the top of the announcements list.';
+        }
+        
+        if (!confirm(confirmMessage)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // Auto-save draft functionality (optional enhancement)
+    let draftTimer;
+    $('#title, #content').on('input', function() {
+        clearTimeout(draftTimer);
+        draftTimer = setTimeout(function() {
+            // Could implement auto-save to localStorage here
+            console.log('Auto-saving draft...');
+        }, 2000);
+    });
+});
+</script>
+{% endblock %}

@@ -4,7 +4,8 @@ from django.contrib.auth.models import User
 from .models import (
     Post, Course, UserProfile, Enrollment, Lesson, Progress, 
     CourseMaterial, Assignment, Submission,
-    Quiz, Question, Answer, QuizAttempt, QuizResponse
+    Quiz, Question, Answer, QuizAttempt, QuizResponse,
+    Announcement, AnnouncementRead
 )
 
 
@@ -199,6 +200,64 @@ class QuizResponseAdmin(admin.ModelAdmin):
     def question_text(self, obj):
         return obj.question.question_text[:50] + "..." if len(obj.question.question_text) > 50 else obj.question.question_text
     question_text.short_description = 'Question'
+
+
+# Course Announcement Admin - ACTIVATED
+@admin.register(Announcement)
+class AnnouncementAdmin(admin.ModelAdmin):
+    list_display = ['title', 'course', 'author', 'priority', 'is_published', 'is_pinned', 'created_date']
+    list_filter = ['priority', 'is_published', 'is_pinned', 'course', 'created_date']
+    search_fields = ['title', 'content', 'course__title', 'course__course_code']
+    ordering = ['-created_date']
+    readonly_fields = ['created_date', 'published_date']
+    
+    fieldsets = (
+        ('Announcement Details', {
+            'fields': ('course', 'title', 'content')
+        }),
+        ('Settings', {
+            'fields': ('priority', 'is_published', 'is_pinned', 'scheduled_for')
+        }),
+        ('Metadata', {
+            'fields': ('author', 'created_date', 'published_date'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # If creating new announcement
+            obj.author = request.user
+        super().save_model(request, obj, form, change)
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        # Non-superusers can only see announcements for courses they teach
+        return qs.filter(course__instructor=request.user)
+    
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'course':
+            if not request.user.is_superuser:
+                # Non-superusers can only select courses they teach
+                kwargs['queryset'] = Course.objects.filter(instructor=request.user)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+@admin.register(AnnouncementRead)
+class AnnouncementReadAdmin(admin.ModelAdmin):
+    list_display = ['student', 'announcement_title', 'announcement_course', 'read_date']
+    list_filter = ['announcement__course', 'read_date']
+    search_fields = ['student__username', 'announcement__title']
+    readonly_fields = ['read_date']
+    
+    def announcement_title(self, obj):
+        return obj.announcement.title
+    announcement_title.short_description = 'Announcement'
+    
+    def announcement_course(self, obj):
+        return obj.announcement.course.course_code
+    announcement_course.short_description = 'Course'
 
 
 # Register remaining models without custom admin

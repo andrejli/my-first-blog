@@ -1,0 +1,597 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block title %}{{ announcement.title }} - {{ course.course_code }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.announcement-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.announcement-header {
+    background: white;
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-left: 4px solid #3498db;
+}
+
+.announcement-title {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.announcement-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+    color: #6c757d;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.priority-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.priority-low {
+    background-color: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #bbdefb;
+}
+
+.priority-normal {
+    background-color: #f3e5f5;
+    color: #7b1fa2;
+    border: 1px solid #ce93d8;
+}
+
+.priority-high {
+    background-color: #fff3e0;
+    color: #ef6c00;
+    border: 1px solid #ffcc02;
+}
+
+.priority-urgent {
+    background-color: #ffebee;
+    color: #d32f2f;
+    border: 1px solid #ef9a9a;
+}
+
+.status-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-published {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-draft {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.status-pinned {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-scheduled {
+    background-color: #cce5ff;
+    color: #004085;
+    border: 1px solid #99d6ff;
+}
+
+.announcement-content {
+    background: white;
+    border-radius: 8px;
+    padding: 30px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    line-height: 1.7;
+    font-size: 1.05rem;
+}
+
+.announcement-content p {
+    margin-bottom: 1.2rem;
+}
+
+.announcement-content p:last-child {
+    margin-bottom: 0;
+}
+
+.announcement-actions {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.stats-section {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    text-align: center;
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.progress-section {
+    margin-top: 20px;
+}
+
+.progress-label {
+    display: flex;
+    justify-content: between;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.progress {
+    height: 10px;
+    border-radius: 5px;
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    border-radius: 5px;
+    transition: width 0.3s ease;
+}
+
+.read-status {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.read-status.read {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.read-status.unread {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.navigation-section {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.nav-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.nav-group {
+    display: flex;
+    gap: 10px;
+}
+
+@media (max-width: 768px) {
+    .announcement-meta {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .nav-buttons {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .nav-group {
+        flex-direction: column;
+    }
+    
+    .nav-group .btn {
+        width: 100%;
+    }
+}
+
+.course-link {
+    color: #3498db;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.course-link:hover {
+    color: #2980b9;
+    text-decoration: underline;
+}
+
+.timestamp {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="announcement-container">
+        <!-- Announcement Header -->
+        <div class="announcement-header">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="flex-grow-1">
+                    <h1 class="announcement-title">{{ announcement.title }}</h1>
+                    <p class="mb-2">
+                        <a href="{% url 'course_detail' course.id %}" class="course-link">
+                            <strong>{{ course.course_code }}:</strong> {{ course.title }}
+                        </a>
+                    </p>
+                </div>
+                <div class="status-badges">
+                    {% if announcement.is_published %}
+                        <span class="status-badge status-published">
+                            <i class="fas fa-check-circle"></i> Published
+                        </span>
+                    {% else %}
+                        <span class="status-badge status-draft">
+                            <i class="fas fa-edit"></i> Draft
+                        </span>
+                    {% endif %}
+                    
+                    {% if announcement.is_pinned %}
+                        <span class="status-badge status-pinned">
+                            <i class="fas fa-thumbtack"></i> Pinned
+                        </span>
+                    {% endif %}
+                    
+                    {% if announcement.scheduled_for %}
+                        <span class="status-badge status-scheduled">
+                            <i class="fas fa-clock"></i> Scheduled
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="announcement-meta">
+                <div class="meta-item">
+                    <i class="fas fa-user"></i>
+                    <span>{{ announcement.author.get_full_name|default:announcement.author.username }}</span>
+                </div>
+                
+                <div class="meta-item">
+                    <span class="priority-badge priority-{{ announcement.priority }}">
+                        {% if announcement.priority == 'low' %}<i class="fas fa-info-circle"></i>{% endif %}
+                        {% if announcement.priority == 'normal' %}<i class="fas fa-bell"></i>{% endif %}
+                        {% if announcement.priority == 'high' %}<i class="fas fa-exclamation"></i>{% endif %}
+                        {% if announcement.priority == 'urgent' %}<i class="fas fa-exclamation-triangle"></i>{% endif %}
+                        {{ announcement.priority|title }} Priority
+                    </span>
+                </div>
+                
+                <div class="meta-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>{{ announcement.created_date|date:"M d, Y g:i A" }}</span>
+                </div>
+                
+                {% if announcement.modified_date != announcement.created_date %}
+                <div class="meta-item">
+                    <i class="fas fa-edit"></i>
+                    <span>Updated {{ announcement.modified_date|date:"M d, Y g:i A" }}</span>
+                </div>
+                {% endif %}
+                
+                {% if announcement.scheduled_for and not announcement.is_published %}
+                <div class="meta-item">
+                    <i class="fas fa-clock"></i>
+                    <span>Scheduled for {{ announcement.scheduled_for|date:"M d, Y g:i A" }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Announcement Content -->
+        <div class="announcement-content">
+            {{ announcement.content|linebreaks }}
+        </div>
+
+        <!-- Instructor Actions -->
+        {% if user_is_instructor %}
+        <div class="announcement-actions">
+            <h5 class="mb-3"><i class="fas fa-tools"></i> Instructor Actions</h5>
+            <div class="action-buttons">
+                <a href="{% url 'edit_announcement' course.id announcement.id %}" class="btn btn-warning">
+                    <i class="fas fa-edit"></i> Edit Announcement
+                </a>
+                <a href="{% url 'delete_announcement' course.id announcement.id %}" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Delete Announcement
+                </a>
+                <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#statsModal">
+                    <i class="fas fa-chart-bar"></i> View Statistics
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Statistics Section (visible to instructors) -->
+        {% if user_is_instructor %}
+        <div class="stats-section">
+            <h5 class="mb-3"><i class="fas fa-chart-line"></i> Reading Statistics</h5>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">{{ enrolled_count }}</div>
+                    <div class="stat-label">Total Students</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ read_count }}</div>
+                    <div class="stat-label">Students Read</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ unread_count }}</div>
+                    <div class="stat-label">Students Unread</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ read_percentage }}%</div>
+                    <div class="stat-label">Read Rate</div>
+                </div>
+            </div>
+
+            {% if enrolled_count > 0 %}
+            <div class="progress-section">
+                <div class="progress-label">
+                    <span>Reading Progress</span>
+                    <span>{{ read_count }} of {{ enrolled_count }} students</span>
+                </div>
+                <div class="progress">
+                    <div class="progress-bar bg-success" style="width: {{ read_percentage }}%"></div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Student Read Status -->
+        {% if user_is_student %}
+        <div class="read-status {% if user_has_read %}read{% else %}unread{% endif %}">
+            {% if user_has_read %}
+                <i class="fas fa-check-circle"></i>
+                You read this announcement on {{ user_read_date|date:"M d, Y g:i A" }}
+            {% else %}
+                <i class="fas fa-exclamation-circle"></i>
+                This announcement is marked as unread
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Navigation -->
+        <div class="navigation-section">
+            <div class="nav-buttons">
+                <div class="nav-group">
+                    <a href="{% url 'course_announcements' course.id %}" class="btn btn-outline-primary">
+                        <i class="fas fa-list"></i> All Announcements
+                    </a>
+                    <a href="{% url 'course_detail' course.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Course
+                    </a>
+                </div>
+                
+                {% if prev_announcement or next_announcement %}
+                <div class="nav-group">
+                    {% if prev_announcement %}
+                    <a href="{% url 'announcement_detail' course.id prev_announcement.id %}" class="btn btn-outline-info" title="{{ prev_announcement.title }}">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </a>
+                    {% endif %}
+                    
+                    {% if next_announcement %}
+                    <a href="{% url 'announcement_detail' course.id next_announcement.id %}" class="btn btn-outline-info" title="{{ next_announcement.title }}">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Modal (for instructors) -->
+{% if user_is_instructor %}
+<div class="modal fade" id="statsModal" tabindex="-1" aria-labelledby="statsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="statsModalLabel">
+                    <i class="fas fa-chart-bar"></i> Detailed Reading Statistics
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Reading Status</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Total Enrolled:</strong> {{ enrolled_count }} students</li>
+                            <li><strong>Have Read:</strong> {{ read_count }} students ({{ read_percentage }}%)</li>
+                            <li><strong>Haven't Read:</strong> {{ unread_count }} students</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Timeline</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Created:</strong> {{ announcement.created_date|date:"M d, Y g:i A" }}</li>
+                            {% if announcement.modified_date != announcement.created_date %}
+                            <li><strong>Last Modified:</strong> {{ announcement.modified_date|date:"M d, Y g:i A" }}</li>
+                            {% endif %}
+                            {% if announcement.scheduled_for %}
+                            <li><strong>Scheduled For:</strong> {{ announcement.scheduled_for|date:"M d, Y g:i A" }}</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+                
+                {% if read_count > 0 %}
+                <div class="mt-3">
+                    <h6>Recent Readers</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Read At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for read_record in recent_reads %}
+                                <tr>
+                                    <td>{{ read_record.student.get_full_name|default:read_record.student.username }}</td>
+                                    <td>{{ read_record.read_date|date:"M d, Y g:i A" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Mark as read for students (if not already read)
+    {% if user_is_student and not user_has_read %}
+    // Mark the announcement as read after a short delay
+    setTimeout(function() {
+        $.ajax({
+            url: "{% url 'announcement_detail' course.id announcement.id %}",
+            method: 'POST',
+            data: {
+                'mark_as_read': 'true',
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                console.log('Announcement marked as read');
+                // Update the read status display
+                const readStatus = $('.read-status');
+                if (readStatus.length) {
+                    readStatus.removeClass('unread').addClass('read');
+                    readStatus.html('<i class="fas fa-check-circle"></i> You just read this announcement');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.log('Error marking announcement as read:', error);
+            }
+        });
+    }, 3000); // Mark as read after 3 seconds
+    {% endif %}
+
+    // Auto-refresh statistics for instructors
+    {% if user_is_instructor %}
+    setInterval(function() {
+        // Could implement real-time statistics updates here
+        // For now, just log that we could refresh
+        console.log('Could refresh statistics here');
+    }, 30000); // Every 30 seconds
+    {% endif %}
+
+    // Smooth scrolling for navigation
+    $('a[href^="#"]').on('click', function(e) {
+        e.preventDefault();
+        const target = $(this.getAttribute('href'));
+        if (target.length) {
+            $('html, body').animate({
+                scrollTop: target.offset().top - 100
+            }, 500);
+        }
+    });
+});
+</script>
+{% endblock %}

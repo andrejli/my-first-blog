@@ -443,3 +443,76 @@ class QuizResponse(models.Model):
                 self.points_earned = 0
             self.save()
 
+
+# Course Announcement Models - ACTIVATED
+class Announcement(models.Model):
+    #Course announcements from instructors to students
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('normal', 'Normal'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
+    
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='announcements')
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='normal')
+    
+    # Visibility settings
+    is_published = models.BooleanField(default=True)
+    is_pinned = models.BooleanField(default=False, help_text="Pinned announcements appear at the top")
+    
+    # Timestamps
+    created_date = models.DateTimeField(default=timezone.now)
+    published_date = models.DateTimeField(null=True, blank=True)
+    
+    # Optional scheduling
+    scheduled_for = models.DateTimeField(
+        null=True, 
+        blank=True,
+        help_text="Schedule announcement for future publication"
+    )
+    
+    # Author tracking
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='announcements')
+    
+    class Meta:
+        ordering = ['-is_pinned', '-created_date']
+        
+    def __str__(self):
+        return f"{self.course.course_code}: {self.title}"
+    
+    def save(self, *args, **kwargs):
+        # Set published_date when first published
+        if self.is_published and not self.published_date:
+            self.published_date = timezone.now()
+        super().save(*args, **kwargs)
+    
+    @property
+    def is_scheduled(self):
+        #Check if announcement is scheduled for future publication
+        return self.scheduled_for and self.scheduled_for > timezone.now()
+    
+    @property
+    def should_be_visible(self):
+        #Check if announcement should be visible to students
+        if not self.is_published:
+            return False
+        if self.scheduled_for and self.scheduled_for > timezone.now():
+            return False
+        return True
+
+
+class AnnouncementRead(models.Model):
+    #Track which students have read which announcements
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    announcement = models.ForeignKey(Announcement, on_delete=models.CASCADE)
+    read_date = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        unique_together = ['student', 'announcement']
+        
+    def __str__(self):
+        return f"{self.student.username} read {self.announcement.title}"
+

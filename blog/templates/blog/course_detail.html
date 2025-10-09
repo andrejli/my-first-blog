@@ -85,6 +85,74 @@
                     </div>
                 {% endif %}
 
+                <!-- Course Announcements -->
+                {% if user.is_authenticated %}
+                    <div class="panel panel-info">
+                        <div class="panel-heading">
+                            <h4><i class="glyphicon glyphicon-bullhorn"></i> Course Announcements</h4>
+                        </div>
+                        <div class="panel-body">
+                            {% if user.userprofile.role == 'instructor' and course.instructor == user %}
+                                <p>
+                                    <a href="{% url 'course_announcements' course.id %}" class="btn btn-info">
+                                        <i class="glyphicon glyphicon-list"></i> View All Announcements
+                                    </a>
+                                    <a href="{% url 'create_announcement' course.id %}" class="btn btn-success">
+                                        <i class="glyphicon glyphicon-plus"></i> Create Announcement
+                                    </a>
+                                </p>
+                            {% elif is_enrolled %}
+                                <p>
+                                    <a href="{% url 'course_announcements' course.id %}" class="btn btn-info">
+                                        <i class="glyphicon glyphicon-list"></i> View Course Announcements
+                                    </a>
+                                </p>
+                            {% else %}
+                                <p class="text-muted">
+                                    <i class="glyphicon glyphicon-lock"></i> 
+                                    Enroll in this course to view announcements.
+                                </p>
+                            {% endif %}
+                            
+                            <!-- Recent Announcements Preview -->
+                            {% if recent_announcements %}
+                                <hr>
+                                <h5>Recent Announcements:</h5>
+                                {% for announcement in recent_announcements %}
+                                    <div class="announcement-preview">
+                                        <h6>
+                                            <a href="{% url 'announcement_detail' announcement.id %}">
+                                                {% if announcement.priority == 'urgent' %}<span class="label label-danger">URGENT</span>{% endif %}
+                                                {% if announcement.priority == 'high' %}<span class="label label-warning">HIGH</span>{% endif %}
+                                                {% if announcement.is_pinned %}<i class="glyphicon glyphicon-pushpin text-info"></i>{% endif %}
+                                                {{ announcement.title }}
+                                            </a>
+                                        </h6>
+                                        <p class="text-muted small">
+                                            <i class="glyphicon glyphicon-time"></i> {{ announcement.created_date|date:"M d, Y g:i A" }}
+                                        </p>
+                                        <p>{{ announcement.content|truncatewords:20|linebreaks }}</p>
+                                    </div>
+                                    {% if not forloop.last %}<hr>{% endif %}
+                                {% endfor %}
+                                {% if recent_announcements|length == 3 %}
+                                    <p class="text-center">
+                                        <a href="{% url 'course_announcements' course.id %}" class="btn btn-sm btn-default">
+                                            View All Announcements <i class="glyphicon glyphicon-arrow-right"></i>
+                                        </a>
+                                    </p>
+                                {% endif %}
+                            {% else %}
+                                {% if user.userprofile.role == 'instructor' and course.instructor == user %}
+                                    <p class="text-muted">No announcements yet. Create your first announcement to communicate with your students!</p>
+                                {% else %}
+                                    <p class="text-muted">No announcements available.</p>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+
                 <!-- Course Prerequisites -->
                 {% if course.prerequisites %}
                 <div class="panel panel-default">

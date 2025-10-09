@@ -1,0 +1,591 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block title %}Delete Announcement - {{ course.course_code }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.delete-container {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.warning-section {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 25px;
+    border-left: 4px solid #f39c12;
+}
+
+.warning-icon {
+    font-size: 3rem;
+    color: #f39c12;
+    margin-bottom: 15px;
+}
+
+.warning-title {
+    color: #856404;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.warning-message {
+    color: #856404;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.warning-list {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.warning-list h6 {
+    color: #d32f2f;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.warning-list ul {
+    margin-bottom: 0;
+    padding-left: 20px;
+}
+
+.warning-list li {
+    color: #495057;
+    margin-bottom: 8px;
+}
+
+.announcement-preview {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.preview-title {
+    color: #2c3e50;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 10px;
+}
+
+.preview-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.priority-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.priority-low {
+    background-color: #e3f2fd;
+    color: #1565c0;
+}
+
+.priority-normal {
+    background-color: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.priority-high {
+    background-color: #fff3e0;
+    color: #ef6c00;
+}
+
+.priority-urgent {
+    background-color: #ffebee;
+    color: #d32f2f;
+}
+
+.status-badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.status-badge {
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.status-published {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-draft {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.status-pinned {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.preview-content {
+    color: #495057;
+    line-height: 1.6;
+    max-height: 150px;
+    overflow: hidden;
+    position: relative;
+}
+
+.preview-content.truncated::after {
+    content: '...';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: white;
+    padding-left: 20px;
+}
+
+.stats-section {
+    background: #e8f4f8;
+    border: 1px solid #b8daff;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.stats-title {
+    color: #004085;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #cce5ff;
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #004085;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.confirmation-section {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.confirmation-title {
+    color: #d32f2f;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.confirmation-text {
+    color: #495057;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.confirmation-input {
+    margin-bottom: 20px;
+}
+
+.confirmation-input label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+}
+
+.confirmation-input input {
+    border: 2px solid #dee2e6;
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 1rem;
+}
+
+.confirmation-input input:focus {
+    border-color: #d32f2f;
+    box-shadow: 0 0 0 0.2rem rgba(211, 47, 47, 0.25);
+}
+
+.confirmation-input .form-text {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-top: 8px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+    margin-top: 30px;
+}
+
+.btn-delete {
+    background-color: #d32f2f;
+    border-color: #d32f2f;
+    color: white;
+    font-weight: 600;
+    padding: 12px 30px;
+}
+
+.btn-delete:hover {
+    background-color: #b71c1c;
+    border-color: #b71c1c;
+    color: white;
+}
+
+.btn-delete:disabled {
+    background-color: #e57373;
+    border-color: #e57373;
+    cursor: not-allowed;
+}
+
+.btn-cancel {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white;
+    padding: 12px 30px;
+}
+
+.btn-cancel:hover {
+    background-color: #5a6268;
+    border-color: #5a6268;
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .preview-meta {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="delete-container">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 text-danger">Delete Announcement</h1>
+                <p class="text-muted mb-0">
+                    <strong>{{ course.course_code }}:</strong> {{ course.title }}
+                </p>
+            </div>
+            <div class="btn-group-sm">
+                <a href="{% url 'announcement_detail' course.id announcement.id %}" class="btn btn-outline-info btn-sm">
+                    <i class="fas fa-eye"></i> View
+                </a>
+                <a href="{% url 'course_announcements' course.id %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left"></i> Back
+                </a>
+            </div>
+        </div>
+
+        <!-- Warning Section -->
+        <div class="warning-section text-center">
+            <div class="warning-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h2 class="warning-title">Permanent Deletion Warning</h2>
+            <p class="warning-message">
+                You are about to permanently delete this announcement. This action cannot be undone.
+            </p>
+            
+            <div class="warning-list">
+                <h6><i class="fas fa-times-circle"></i> This will permanently:</h6>
+                <ul>
+                    <li>Remove the announcement from all student views</li>
+                    <li>Delete all reading status records for this announcement</li>
+                    <li>Remove the announcement from course statistics</li>
+                    <li>Clear any scheduled publication settings</li>
+                    {% if read_count > 0 %}
+                    <li><strong>{{ read_count }} student{{ read_count|pluralize }} have already read this announcement</strong></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Announcement Preview -->
+        <div class="announcement-preview">
+            <div class="preview-title">{{ announcement.title }}</div>
+            
+            <div class="preview-meta">
+                <div class="meta-item">
+                    <i class="fas fa-user"></i>
+                    <span>{{ announcement.author.get_full_name|default:announcement.author.username }}</span>
+                </div>
+                
+                <div class="meta-item">
+                    <span class="priority-badge priority-{{ announcement.priority }}">
+                        {{ announcement.priority|title }} Priority
+                    </span>
+                </div>
+                
+                <div class="meta-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>{{ announcement.created_date|date:"M d, Y g:i A" }}</span>
+                </div>
+                
+                <div class="status-badges">
+                    {% if announcement.is_published %}
+                        <span class="status-badge status-published">Published</span>
+                    {% else %}
+                        <span class="status-badge status-draft">Draft</span>
+                    {% endif %}
+                    
+                    {% if announcement.is_pinned %}
+                        <span class="status-badge status-pinned">Pinned</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="preview-content {% if announcement.content|length > 300 %}truncated{% endif %}">
+                {{ announcement.content|linebreaks|truncatewords:50 }}
+            </div>
+        </div>
+
+        <!-- Statistics Section -->
+        {% if announcement.is_published %}
+        <div class="stats-section">
+            <h5 class="stats-title"><i class="fas fa-chart-bar"></i> Impact Statistics</h5>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number">{{ enrolled_count }}</div>
+                    <div class="stat-label">Total Students</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ read_count }}</div>
+                    <div class="stat-label">Students Read</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ unread_count }}</div>
+                    <div class="stat-label">Still Unread</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ read_percentage }}%</div>
+                    <div class="stat-label">Read Rate</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Confirmation Form -->
+        <div class="confirmation-section">
+            <h3 class="confirmation-title">
+                <i class="fas fa-shield-alt"></i> Confirm Deletion
+            </h3>
+            
+            <p class="confirmation-text">
+                To confirm deletion, please type the announcement title exactly as shown below:
+            </p>
+            
+            <form method="post" id="deleteForm">
+                {% csrf_token %}
+                
+                <div class="confirmation-input">
+                    <label for="confirm_title" class="form-label">
+                        Type: "<strong>{{ announcement.title }}</strong>"
+                    </label>
+                    <input 
+                        type="text" 
+                        class="form-control" 
+                        id="confirm_title" 
+                        name="confirm_title" 
+                        placeholder="Type the announcement title here..."
+                        autocomplete="off"
+                        required
+                    >
+                    <div class="form-text">This helps prevent accidental deletions.</div>
+                </div>
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="confirm_understand" name="confirm_understand" required>
+                    <label class="form-check-label" for="confirm_understand">
+                        I understand that this action is permanent and cannot be undone
+                    </label>
+                </div>
+
+                {% if announcement.is_published and read_count > 0 %}
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="confirm_impact" name="confirm_impact" required>
+                    <label class="form-check-label" for="confirm_impact">
+                        I acknowledge that {{ read_count }} student{{ read_count|pluralize }} have read this announcement
+                    </label>
+                </div>
+                {% endif %}
+
+                <div class="action-buttons">
+                    <a href="{% url 'announcement_detail' course.id announcement.id %}" class="btn btn-cancel">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-delete" id="deleteButton" disabled>
+                        <i class="fas fa-trash-alt"></i> Delete Announcement
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    const requiredTitle = "{{ announcement.title|escapejs }}";
+    const titleInput = $('#confirm_title');
+    const deleteButton = $('#deleteButton');
+    const confirmUnderstand = $('#confirm_understand');
+    const confirmImpact = $('#confirm_impact');
+
+    function validateForm() {
+        const titleMatches = titleInput.val().trim() === requiredTitle;
+        const understandChecked = confirmUnderstand.is(':checked');
+        const impactChecked = confirmImpact.length === 0 || confirmImpact.is(':checked');
+        
+        const allValid = titleMatches && understandChecked && impactChecked;
+        
+        deleteButton.prop('disabled', !allValid);
+        
+        // Visual feedback for title input
+        if (titleInput.val().trim() === '') {
+            titleInput.removeClass('is-valid is-invalid');
+        } else if (titleMatches) {
+            titleInput.removeClass('is-invalid').addClass('is-valid');
+        } else {
+            titleInput.removeClass('is-valid').addClass('is-invalid');
+        }
+    }
+
+    // Real-time validation
+    titleInput.on('input', validateForm);
+    confirmUnderstand.on('change', validateForm);
+    if (confirmImpact.length > 0) {
+        confirmImpact.on('change', validateForm);
+    }
+
+    // Form submission confirmation
+    $('#deleteForm').on('submit', function(e) {
+        if (!deleteButton.prop('disabled')) {
+            const finalConfirm = confirm(
+                'Are you absolutely sure you want to delete this announcement?\n\n' +
+                'This action is permanent and cannot be undone.\n\n' +
+                'Click OK to proceed with deletion, or Cancel to abort.'
+            );
+            
+            if (!finalConfirm) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Disable the button to prevent double submission
+            deleteButton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Deleting...');
+        } else {
+            e.preventDefault();
+        }
+    });
+
+    // Prevent accidental navigation
+    let formSubmitted = false;
+    
+    $('#deleteForm').on('submit', function() {
+        formSubmitted = true;
+    });
+    
+    window.addEventListener('beforeunload', function(e) {
+        if (!formSubmitted && (titleInput.val().trim() !== '' || confirmUnderstand.is(':checked'))) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
+    // Auto-focus on title input
+    titleInput.focus();
+
+    // Add copy-paste prevention for title input (optional security measure)
+    titleInput.on('paste', function(e) {
+        e.preventDefault();
+        alert('For security reasons, please type the title manually rather than copying and pasting.');
+    });
+
+    // Keyboard shortcuts
+    $(document).on('keydown', function(e) {
+        // Escape key to cancel
+        if (e.key === 'Escape') {
+            window.history.back();
+        }
+        
+        // Ctrl+Enter to submit (if form is valid)
+        if (e.ctrlKey && e.key === 'Enter') {
+            if (!deleteButton.prop('disabled')) {
+                $('#deleteForm').submit();
+            }
+        }
+    });
+
+    // Initial validation
+    validateForm();
+});
+</script>
+{% endblock %}
