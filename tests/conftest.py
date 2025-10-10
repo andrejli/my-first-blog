@@ -71,6 +71,7 @@ class UserProfileFactory(DjangoModelFactory):
     """Factory for creating UserProfile instances"""
     class Meta:
         model = UserProfile
+        django_get_or_create = ('user',)
     
     user = factory.SubFactory(UserFactory)
     role = 'student'
@@ -109,13 +110,15 @@ class CourseFactory(DjangoModelFactory):
         if not create:
             return
         
-        profile, created = UserProfile.objects.get_or_create(
-            user=self.instructor,
-            defaults={'role': 'instructor'}
-        )
-        if not created and profile.role != 'instructor':
-            profile.role = 'instructor'
-            profile.save()
+        # Signal should have created profile, just update role if needed
+        try:
+            profile = self.instructor.userprofile
+            if profile.role != 'instructor':
+                profile.role = 'instructor'
+                profile.save()
+        except UserProfile.DoesNotExist:
+            # Fallback if signal didn't work
+            UserProfile.objects.create(user=self.instructor, role='instructor')
 
 
 class LessonFactory(DjangoModelFactory):

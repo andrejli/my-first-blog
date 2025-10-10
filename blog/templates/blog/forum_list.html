@@ -1,0 +1,126 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Discussion Forums{% endblock %}
+
+{% block content %}
+<div class="content container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex flex-column flex-lg-row justify-content-lg-between align-items-lg-center mb-4">
+                <h2 class="mb-3 mb-lg-0"><i class="fas fa-comments"></i> Discussion Forums</h2>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'course_list' %}">Home</a></li>
+                        <li class="breadcrumb-item active">Forums</li>
+                    </ol>
+                </nav>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="row">
+                {% for forum in forums %}
+                <div class="col-12 col-md-6 col-xl-4 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start">
+                                <div class="me-3 flex-shrink-0">
+                                    {% if forum.forum_type == 'general' %}
+                                        <i class="fas fa-globe-americas fa-2x text-primary"></i>
+                                    {% elif forum.forum_type == 'instructor' %}
+                                        <i class="fas fa-chalkboard-teacher fa-2x text-warning"></i>
+                                    {% elif forum.forum_type == 'course' %}
+                                        <i class="fas fa-graduation-cap fa-2x text-success"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1 min-width-0">
+                                    <h5 class="card-title">
+                                        <a href="{% url 'forum_detail' forum.id %}" class="text-decoration-none text-truncate d-block">
+                                            {{ forum.title }}
+                                        </a>
+                                    </h5>
+                                    <p class="card-text text-muted small">{{ forum.description|truncatechars:100 }}</p>
+                                    
+                                    {% if forum.course %}
+                                        <div class="badge bg-info mb-2">
+                                            {{ forum.course.course_code }}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {% if forum.forum_type == 'general' %}
+                                        <div class="badge bg-primary mb-2">All Users</div>
+                                    {% elif forum.forum_type == 'instructor' %}
+                                        <div class="badge bg-warning mb-2">Instructors Only</div>
+                                    {% elif forum.forum_type == 'course' %}
+                                        <div class="badge bg-success mb-2">Course Forum</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-comments"></i>
+                                    {{ forum.topics.count }} topic{{ forum.topics.count|pluralize }}
+                                </small>
+                                <a href="{% url 'forum_detail' forum.id %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-arrow-right"></i> Enter
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info text-center">
+                        <i class="fas fa-info-circle"></i>
+                        No forums available. Check back later or contact your instructor.
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- User Role Info -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card border-secondary">
+                        <div class="card-header bg-secondary text-white">
+                            <h6 class="mb-0"><i class="fas fa-info-circle"></i> Forum Access Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-2"><strong>Your Role:</strong> 
+                                <span class="badge bg-{% if user_role == 'instructor' %}warning{% else %}primary{% endif %}">
+                                    {{ user_role|title }}
+                                </span>
+                            </p>
+                            
+                            {% if user_role == 'student' %}
+                                <ul class="mb-0">
+                                    <li><strong>General Forum:</strong> Discuss with all students and instructors</li>
+                                    <li><strong>Course Forums:</strong> Access forums for courses you're enrolled in</li>
+                                    <li>You can create topics and reply to existing discussions</li>
+                                </ul>
+                            {% elif user_role == 'instructor' %}
+                                <ul class="mb-0">
+                                    <li><strong>General Forum:</strong> Discuss with all students and instructors</li>
+                                    <li><strong>Instructor Forum:</strong> Private area for instructor discussions</li>
+                                    <li><strong>Course Forums:</strong> Manage discussions for courses you teach</li>
+                                    <li>You can moderate discussions in your course forums</li>
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

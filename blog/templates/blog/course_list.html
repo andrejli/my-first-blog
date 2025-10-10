@@ -16,6 +16,7 @@
         <div class="top-menu">
             {% if user.is_authenticated %}
                 <span>user@lms:~$ whoami → {{ user.username }}</span>
+                <a href="{% url 'forum_list' %}" class="btn btn-default">forums</a>
                 {% if user.userprofile.role == 'admin' %}
                     <a href="/admin/" class="btn btn-default">admin</a>
                 {% elif user.userprofile.role == 'instructor' %}

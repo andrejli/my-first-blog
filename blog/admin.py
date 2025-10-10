@@ -5,7 +5,8 @@ from .models import (
     Post, Course, UserProfile, Enrollment, Lesson, Progress, 
     CourseMaterial, Assignment, Submission,
     Quiz, Question, Answer, QuizAttempt, QuizResponse,
-    Announcement, AnnouncementRead
+    Announcement, AnnouncementRead,
+    Forum, Topic, ForumPost, SiteTheme, UserThemePreference
 )
 
 
@@ -262,4 +263,76 @@ class AnnouncementReadAdmin(admin.ModelAdmin):
 
 # Register remaining models without custom admin
 admin.site.register(Answer)
+
+
+# ================================
+# DISCUSSION FORUM ADMIN - Phase 4 Point 2
+# ================================
+
+@admin.register(Forum)
+class ForumAdmin(admin.ModelAdmin):
+    list_display = ['title', 'forum_type', 'course', 'is_active', 'created_date']
+    list_filter = ['forum_type', 'is_active', 'created_date']
+    search_fields = ['title', 'description']
+    ordering = ['forum_type', 'title']
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('course')
+
+
+@admin.register(Topic)
+class TopicAdmin(admin.ModelAdmin):
+    list_display = ['title', 'forum', 'created_by', 'created_date', 'is_pinned', 'is_locked', 'post_count']
+    list_filter = ['forum', 'is_pinned', 'is_locked', 'created_date']
+    search_fields = ['title', 'created_by__username']
+    ordering = ['-created_date']
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('forum', 'created_by')
+
+
+@admin.register(ForumPost)
+class ForumPostAdmin(admin.ModelAdmin):
+    list_display = ['topic', 'author', 'created_date', 'is_first_post']
+    list_filter = ['topic__forum', 'is_first_post', 'created_date']
+    search_fields = ['topic__title', 'author__username', 'content']
+    ordering = ['-created_date']
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('topic', 'author')
+
+
+# Site Theme Administration
+@admin.register(SiteTheme)
+class SiteThemeAdmin(admin.ModelAdmin):
+    list_display = ['display_name', 'theme_key', 'is_default', 'is_active', 'created_date']
+    list_filter = ['is_default', 'is_active', 'theme_key']
+    search_fields = ['name', 'display_name', 'description']
+    ordering = ['display_name']
+    
+    fieldsets = (
+        ('Theme Information', {
+            'fields': ('name', 'display_name', 'theme_key', 'description')
+        }),
+        ('Settings', {
+            'fields': ('is_default', 'is_active')
+        }),
+    )
+    
+    def save_model(self, request, obj, form, change):
+        # Ensure only one default theme
+        if obj.is_default:
+            SiteTheme.objects.filter(is_default=True).exclude(pk=obj.pk).update(is_default=False)
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(UserThemePreference)
+class UserThemePreferenceAdmin(admin.ModelAdmin):
+    list_display = ['user', 'theme', 'created_date', 'updated_date']
+    list_filter = ['theme', 'created_date', 'updated_date']
+    search_fields = ['user__username', 'user__email', 'theme__display_name']
+    ordering = ['-updated_date']
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user', 'theme')
 

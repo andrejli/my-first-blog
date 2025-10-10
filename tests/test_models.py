@@ -54,7 +54,10 @@ class TestUserProfileModel:
     def test_create_user_profile(self):
         """Test creating a user profile"""
         user = User.objects.create_user(username='testuser', email='test@example.com')
-        profile = UserProfile.objects.create(user=user, role='student')
+        # Signal automatically creates profile, so get it
+        profile = user.userprofile
+        profile.role = 'student'
+        profile.save()
         
         assert profile.user == user
         assert profile.role == 'student'

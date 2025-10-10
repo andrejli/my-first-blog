@@ -1,0 +1,155 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Edit Post - {{ topic.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12 col-lg-8 mx-auto">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-edit"></i> Edit Post</h2>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'course_list' %}">Home</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'forum_list' %}">Forums</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'forum_detail' topic.forum.id %}">{{ topic.forum.title }}</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'topic_detail' topic.id %}">{{ topic.title }}</a></li>
+                        <li class="breadcrumb-item active">Edit Post</li>
+                    </ol>
+                </nav>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Post Info -->
+            <div class="card mb-4 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle"></i>
+                        Editing post in: {{ topic.title }}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Topic:</strong> {{ topic.title }}</p>
+                            <p class="mb-1"><strong>Forum:</strong> {{ topic.forum.title }}</p>
+                            <p class="mb-0"><strong>Author:</strong> {{ post.author.get_full_name|default:post.author.username }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Created:</strong> {{ post.created_date|date:"M d, Y H:i" }}</p>
+                            {% if post.edited_date %}
+                                <p class="mb-1"><strong>Last Edit:</strong> {{ post.edited_date|date:"M d, Y H:i" }}</p>
+                            {% endif %}
+                            {% if post.is_first_post %}
+                                <span class="badge bg-warning text-dark">Original Post</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Form -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-edit"></i> Edit Content</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="content" class="form-label">
+                                <strong>Content</strong>
+                                <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control" id="content" name="content" rows="8" required>{{ post.content }}</textarea>
+                            <div class="form-text">
+                                Make your changes to the post content. The edit will be marked with a timestamp.
+                            </div>
+                        </div>
+
+                        <!-- Edit Notice -->
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-exclamation-circle"></i> Edit Notice</h6>
+                            <ul class="mb-0 small">
+                                <li>Your edit will be timestamped and visible to other users</li>
+                                <li>Make sure your changes improve the clarity or accuracy of your post</li>
+                                <li>Significant changes should be explained in a follow-up post if needed</li>
+                                {% if post.is_first_post %}
+                                    <li><strong>Note:</strong> This is the original post that started the topic</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'topic_detail' topic.id %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Original Content Preview -->
+            <div class="mt-4">
+                <div class="card border-secondary">
+                    <div class="card-header bg-secondary text-white">
+                        <h6 class="mb-0"><i class="fas fa-eye"></i> Current Content</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="border rounded p-3 bg-light">
+                            {{ post.content|linebreaks }}
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            <i class="fas fa-clock"></i>
+                            Originally posted: {{ post.created_date|date:"M d, Y H:i" }}
+                            {% if post.edited_date %}
+                                | Last edited: {{ post.edited_date|date:"M d, Y H:i" }}
+                                {% if post.edited_by %}
+                                    by {{ post.edited_by.get_full_name|default:post.edited_by.username }}
+                                {% endif %}
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <small class="text-muted">
+                    <i class="fas fa-lightbulb"></i>
+                    <strong>Tip:</strong> Consider if your changes are significant enough to warrant editing, or if a new post would be more appropriate.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-resize textarea
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('content');
+    
+    function autoResize() {
+        textarea.style.height = 'auto';
+        textarea.style.height = (textarea.scrollHeight) + 'px';
+    }
+    
+    // Initial resize
+    autoResize();
+    
+    // Resize on input
+    textarea.addEventListener('input', autoResize);
+});
+</script>
+{% endblock %}

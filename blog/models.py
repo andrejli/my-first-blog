@@ -38,6 +38,53 @@ class UserProfile(models.Model):
         return f"{self.user.username} - {self.role}"
 
 
+# Site Configuration Models
+class SiteTheme(models.Model):
+    THEME_CHOICES = [
+        ('terminal-green', 'Terminal Green'),
+        ('dark-blue', 'Dark Blue'),
+        ('light', 'Light'),
+        ('cyberpunk', 'Cyberpunk'),
+        ('matrix', 'Matrix'),
+    ]
+    
+    name = models.CharField(max_length=50, unique=True, help_text="Theme identifier")
+    display_name = models.CharField(max_length=100, help_text="Human-readable theme name")
+    theme_key = models.CharField(max_length=20, choices=THEME_CHOICES, unique=True)
+    is_default = models.BooleanField(default=False, help_text="Set as default theme for new users")
+    is_active = models.BooleanField(default=True, help_text="Theme is available for selection")
+    description = models.TextField(blank=True, help_text="Theme description")
+    created_date = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        verbose_name = "Site Theme"
+        verbose_name_plural = "Site Themes"
+    
+    def __str__(self):
+        default_text = " (Default)" if self.is_default else ""
+        return f"{self.display_name}{default_text}"
+    
+    def save(self, *args, **kwargs):
+        # Ensure only one default theme
+        if self.is_default:
+            SiteTheme.objects.filter(is_default=True).update(is_default=False)
+        super().save(*args, **kwargs)
+
+
+class UserThemePreference(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='theme_preference')
+    theme = models.ForeignKey(SiteTheme, on_delete=models.CASCADE, limit_choices_to={'is_active': True})
+    created_date = models.DateTimeField(default=timezone.now)
+    updated_date = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "User Theme Preference"
+        verbose_name_plural = "User Theme Preferences"
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.theme.display_name}"
+
+
 # Course Management Models
 class Course(models.Model):
     STATUS_CHOICES = [
@@ -515,4 +562,138 @@ class AnnouncementRead(models.Model):
         
     def __str__(self):
         return f"{self.student.username} read {self.announcement.title}"
+
+
+# ================================
+# DISCUSSION FORUM MODELS - Phase 4 Point 2
+# ================================
+
+class Forum(models.Model):
+    """
+    Forum categories for organizing discussions
+    """
+    FORUM_TYPES = [
+        ('general', 'General Forum'),
+        ('course', 'Course Forum'),
+        ('instructor', 'Instructor Forum'),
+    ]
+    
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    forum_type = models.CharField(max_length=20, choices=FORUM_TYPES, default='general')
+    course = models.OneToOneField(Course, on_delete=models.CASCADE, null=True, blank=True, 
+                                  help_text="Leave blank for general forum")
+    is_active = models.BooleanField(default=True)
+    created_date = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        ordering = ['forum_type', 'title']
+    
+    def __str__(self):
+        if self.course:
+            return f"{self.course.course_code} - {self.title}"
+        return self.title
+    
+    def can_view(self, user):
+        """Check if user can view this forum"""
+        if not user.is_authenticated:
+            return False
+            
+        if self.forum_type == 'general':
+            return hasattr(user, 'userprofile') and user.userprofile.role in ['student', 'instructor']
+        elif self.forum_type == 'course' and self.course:
+            # Students must be enrolled, instructors must be course instructor
+            if hasattr(user, 'userprofile'):
+                if user.userprofile.role == 'instructor' and self.course.instructor == user:
+                    return True
+                elif user.userprofile.role == 'student':
+                    return Enrollment.objects.filter(student=user, course=self.course, status='enrolled').exists()
+        elif self.forum_type == 'instructor':
+            return hasattr(user, 'userprofile') and user.userprofile.role == 'instructor'
+        
+        return False
+    
+    def can_post(self, user):
+        """Check if user can create topics in this forum"""
+        return self.can_view(user)
+
+
+class Topic(models.Model):
+    """
+    Discussion topics within forums
+    """
+    forum = models.ForeignKey(Forum, on_delete=models.CASCADE, related_name='topics')
+    title = models.CharField(max_length=200)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_topics')
+    created_date = models.DateTimeField(default=timezone.now)
+    is_pinned = models.BooleanField(default=False, help_text="Pinned topics appear at the top")
+    is_locked = models.BooleanField(default=False, help_text="Locked topics cannot receive new posts")
+    last_post_date = models.DateTimeField(default=timezone.now)
+    last_post_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='last_posts')
+    
+    class Meta:
+        ordering = ['-is_pinned', '-last_post_date']
+    
+    def __str__(self):
+        return f"{self.forum.title} - {self.title}"
+    
+    def post_count(self):
+        """Return total number of posts in this topic"""
+        return self.posts.count()
+    
+    def can_view(self, user):
+        """Check if user can view this topic"""
+        return self.forum.can_view(user)
+    
+    def can_reply(self, user):
+        """Check if user can reply to this topic"""
+        if self.is_locked:
+            return False
+        return self.forum.can_post(user)
+
+
+class ForumPost(models.Model):
+    """
+    Individual posts within topics
+    """
+    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='posts')
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='forum_posts')
+    content = models.TextField()
+    created_date = models.DateTimeField(default=timezone.now)
+    edited_date = models.DateTimeField(null=True, blank=True)
+    edited_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='edited_posts')
+    is_first_post = models.BooleanField(default=False, help_text="True if this is the first post in the topic")
+    
+    class Meta:
+        ordering = ['created_date']
+    
+    def __str__(self):
+        return f"{self.topic.title} - Post by {self.author.username}"
+    
+    def can_edit(self, user):
+        """Check if user can edit this post"""
+        if not user.is_authenticated:
+            return False
+        
+        # Authors can edit their own posts
+        if self.author == user:
+            return True
+        
+        # Instructors can edit posts in their course forums
+        if hasattr(user, 'userprofile') and user.userprofile.role == 'instructor':
+            if self.topic.forum.forum_type == 'course' and self.topic.forum.course:
+                return self.topic.forum.course.instructor == user
+        
+        return False
+    
+    def can_delete(self, user):
+        """Check if user can delete this post"""
+        return self.can_edit(user)
+    
+    def save(self, *args, **kwargs):
+        """Update topic's last post info when saving"""
+        super().save(*args, **kwargs)
+        self.topic.last_post_date = self.created_date
+        self.topic.last_post_by = self.author
+        self.topic.save(update_fields=['last_post_date', 'last_post_by'])
 

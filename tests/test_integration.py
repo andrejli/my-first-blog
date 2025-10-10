@@ -158,10 +158,10 @@ class TestStudentEnrollmentWorkflow:
         assert response.context['is_enrolled'] is True
         
         # Step 6: View Lessons
-        response = client.get(reverse('lesson_detail', kwargs={'lesson_id': lesson1.id}))
+        response = client.get(reverse('lesson_detail', kwargs={'course_id': course.id, 'lesson_id': lesson1.id}))
         assert response.status_code == 200
         
-        response = client.get(reverse('lesson_detail', kwargs={'lesson_id': lesson2.id}))
+        response = client.get(reverse('lesson_detail', kwargs={'course_id': course.id, 'lesson_id': lesson2.id}))
         assert response.status_code == 200
         
         # Step 7: Submit Assignment

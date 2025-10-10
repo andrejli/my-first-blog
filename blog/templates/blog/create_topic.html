@@ -1,0 +1,131 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Create New Topic - {{ forum.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12 col-lg-8 mx-auto">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-plus"></i> Create New Topic</h2>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'course_list' %}">Home</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'forum_list' %}">Forums</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'forum_detail' forum.id %}">{{ forum.title }}</a></li>
+                        <li class="breadcrumb-item active">New Topic</li>
+                    </ol>
+                </nav>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Forum Info -->
+            <div class="card mb-4 border-info">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle"></i>
+                        Creating topic in: {{ forum.title }}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ forum.description }}</p>
+                    {% if forum.course %}
+                        <div class="badge bg-info mt-2">{{ forum.course.course_code }} - {{ forum.course.title }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Create Topic Form -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-edit"></i> Topic Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="title" class="form-label">
+                                <strong>Topic Title</strong>
+                                <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   placeholder="Enter a descriptive title for your topic" required maxlength="200">
+                            <div class="form-text">
+                                Choose a clear, descriptive title that summarizes your topic.
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="content" class="form-label">
+                                <strong>Initial Post</strong>
+                                <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control" id="content" name="content" rows="8" 
+                                      placeholder="Write your initial post here..." required></textarea>
+                            <div class="form-text">
+                                This will be the first post in your topic. Provide details, ask questions, or start the discussion.
+                            </div>
+                        </div>
+
+                        <!-- Forum Guidelines -->
+                        <div class="alert alert-light border">
+                            <h6><i class="fas fa-list-ul"></i> Forum Guidelines</h6>
+                            <ul class="mb-0 small">
+                                <li>Be respectful and professional in all communications</li>
+                                <li>Stay on topic and provide relevant contributions</li>
+                                <li>Use clear and descriptive titles for your topics</li>
+                                {% if forum.forum_type == 'course' %}
+                                    <li>Keep discussions related to course content and activities</li>
+                                {% elif forum.forum_type == 'instructor' %}
+                                    <li>Share teaching experiences and educational resources</li>
+                                {% else %}
+                                    <li>General discussions should be educational or helpful to the community</li>
+                                {% endif %}
+                                <li>Search existing topics before creating new ones</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'forum_detail' forum.id %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Create Topic
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Preview Area (future enhancement) -->
+            <div class="mt-3">
+                <small class="text-muted">
+                    <i class="fas fa-lightbulb"></i>
+                    <strong>Tip:</strong> You can edit your posts after creating them if needed.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-resize textarea
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('content');
+    
+    textarea.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
+});
+</script>
+{% endblock %}

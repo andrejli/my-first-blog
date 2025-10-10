@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Terminal LMS{% endblock %}</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="{% static 'css/blog.css' %}">
@@ -12,11 +13,13 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    {% csrf_token %}
     <div class="page-header">
         <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
         <div class="top-menu">
             {% if user.is_authenticated %}
                 <span>user@lms:~$ whoami → {{ user.username }}</span>
+                <a href="{% url 'forum_list' %}" class="btn btn-default">forums</a>
                 {% if user.is_staff and user.is_superuser %}
                     <a href="/admin/" class="btn btn-default">admin</a>
                 {% else %}
@@ -39,6 +42,7 @@
 
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script src="{% static 'js/theme-switcher.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

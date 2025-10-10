@@ -88,4 +88,17 @@ urlpatterns = [
     path('announcement/<int:announcement_id>/', views.announcement_detail, name='announcement_detail'),
     path('announcement/<int:announcement_id>/edit/', views.edit_announcement, name='edit_announcement'),
     path('announcement/<int:announcement_id>/delete/', views.delete_announcement, name='delete_announcement'),
+    
+    # Phase 4: Discussion Forums - NEW
+    path('forums/', views.forum_list, name='forum_list'),
+    path('forum/<int:forum_id>/', views.forum_detail, name='forum_detail'),
+    path('forum/<int:forum_id>/create-topic/', views.create_topic, name='create_topic'),
+    path('topic/<int:topic_id>/', views.topic_detail, name='topic_detail'),
+    path('topic/<int:topic_id>/reply/', views.create_post, name='create_post'),
+    path('post/<int:post_id>/edit/', views.edit_post, name='edit_post'),
+    path('post/<int:post_id>/delete/', views.delete_post, name='delete_post'),
+    
+    # Theme Management
+    path('api/theme/get/', views.get_user_theme, name='get_user_theme'),
+    path('api/theme/set/', views.set_user_theme, name='set_user_theme'),
 ]

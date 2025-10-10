@@ -1,0 +1,194 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}{{ forum.title }} - Discussion Forum{% endblock %}
+
+{% block content %}
+<div class="content container">
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Header and Breadcrumb - Stack on mobile -->
+            <div class="mb-4">
+                <div class="d-flex flex-column flex-lg-row justify-content-lg-between align-items-lg-center">
+                    <div class="mb-3 mb-lg-0">
+                        <h2 class="mb-2">
+                            {% if forum.forum_type == 'general' %}
+                                <i class="fas fa-globe-americas text-primary"></i>
+                            {% elif forum.forum_type == 'instructor' %}
+                                <i class="fas fa-chalkboard-teacher text-warning"></i>
+                            {% elif forum.forum_type == 'course' %}
+                                <i class="fas fa-graduation-cap text-success"></i>
+                            {% endif %}
+                            {{ forum.title }}
+                        </h2>
+                        <p class="text-muted mb-2">{{ forum.description }}</p>
+                        {% if forum.course %}
+                            <div class="badge bg-info">{{ forum.course.course_code }} - {{ forum.course.title }}</div>
+                        {% endif %}
+                    </div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="{% url 'course_list' %}">Home</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'forum_list' %}">Forums</a></li>
+                            <li class="breadcrumb-item active">{{ forum.title|truncatechars:25 }}</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+                        <div>
+                            {% if can_post %}
+                                <a href="{% url 'create_topic' forum.id %}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> New Topic
+                                </a>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <small class="text-muted">
+                                <i class="fas fa-comments"></i>
+                                {{ topics.count }} topic{{ topics.count|pluralize }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Topics List -->
+            <div class="row">
+                <div class="col-12">
+                    {% if topics %}
+                        <div class="card">
+                            <div class="card-header bg-light d-none d-md-block">
+                                <div class="row">
+                                    <div class="col-md-6"><strong>Topic</strong></div>
+                                    <div class="col-md-2 text-center"><strong>Posts</strong></div>
+                                    <div class="col-md-4 text-center"><strong>Last Post</strong></div>
+                                </div>
+                            </div>
+                            <div class="list-group list-group-flush">
+                                {% for topic in topics %}
+                                <div class="list-group-item">
+                                    <div class="row align-items-center">
+                                        <div class="col-12 col-md-6">
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-2 flex-shrink-0">
+                                                    {% if topic.is_pinned %}
+                                                        <i class="fas fa-thumbtack text-warning" title="Pinned"></i>
+                                                    {% elif topic.is_locked %}
+                                                        <i class="fas fa-lock text-danger" title="Locked"></i>
+                                                    {% else %}
+                                                        <i class="fas fa-comment text-muted"></i>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-1">
+                                                        <a href="{% url 'topic_detail' topic.id %}" class="text-decoration-none">
+                                                            {{ topic.title }}
+                                                        </a>
+                                                    </h6>
+                                                    <small class="text-muted">
+                                                        by {{ topic.created_by.get_full_name|default:topic.created_by.username }}
+                                                        on {{ topic.created_date|date:"M d, Y" }}
+                                                    </small>
+                                                    <!-- Mobile-only stats -->
+                                                    <div class="d-md-none mt-1">
+                                                        <span class="badge bg-secondary me-2">{{ topic.post_count }} post{{ topic.post_count|pluralize }}</span>
+                                                        {% if topic.last_post_by %}
+                                                            <small class="text-muted">
+                                                                Last by {{ topic.last_post_by.get_full_name|default:topic.last_post_by.username }}
+                                                            </small>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2 text-center d-none d-md-block">
+                                            <span class="badge bg-secondary">{{ topic.post_count }}</span>
+                                        </div>
+                                        <div class="col-md-4 text-center d-none d-md-block">
+                                            {% if topic.last_post_by %}
+                                                <small class="text-muted">
+                                                    by {{ topic.last_post_by.get_full_name|default:topic.last_post_by.username }}<br>
+                                                    {{ topic.last_post_date|date:"M d, Y H:i" }}
+                                                </small>
+                                            {% else %}
+                                                <small class="text-muted">No posts yet</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                                <h5>No topics yet</h5>
+                                <p class="text-muted">Be the first to start a discussion in this forum!</p>
+                                {% if can_post %}
+                                    <a href="{% url 'create_topic' forum.id %}" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Create First Topic
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Forum Stats -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card border-secondary">
+                        <div class="card-header bg-secondary text-white">
+                            <h6 class="mb-0"><i class="fas fa-chart-bar"></i> Forum Statistics</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <div class="h4 mb-0">{{ topics.count }}</div>
+                                    <small class="text-muted">Topic{{ topics.count|pluralize }}</small>
+                                </div>
+                                <div class="col-4">
+                                    <div class="h4 mb-0">
+                                        {% with total_posts=0 %}
+                                            {% for topic in topics %}
+                                                {% with total_posts=total_posts|add:topic.post_count %}{% endwith %}
+                                            {% endfor %}
+                                            {{ total_posts }}
+                                        {% endwith %}
+                                    </div>
+                                    <small class="text-muted">Total Posts</small>
+                                </div>
+                                <div class="col-4">
+                                    <div class="h4 mb-0">
+                                        {% if topics %}
+                                            {{ topics.first.last_post_date|date:"M d" }}
+                                        {% else %}
+                                            --
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">Latest Activity</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

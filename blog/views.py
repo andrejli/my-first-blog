@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse
 from django.db import transaction
-from .models import Post, Course, Enrollment, Lesson, Progress, UserProfile, CourseMaterial, Assignment, Submission, Quiz, Question, Answer, QuizAttempt, QuizResponse, Announcement, AnnouncementRead
+from .models import Post, Course, Enrollment, Lesson, Progress, UserProfile, CourseMaterial, Assignment, Submission, Quiz, Question, Answer, QuizAttempt, QuizResponse, Announcement, AnnouncementRead, Forum, Topic, ForumPost
 
 
 # Authentication Views
@@ -2404,3 +2404,317 @@ def announcement_detail(request, announcement_id):
     }
     
     return render(request, 'blog/announcement_detail.html', context)
+
+
+# ================================
+# DISCUSSION FORUM VIEWS - Phase 4 Point 2
+# ================================
+
+@login_required
+def forum_list(request):
+    """Display all forums available to the current user"""
+    if not hasattr(request.user, 'userprofile'):
+        messages.error(request, 'Please complete your profile setup.')
+        return redirect('student_dashboard')
+    
+    profile = request.user.userprofile
+    forums = []
+    
+    # General forum - all students and instructors can access
+    general_forum, created = Forum.objects.get_or_create(
+        forum_type='general',
+        defaults={
+            'title': 'General Discussion',
+            'description': 'General discussion for all students and instructors'
+        }
+    )
+    forums.append(general_forum)
+    
+    # Instructor forum - only instructors can access
+    if profile.role == 'instructor':
+        instructor_forum, created = Forum.objects.get_or_create(
+            forum_type='instructor',
+            defaults={
+                'title': 'Instructor Forum',
+                'description': 'Private discussion area for instructors'
+            }
+        )
+        forums.append(instructor_forum)
+        
+        # Course forums for instructors - show courses they teach
+        course_forums = Forum.objects.filter(
+            forum_type='course',
+            course__instructor=request.user
+        ).select_related('course')
+        forums.extend(course_forums)
+    
+    # Course forums for students - show enrolled courses
+    if profile.role == 'student':
+        enrollments = Enrollment.objects.filter(
+            student=request.user,
+            status='enrolled'
+        ).select_related('course')
+        
+        for enrollment in enrollments:
+            course_forum, created = Forum.objects.get_or_create(
+                forum_type='course',
+                course=enrollment.course,
+                defaults={
+                    'title': f'{enrollment.course.course_code} Discussion',
+                    'description': f'Discussion forum for {enrollment.course.title}'
+                }
+            )
+            forums.append(course_forum)
+    
+    context = {
+        'forums': forums,
+        'user_role': profile.role,
+    }
+    
+    return render(request, 'blog/forum_list.html', context)
+
+
+@login_required
+def forum_detail(request, forum_id):
+    """Display topics in a specific forum"""
+    forum = get_object_or_404(Forum, id=forum_id)
+    
+    # Check permissions
+    if not forum.can_view(request.user):
+        messages.error(request, 'You do not have permission to view this forum.')
+        return redirect('forum_list')
+    
+    topics = forum.topics.all().select_related('created_by', 'last_post_by')
+    
+    context = {
+        'forum': forum,
+        'topics': topics,
+        'can_post': forum.can_post(request.user),
+    }
+    
+    return render(request, 'blog/forum_detail.html', context)
+
+
+@login_required
+def topic_detail(request, topic_id):
+    """Display posts in a specific topic"""
+    topic = get_object_or_404(Topic, id=topic_id)
+    
+    # Check permissions
+    if not topic.can_view(request.user):
+        messages.error(request, 'You do not have permission to view this topic.')
+        return redirect('forum_list')
+    
+    posts = topic.posts.all().select_related('author', 'edited_by')
+    
+    # Calculate permissions for each post
+    posts_with_permissions = []
+    for post in posts:
+        posts_with_permissions.append({
+            'post': post,
+            'can_edit': post.can_edit(request.user),
+            'can_delete': post.can_delete(request.user),
+        })
+    
+    context = {
+        'topic': topic,
+        'posts': posts,
+        'posts_with_permissions': posts_with_permissions,
+        'can_reply': topic.can_reply(request.user),
+    }
+    
+    return render(request, 'blog/topic_detail.html', context)
+
+
+@login_required
+def create_topic(request, forum_id):
+    """Create a new topic in a forum"""
+    forum = get_object_or_404(Forum, id=forum_id)
+    
+    # Check permissions
+    if not forum.can_post(request.user):
+        messages.error(request, 'You do not have permission to create topics in this forum.')
+        return redirect('forum_detail', forum_id=forum.id)
+    
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        content = request.POST.get('content')
+        
+        if not title or not content:
+            messages.error(request, 'Both title and content are required.')
+        else:
+            with transaction.atomic():
+                # Create topic
+                topic = Topic.objects.create(
+                    forum=forum,
+                    title=title,
+                    created_by=request.user,
+                )
+                
+                # Create first post
+                ForumPost.objects.create(
+                    topic=topic,
+                    author=request.user,
+                    content=content,
+                    is_first_post=True,
+                )
+                
+                messages.success(request, 'Topic created successfully!')
+                return redirect('topic_detail', topic_id=topic.id)
+    
+    context = {
+        'forum': forum,
+    }
+    
+    return render(request, 'blog/create_topic.html', context)
+
+
+@login_required
+def create_post(request, topic_id):
+    """Create a new post in a topic"""
+    topic = get_object_or_404(Topic, id=topic_id)
+    
+    # Check permissions
+    if not topic.can_reply(request.user):
+        messages.error(request, 'You cannot reply to this topic.')
+        return redirect('topic_detail', topic_id=topic.id)
+    
+    if request.method == 'POST':
+        content = request.POST.get('content')
+        
+        if not content:
+            messages.error(request, 'Content is required.')
+        else:
+            ForumPost.objects.create(
+                topic=topic,
+                author=request.user,
+                content=content,
+            )
+            
+            messages.success(request, 'Post created successfully!')
+            return redirect('topic_detail', topic_id=topic.id)
+    
+    context = {
+        'topic': topic,
+    }
+    
+    return render(request, 'blog/create_post.html', context)
+
+
+@login_required
+def edit_post(request, post_id):
+    """Edit an existing forum post"""
+    post = get_object_or_404(ForumPost, id=post_id)
+    
+    # Check permissions
+    if not post.can_edit(request.user):
+        messages.error(request, 'You do not have permission to edit this post.')
+        return redirect('topic_detail', topic_id=post.topic.id)
+    
+    if request.method == 'POST':
+        content = request.POST.get('content')
+        
+        if not content:
+            messages.error(request, 'Content is required.')
+        else:
+            post.content = content
+            post.edited_date = timezone.now()
+            post.edited_by = request.user
+            post.save()
+            
+            messages.success(request, 'Post updated successfully!')
+            return redirect('topic_detail', topic_id=post.topic.id)
+    
+    context = {
+        'post': post,
+        'topic': post.topic,
+    }
+    
+    return render(request, 'blog/edit_post.html', context)
+
+
+@login_required
+def delete_post(request, post_id):
+    """Delete a forum post"""
+    post = get_object_or_404(ForumPost, id=post_id)
+    
+    # Check permissions
+    if not post.can_delete(request.user):
+        messages.error(request, 'You do not have permission to delete this post.')
+        return redirect('topic_detail', topic_id=post.topic.id)
+    
+    if request.method == 'POST':
+        topic_id = post.topic.id
+        
+        # If this is the first post, delete the entire topic
+        if post.is_first_post:
+            post.topic.delete()
+            messages.success(request, 'Topic deleted successfully!')
+            return redirect('forum_detail', forum_id=post.topic.forum.id)
+        else:
+            post.delete()
+            messages.success(request, 'Post deleted successfully!')
+            return redirect('topic_detail', topic_id=topic_id)
+    
+    context = {
+        'post': post,
+        'topic': post.topic,
+    }
+    
+    return render(request, 'blog/delete_post.html', context)
+
+
+# Theme Management Views
+from django.http import JsonResponse
+from .models import SiteTheme, UserThemePreference
+
+def get_user_theme(request):
+    """Get current user's theme preference"""
+    if request.user.is_authenticated:
+        try:
+            user_preference = UserThemePreference.objects.get(user=request.user)
+            theme_key = user_preference.theme.theme_key
+        except UserThemePreference.DoesNotExist:
+            # Get default theme
+            try:
+                default_theme = SiteTheme.objects.get(is_default=True, is_active=True)
+                theme_key = default_theme.theme_key
+            except SiteTheme.DoesNotExist:
+                theme_key = 'terminal-green'  # fallback
+    else:
+        # For anonymous users, get default theme
+        try:
+            default_theme = SiteTheme.objects.get(is_default=True, is_active=True)
+            theme_key = default_theme.theme_key
+        except SiteTheme.DoesNotExist:
+            theme_key = 'terminal-green'  # fallback
+    
+    return JsonResponse({'theme': theme_key})
+
+
+@login_required
+def set_user_theme(request):
+    """Set user's theme preference"""
+    if request.method == 'POST':
+        theme_key = request.POST.get('theme')
+        
+        try:
+            # Validate theme exists and is active
+            theme = SiteTheme.objects.get(theme_key=theme_key, is_active=True)
+            
+            # Create or update user preference
+            user_preference, created = UserThemePreference.objects.get_or_create(
+                user=request.user,
+                defaults={'theme': theme}
+            )
+            
+            if not created:
+                user_preference.theme = theme
+                user_preference.save()
+            
+            return JsonResponse({'success': True, 'theme': theme_key})
+            
+        except SiteTheme.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Invalid theme'})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})

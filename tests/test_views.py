@@ -270,7 +270,7 @@ class TestLessonViews:
         Enrollment.objects.create(student=student, course=course, status='enrolled')
         
         client.login(username='student', password='testpass')
-        response = client.get(reverse('lesson_detail', kwargs={'lesson_id': lesson.id}))
+        response = client.get(reverse('lesson_detail', kwargs={'course_id': course.id, 'lesson_id': lesson.id}))
         
         assert response.status_code == 200
         assert response.context['lesson'] == lesson
@@ -293,7 +293,7 @@ class TestLessonViews:
             is_published=True
         )
         
-        response = client.get(reverse('lesson_detail', kwargs={'lesson_id': lesson.id}))
+        response = client.get(reverse('lesson_detail', kwargs={'course_id': course.id, 'lesson_id': lesson.id}))
         
         # Should redirect to login
         assert response.status_code == 302
@@ -321,7 +321,7 @@ class TestLessonViews:
         )
         
         client.login(username='student', password='testpass')
-        response = client.get(reverse('lesson_detail', kwargs={'lesson_id': lesson.id}))
+        response = client.get(reverse('lesson_detail', kwargs={'course_id': course.id, 'lesson_id': lesson.id}))
         
         # Should redirect to course detail with message
         assert response.status_code == 302

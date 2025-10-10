@@ -1,62 +1,221 @@
-/* Terminal-themed LMS Styles with Ubuntu Font */
+/* LMS Styles with Multiple Color Schemes Support */
 
 /* Import Ubuntu font */
 @import url('https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap');
 
-/* Global terminal theme */
+/* =================================
+   COLOR SCHEME DEFINITIONS
+   ================================= */
+
+/* Default Theme: Terminal Green */
+:root {
+    --primary-bg: #000000;
+    --secondary-bg: #0f0f0f;
+    --tertiary-bg: #111111;
+    --quaternary-bg: #1a1a1a;
+    
+    --primary-color: #ffc107;
+    --secondary-color: #32cd32;
+    --accent-color: #00ff00;
+    --muted-color: #888888;
+    --text-light: #ffffff;
+    
+    --border-color: #32cd32;
+    --border-secondary: #333333;
+    
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --info-color: #17a2b8;
+    
+    --shadow-primary: rgba(50, 205, 50, 0.2);
+    --shadow-secondary: rgba(50, 205, 50, 0.3);
+    --shadow-accent: rgba(50, 205, 50, 0.5);
+    
+    --font-family-primary: 'Ubuntu', sans-serif;
+    --font-family-mono: 'Ubuntu Mono', monospace;
+}
+
+/* Dark Blue Theme */
+[data-theme="dark-blue"] {
+    --primary-bg: #0d1117;
+    --secondary-bg: #161b22;
+    --tertiary-bg: #21262d;
+    --quaternary-bg: #30363d;
+    
+    --primary-color: #58a6ff;
+    --secondary-color: #79c0ff;
+    --accent-color: #1f6feb;
+    --muted-color: #8b949e;
+    --text-light: #f0f6fc;
+    
+    --border-color: #30363d;
+    --border-secondary: #21262d;
+    
+    --success-color: #238636;
+    --warning-color: #d29922;
+    --danger-color: #da3633;
+    --info-color: #0969da;
+    
+    --shadow-primary: rgba(88, 166, 255, 0.2);
+    --shadow-secondary: rgba(88, 166, 255, 0.3);
+    --shadow-accent: rgba(88, 166, 255, 0.5);
+}
+
+/* Light Theme */
+[data-theme="light"] {
+    --primary-bg: #ffffff;
+    --secondary-bg: #f8f9fa;
+    --tertiary-bg: #e9ecef;
+    --quaternary-bg: #dee2e6;
+    
+    --primary-color: #212529;
+    --secondary-color: #0d6efd;
+    --accent-color: #0a58ca;
+    --muted-color: #6c757d;
+    --text-light: #000000;
+    
+    --border-color: #dee2e6;
+    --border-secondary: #adb5bd;
+    
+    --success-color: #198754;
+    --warning-color: #fd7e14;
+    --danger-color: #dc3545;
+    --info-color: #0dcaf0;
+    
+    --shadow-primary: rgba(0, 0, 0, 0.1);
+    --shadow-secondary: rgba(0, 0, 0, 0.15);
+    --shadow-accent: rgba(0, 0, 0, 0.25);
+}
+
+/* Cyberpunk Theme */
+[data-theme="cyberpunk"] {
+    --primary-bg: #0a0a0a;
+    --secondary-bg: #1a0a1a;
+    --tertiary-bg: #2a1a2a;
+    --quaternary-bg: #3a2a3a;
+    
+    --primary-color: #ff00ff;
+    --secondary-color: #00ffff;
+    --accent-color: #ff0080;
+    --muted-color: #8080ff;
+    --text-light: #ffffff;
+    
+    --border-color: #ff00ff;
+    --border-secondary: #440044;
+    
+    --success-color: #00ff80;
+    --warning-color: #ffff00;
+    --danger-color: #ff0040;
+    --info-color: #0080ff;
+    
+    --shadow-primary: rgba(255, 0, 255, 0.3);
+    --shadow-secondary: rgba(255, 0, 255, 0.4);
+    --shadow-accent: rgba(255, 0, 255, 0.6);
+}
+
+/* Matrix Theme */
+[data-theme="matrix"] {
+    --primary-bg: #000000;
+    --secondary-bg: #001100;
+    --tertiary-bg: #002200;
+    --quaternary-bg: #003300;
+    
+    --primary-color: #00ff41;
+    --secondary-color: #008f11;
+    --accent-color: #00cc33;
+    --muted-color: #006600;
+    --text-light: #00ff41;
+    
+    --border-color: #00ff41;
+    --border-secondary: #004400;
+    
+    --success-color: #00ff00;
+    --warning-color: #66ff00;
+    --danger-color: #ff4400;
+    --info-color: #00ffaa;
+    
+    --shadow-primary: rgba(0, 255, 65, 0.3);
+    --shadow-secondary: rgba(0, 255, 65, 0.4);
+    --shadow-accent: rgba(0, 255, 65, 0.6);
+}
+
+/* =================================
+   GLOBAL STYLES
+   ================================= */
+
+/* Global reset and base styles */
 * {
     box-sizing: border-box;
 }
 
 body {
-    background-color: #000000;
-    color: #ffc107; /* Amber */
-    font-family: 'Ubuntu', monospace;
+    background-color: var(--primary-bg);
+    color: var(--primary-color);
+    font-family: var(--font-family-mono);
     margin: 0;
     padding: 0;
     line-height: 1.6;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Headers with terminal styling */
+/* Headers with theme styling */
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'Ubuntu', sans-serif;
-    color: #32cd32; /* Lawngreen */
+    font-family: var(--font-family-primary);
+    color: var(--secondary-color);
     font-weight: 500;
-    text-shadow: 0 0 5px rgba(50, 205, 50, 0.3);
+    text-shadow: 0 0 5px var(--shadow-secondary);
+    transition: color 0.3s ease, text-shadow 0.3s ease;
 }
 
-/* Page header - terminal style */
+/* =================================
+   COMPONENT STYLES
+   ================================= */
+
+/* Enhanced transitions for theme switching */
+*, *::before, *::after {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, 
+               box-shadow 0.3s ease, text-shadow 0.3s ease !important;
+}
+
+/* Override for specific elements that shouldn't transition */
+.no-transition, .no-transition * {
+    transition: none !important;
+}
+
+/* Page header - responsive to theme */
 .page-header {
-    background-color: #0f0f0f;
-    border-bottom: 2px solid #32cd32;
+    background-color: var(--secondary-bg);
+    border-bottom: 2px solid var(--border-color);
     margin-top: 0;
     padding: 20px 40px;
-    box-shadow: 0 2px 10px rgba(50, 205, 50, 0.2);
+    box-shadow: 0 2px 10px var(--shadow-primary);
+    transition: all 0.3s ease;
 }
 
 .page-header h1, .page-header h1 a, .page-header h1 a:visited, .page-header h1 a:active {
-    color: #32cd32;
+    color: var(--secondary-color);
     font-size: 28pt;
     text-decoration: none;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font-family-primary);
     font-weight: 700;
-    text-shadow: 0 0 10px rgba(50, 205, 50, 0.5);
+    text-shadow: 0 0 10px var(--shadow-accent);
     transition: all 0.3s ease;
 }
 
 .page-header h1 a:hover {
-    color: #ffc107;
-    text-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+    color: var(--primary-color);
+    text-shadow: 0 0 10px var(--shadow-accent);
 }
 
-/* Top menu terminal style */
+/* Top menu responsive styling */
 .top-menu {
     float: right;
     margin-top: 10px;
 }
 
 .top-menu span {
-    color: #ffc107;
+    color: var(--primary-color);
     margin-right: 15px;
     font-family: 'Ubuntu Mono', monospace;
     font-size: 14px;
@@ -71,71 +230,111 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .top-menu .btn:hover {
-    background-color: #32cd32;
-    color: #000000;
-    box-shadow: 0 0 10px rgba(50, 205, 50, 0.5);
+    background-color: var(--secondary-color);
+    color: var(--primary-bg);
+    box-shadow: 0 0 10px var(--shadow-accent);
 }
 
-/* Content area */
+/* Theme switcher styles */
+.theme-switcher-container {
+    display: inline-block;
+    margin-right: 15px;
+    vertical-align: middle;
+}
+
+.theme-switcher-container span {
+    color: var(--primary-color);
+    font-family: var(--font-family-mono);
+}
+
+.theme-selector {
+    background-color: var(--tertiary-bg);
+    color: var(--primary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    padding: 3px 6px;
+    font-size: 12px;
+    font-family: var(--font-family-mono);
+    transition: all 0.3s ease;
+    margin-left: 5px;
+}
+
+.theme-selector:hover {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 5px var(--shadow-primary);
+}
+
+.theme-selector:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 8px var(--shadow-secondary);
+}
+
+/* Content area - responsive to theme */
 .content {
-    margin: 0 20px;
-    background-color: #000000;
+    margin: 0 auto;
+    background-color: var(--primary-bg);
+    padding: 0 20px;
+    max-width: 1170px;
+    transition: background-color 0.3s ease;
 }
 
 .container {
-    background-color: #000000;
+    background-color: var(--primary-bg);
+    transition: background-color 0.3s ease;
 }
 
-/* Course cards terminal style */
+/* Course cards - theme responsive */
 .course-card {
-    background-color: #111111;
-    border: 1px solid #32cd32;
+    background-color: var(--tertiary-bg);
+    border: 1px solid var(--border-color);
     border-radius: 5px;
     margin-bottom: 20px;
     min-height: 280px;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 5px rgba(50, 205, 50, 0.1);
+    box-shadow: 0 2px 5px var(--shadow-primary);
 }
 
 .course-card:hover {
-    border-color: #ffc107;
-    box-shadow: 0 5px 15px rgba(255, 193, 7, 0.2);
+    border-color: var(--primary-color);
+    box-shadow: 0 5px 15px var(--shadow-secondary);
     transform: translateY(-2px);
 }
 
 .course-card h3 {
     margin-top: 0;
-    color: #32cd32;
+    color: var(--secondary-color);
 }
 
 .course-card h3 a {
-    color: #32cd32;
+    color: var(--secondary-color);
     text-decoration: none;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font-family-primary);
     transition: color 0.3s ease;
 }
 
 .course-card h3 a:hover {
-    color: #ffc107;
-    text-shadow: 0 0 5px rgba(255, 193, 7, 0.3);
+    color: var(--primary-color);
+    text-shadow: 0 0 5px var(--shadow-secondary);
 }
 
 .course-code {
-    color: #888888;
-    font-family: 'Ubuntu Mono', monospace;
-    background-color: #1a1a1a;
+    color: var(--muted-color);
+    font-family: var(--font-family-mono);
+    background-color: var(--quaternary-bg);
     padding: 2px 6px;
     border-radius: 3px;
     display: inline-block;
     margin-bottom: 10px;
-    border: 1px solid #333333;
+    border: 1px solid var(--border-secondary);
+    transition: all 0.3s ease;
 }
 
 .course-description {
-    color: #ffc107;
+    color: var(--primary-color);
     margin-bottom: 15px;
     min-height: 60px;
-    font-family: 'Ubuntu', sans-serif;
+    font-family: var(--font-family-primary);
 }
 
 /* Panels and cards */
@@ -495,4 +694,177 @@ h1::after, h2::after {
     color: #ffc107;
     border: 1px solid #333333;
     font-family: 'Ubuntu Mono', monospace;
+}
+
+/* Forum Responsive Styles */
+.forum-card {
+    transition: transform 0.2s ease;
+}
+
+.forum-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Fix forum container margins */
+.content.container {
+    padding-left: 15px !important;
+    padding-right: 15px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    max-width: 1170px;
+}
+
+.content.container .row {
+    margin-left: -15px !important;
+    margin-right: -15px !important;
+}
+
+.content.container .row > [class*="col-"] {
+    padding-left: 15px !important;
+    padding-right: 15px !important;
+}
+
+/* Override any zero margins from terminal theme */
+.content {
+    margin-left: auto !important;
+    margin-right: auto !important;
+    width: 100% !important;
+}
+
+/* Ensure forum content has proper spacing */
+.forum-container {
+    padding: 20px 15px;
+    margin: 0 auto;
+    max-width: 1170px;
+}
+
+/* Mobile responsiveness for forum containers */
+@media (max-width: 767px) {
+    .content.container {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+    
+    .forum-container {
+        padding: 15px 10px;
+    }
+}
+
+/* Responsive utilities */
+.min-width-0 {
+    min-width: 0;
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 767.98px) {
+    /* Stack forum actions vertically on mobile */
+    .forum-actions {
+        flex-direction: column !important;
+        gap: 0.5rem;
+    }
+    
+    /* Improve post headers on mobile */
+    .post-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+    
+    .post-header .col-md-6,
+    .post-header .col-md-4 {
+        margin-top: 0.5rem;
+    }
+    
+    /* Better breadcrumb spacing */
+    .breadcrumb {
+        padding: 0.5rem 0;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Forum card improvements */
+    .forum-card .card-body {
+        padding: 1rem;
+    }
+    
+    .forum-card .card-title {
+        font-size: 1.1rem;
+        line-height: 1.3;
+    }
+    
+    /* Topic list improvements */
+    .topic-item {
+        padding: 1rem 0.75rem;
+    }
+    
+    .topic-title {
+        font-size: 1rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    /* Better button spacing on mobile */
+    .btn-group-mobile {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .btn-group-mobile .btn {
+        width: 100%;
+    }
+}
+
+/* Tablet-specific improvements */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .forum-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+}
+
+/* Ensure text doesn't break layout */
+.text-truncate-mobile {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 575.98px) {
+    .text-truncate-mobile {
+        max-width: 200px;
+    }
+}
+
+/* Improve forum post content display */
+.post-content {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Badge styling to match theme */
+.badge.bg-primary {
+    background-color: var(--secondary-color) !important;
+    color: var(--primary-bg) !important;
+    border: 1px solid var(--border-color);
+}
+
+.badge.bg-warning {
+    background-color: var(--accent-color) !important;
+    color: var(--primary-bg) !important;
+    border: 1px solid var(--border-color);
+}
+
+/* Better spacing for mobile forum layouts */
+@media (max-width: 767.98px) {
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .card {
+        margin-bottom: 1rem;
+    }
+    
+    .list-group-item {
+        padding: 1rem 0.75rem;
+    }
 }
