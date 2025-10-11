@@ -159,8 +159,10 @@ def theme():
     from blog.models import SiteTheme
     
     return SiteTheme.objects.create(
-        name='Test Theme',
-        css_class='test-theme',
+        name='test_theme',
+        display_name='Test Theme',
+        theme_key='terminal-green',
         description='A theme for testing purposes',
-        is_default=False
+        is_default=False,
+        is_active=True
     )
