@@ -56,7 +56,15 @@
 
                 <!-- Enrollment Status -->
                 {% if user.is_authenticated %}
-                    {% if is_enrolled %}
+                    {% if is_instructor %}
+                        <div class="alert alert-info">
+                            <h4><i class="glyphicon glyphicon-education"></i> Course Instructor</h4>
+                            <p>You are the instructor of this course. Use your instructor dashboard to manage course content, view student progress, and grade assignments.</p>
+                            <a href="{% url 'instructor_course_detail' course.id %}" class="btn btn-primary">
+                                <i class="glyphicon glyphicon-cog"></i> Manage Course
+                            </a>
+                        </div>
+                    {% elif is_enrolled %}
                         <div class="alert alert-success">
                             <h4><i class="glyphicon glyphicon-ok"></i> You are enrolled in this course!</h4>
                             {% if total_lessons > 0 %}

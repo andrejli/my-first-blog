@@ -185,10 +185,17 @@ def course_detail(request, course_id):
                 Q(scheduled_for__isnull=True) | Q(scheduled_for__lte=timezone.now())
             ).order_by('-created_date')[:3]
 
+    # Check if user is the instructor of this course
+    is_instructor = (request.user.is_authenticated and 
+                    hasattr(request.user, 'userprofile') and 
+                    request.user.userprofile.role == 'instructor' and 
+                    course.instructor == request.user)
+
     context = {
         'course': course,
         'lessons': lessons,
         'is_enrolled': is_enrolled,
+        'is_instructor': is_instructor,
         'enrollment': enrollment,
         'user_progress': user_progress,
         'next_lesson': next_lesson,
@@ -283,6 +290,11 @@ def enroll_course(request, course_id):
     # Check if user has a profile
     if not hasattr(request.user, 'userprofile'):
         messages.error(request, 'Please complete your profile setup before enrolling.')
+        return redirect('course_detail', course_id=course_id)
+    
+    # Prevent instructors from enrolling in their own courses
+    if hasattr(request.user, 'userprofile') and request.user.userprofile.role == 'instructor' and course.instructor == request.user:
+        messages.error(request, 'Instructors cannot enroll as students in their own courses.')
         return redirect('course_detail', course_id=course_id)
     
     # Check if already enrolled

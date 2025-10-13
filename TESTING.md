@@ -23,10 +23,56 @@ This guide provides comprehensive testing instructions for all aspects of the Te
 
 ## 🚀 **Running Tests**
 
-### **1. Pytest (Recommended)**
+### **🎯 Quick Start - Automated Test Scripts**
+
+#### **PowerShell (Windows)**
+```powershell
+# Comprehensive test runner with options
+.\run_tests.ps1                    # Run all tests
+.\run_tests.ps1 auth -VerboseOutput # Run auth tests with details
+.\run_tests.ps1 coverage -Parallel # Full coverage in parallel
+.\run_tests.ps1 -Help              # Show all options
+
+# Quick test runner (simple)
+.\test.ps1                         # Run all tests
+.\test.ps1 -m auth                 # Run auth tests only
+.\test.ps1 --cov=blog             # Run with coverage
+```
+
+#### **Bash (Linux/Mac/WSL)**
+```bash
+# Make scripts executable (first time only)
+chmod +x run_tests.sh test.sh
+
+# Comprehensive test runner with options
+./run_tests.sh                     # Run all tests
+./run_tests.sh auth --verbose      # Run auth tests with details
+./run_tests.sh coverage --parallel # Full coverage in parallel
+./run_tests.sh --help              # Show all options
+
+# Quick test runner (simple)
+./test.sh                          # Run all tests
+./test.sh -m auth                  # Run auth tests only
+./test.sh --cov=blog              # Run with coverage
+```
+
+### **📋 Test Script Features**
+- ✅ **Automatic environment setup**: Activates virtual environment
+- ✅ **Django settings**: Sets `DJANGO_SETTINGS_MODULE=mysite.settings`
+- ✅ **Dependency check**: Installs pytest if missing
+- ✅ **Parallel execution**: Use `--parallel` for faster runs
+- ✅ **Coverage reports**: HTML and terminal coverage output
+- ✅ **Colored output**: Easy-to-read results
+- ✅ **Error handling**: Helpful error messages and tips
+
+### **1. Manual Pytest Commands**
 ```bash
 # Install pytest packages
 pip install pytest pytest-django pytest-cov pytest-xdist pytest-mock
+
+# Set Django settings (required)
+export DJANGO_SETTINGS_MODULE=mysite.settings  # Linux/Mac
+$env:DJANGO_SETTINGS_MODULE="mysite.settings"  # PowerShell
 
 # Run all tests
 pytest
