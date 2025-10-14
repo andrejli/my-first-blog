@@ -118,12 +118,15 @@
                         <div class="form-group">
                             <label for="content">Lesson Content *</label>
                             <textarea class="form-control" id="content" name="content" 
-                                      placeholder="Enter lesson content here. You can use markdown formatting." 
+                                      data-markdown="true"
+                                      data-show-preview="true"
+                                      data-enable-toolbar="true"
+                                      data-enable-drag-drop="true"
+                                      placeholder="Enter lesson content here using enhanced Markdown with Obsidian features..." 
                                       required>{% if lesson %}{{ lesson.content }}{% endif %}</textarea>
                             <div class="help-block">
-                                Write your lesson content. Use plain text or simple markdown formatting.
-                                <br>
-                                <strong>Tips:</strong> Use **bold**, *italic*, bullet points with -, and links [text](url)
+                                {% load markdown_extras %}
+                                {% markdown_help %}
                             </div>
                         </div>
 
@@ -317,5 +320,8 @@
             });
         });
     </script>
+    
+    <!-- Enhanced Markdown Editor -->
+    <script src="{% static 'js/markdown-editor.js' %}"></script>
 </body>
 </html>
