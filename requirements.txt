@@ -25,9 +25,8 @@ markdown-math>=0.8
 # pytest-django>=4.5.0
 # coverage>=7.0.0
 
-# Production deployment (optional)
-# Uncomment the following for production:
-# gunicorn>=21.0.0
-# psycopg2-binary>=2.9.0  # For PostgreSQL
-# whitenoise>=6.0.0       # For static files
-# django-environ>=0.11.0  # For environment variables
+# Production deployment
+gunicorn>=21.0.0
+psycopg2-binary>=2.9.0  # For PostgreSQL
+whitenoise>=6.0.0       # For static files
+django-environ>=0.11.0  # For environment variables
