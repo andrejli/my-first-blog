@@ -158,11 +158,13 @@
                         <!-- Description Field -->
                         <div class="form-group">
                             <label for="description">Course Description *</label>
-                            <textarea class="form-control" id="description" name="description" 
-                                      placeholder="Describe what students will learn in this course..." 
-                                      required>{% if course %}{{ course.description }}{% endif %}</textarea>
+                            <div id="description-editor">
+                                <textarea class="form-control" id="description" name="description" rows="8"
+                                          placeholder="Describe what students will learn in this course... (supports Obsidian markdown: [[wiki links]], callouts, math equations)" 
+                                          required>{% if course %}{{ course.description }}{% endif %}</textarea>
+                            </div>
                             <div class="help-block">
-                                Provide a comprehensive description of the course content and learning outcomes
+                                Provide a comprehensive description of the course content and learning outcomes. Supports [[Wiki Links]], > [!note] Callouts, and $math$ equations
                             </div>
                         </div>
 
@@ -378,6 +380,20 @@
                     return false;
                 }
             });
+        });
+    </script>
+    
+    <!-- Markdown Editor -->
+    <script src="{% static 'js/markdown-editor.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize MarkdownEditor for description field
+            if (document.getElementById('description')) {
+                new MarkdownEditor('description-editor', 'description', {
+                    showPreview: true,
+                    height: '300px'
+                });
+            }
         });
     </script>
 </body>

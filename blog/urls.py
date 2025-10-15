@@ -101,4 +101,9 @@ urlpatterns = [
     # Theme Management
     path('api/theme/get/', views.get_user_theme, name='get_user_theme'),
     path('api/theme/set/', views.set_user_theme, name='set_user_theme'),
+    
+    # Phase 5B: Course Import/Export System
+    path('instructor/course/<int:course_id>/export/', views.export_course, name='export_course'),
+    path('instructor/course/import/', views.import_course, name='import_course'),
+    path('instructor/course/import/confirm/', views.confirm_import_course, name='confirm_import_course'),
 ]

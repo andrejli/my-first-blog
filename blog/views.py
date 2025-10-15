@@ -8,6 +8,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse
 from django.db import transaction
 from .models import Post, Course, Enrollment, Lesson, Progress, UserProfile, CourseMaterial, Assignment, Submission, Quiz, Question, Answer, QuizAttempt, QuizResponse, Announcement, AnnouncementRead, Forum, Topic, ForumPost
+from .course_import_export import export_course, import_course, confirm_import_course
 
 
 # Authentication Views

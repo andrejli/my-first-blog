@@ -1,0 +1,341 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Import Course{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+            <!-- Header -->
+            <div class="page-header">
+                <h1>
+                    <i class="glyphicon glyphicon-import"></i> Import Course
+                    <small>Restore or Create from Backup</small>
+                </h1>
+            </div>
+
+            <!-- Navigation -->
+            <div class="btn-toolbar mb-3" role="toolbar">
+                <div class="btn-group" role="group">
+                    <a href="{% url 'instructor_dashboard' %}" class="btn btn-default">
+                        <i class="glyphicon glyphicon-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+            {% if not preview %}
+            <!-- Upload Form -->
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">
+                                <i class="glyphicon glyphicon-upload"></i> Select Course File
+                            </h3>
+                        </div>
+                        <div class="panel-body">
+                            <form method="post" enctype="multipart/form-data" action="{% url 'import_course' %}">
+                                {% csrf_token %}
+                                
+                                <!-- Import Description -->
+                                <div class="alert alert-info">
+                                    <h4><i class="glyphicon glyphicon-info-sign"></i> Course Import Process</h4>
+                                    <p>Import a course from a previously exported ZIP file. The import process will:</p>
+                                    <ol>
+                                        <li><strong>Validate</strong> the course file and show you a preview</li>
+                                        <li><strong>Allow customization</strong> of course code and instructor assignment</li>
+                                        <li><strong>Import all content</strong> as draft for your review</li>
+                                        <li><strong>Create a new course</strong> ready for publishing</li>
+                                    </ol>
+                                </div>
+
+                                <!-- File Upload -->
+                                <div class="form-group">
+                                    <label for="course_file">Course Export File (.zip)</label>
+                                    <input type="file" class="form-control" id="course_file" name="course_file" 
+                                           accept=".zip" required>
+                                    <div class="help-block">
+                                        Select a ZIP file exported from this or another Terminal LMS instance.
+                                    </div>
+                                </div>
+
+                                <!-- Upload Button -->
+                                <div class="form-group">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="glyphicon glyphicon-upload"></i> Upload and Preview
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Import Guidelines Sidebar -->
+                <div class="col-md-4">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <i class="glyphicon glyphicon-question-sign"></i> Import Guidelines
+                            </h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="import-guidelines">
+                                <h5>Supported Files</h5>
+                                <ul>
+                                    <li>ZIP files exported from Terminal LMS</li>
+                                    <li>Must contain valid course_data.json</li>
+                                    <li>Maximum file size: 100MB</li>
+                                </ul>
+
+                                <h5>What Gets Imported</h5>
+                                <ul>
+                                    <li>Course structure and settings</li>
+                                    <li>All lessons and content</li>
+                                    <li>Assignments and instructions</li>
+                                    <li>Quizzes with questions</li>
+                                    <li>Course materials (if included)</li>
+                                    <li>Announcements</li>
+                                </ul>
+
+                                <h5>Import Notes</h5>
+                                <ul>
+                                    <li>All content imports as <strong>draft</strong></li>
+                                    <li>You'll be assigned as instructor</li>
+                                    <li>Course codes must be unique</li>
+                                    <li>Student data is optional</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% else %}
+            <!-- Preview and Confirmation -->
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="panel panel-success">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">
+                                <i class="glyphicon glyphicon-ok"></i> Course Preview - Ready to Import
+                            </h3>
+                        </div>
+                        <div class="panel-body">
+                            <!-- Course Information -->
+                            <div class="course-preview">
+                                <h4>{{ course_data.course.title }}</h4>
+                                <p><strong>Original Course Code:</strong> {{ course_data.course.course_code }}</p>
+                                <p><strong>Description:</strong> {{ course_data.course.description|truncatewords:30 }}</p>
+                                <p><strong>Duration:</strong> {{ course_data.course.duration_weeks }} weeks</p>
+                                <p><strong>Max Students:</strong> {{ course_data.course.max_students }}</p>
+                                
+                                {% if course_data.course.prerequisites %}
+                                <p><strong>Prerequisites:</strong> {{ course_data.course.prerequisites|truncatewords:20 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Import Configuration Form -->
+                            <form method="post" action="{% url 'confirm_import_course' %}">
+                                {% csrf_token %}
+                                
+                                <hr>
+                                <h4>Import Configuration</h4>
+                                
+                                <!-- Course Code -->
+                                <div class="form-group">
+                                    <label for="course_code">New Course Code</label>
+                                    <input type="text" class="form-control" id="course_code" name="course_code" 
+                                           value="{{ course_data.course.course_code }}" required
+                                           pattern="[A-Z0-9]+" title="Use uppercase letters and numbers only">
+                                    <div class="help-block">
+                                        Must be unique. Original code: <code>{{ course_data.course.course_code }}</code>
+                                    </div>
+                                </div>
+
+                                <!-- Instructor Assignment -->
+                                <div class="form-group">
+                                    <label class="checkbox">
+                                        <input type="checkbox" name="assign_to_me" checked>
+                                        <strong>Assign me as instructor</strong>
+                                    </label>
+                                    <div class="help-block">
+                                        Original instructor: {{ course_data.course.instructor_first_name }} {{ course_data.course.instructor_last_name }} 
+                                        ({{ course_data.course.instructor_username }})
+                                    </div>
+                                </div>
+
+                                <!-- Import Warning -->
+                                <div class="alert alert-warning">
+                                    <h5><i class="glyphicon glyphicon-warning-sign"></i> Import Notes</h5>
+                                    <ul>
+                                        <li>Course will be imported as <strong>Draft</strong> status</li>
+                                        <li>All lessons and assignments will be <strong>unpublished</strong> for review</li>
+                                        <li>You can publish content after reviewing and customizing</li>
+                                        <li>Files and materials will be imported if available</li>
+                                        {% if course_data.enrollments %}
+                                        <li><strong>Student data detected</strong> - enrollments and progress will be imported</li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+
+                                <!-- Confirm Import -->
+                                <div class="form-group">
+                                    <button type="submit" class="btn btn-success btn-lg">
+                                        <i class="glyphicon glyphicon-import"></i> Confirm Import
+                                    </button>
+                                    <a href="{% url 'import_course' %}" class="btn btn-default">
+                                        <i class="glyphicon glyphicon-remove"></i> Cancel
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Summary Sidebar -->
+                <div class="col-md-4">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <i class="glyphicon glyphicon-list"></i> Content Summary
+                            </h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="content-summary">
+                                <div class="summary-item">
+                                    <span class="summary-number">{{ course_data.lessons|length }}</span>
+                                    <span class="summary-label">Lessons</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-number">{{ course_data.assignments|length|default:"0" }}</span>
+                                    <span class="summary-label">Assignments</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-number">{{ course_data.quizzes|length|default:"0" }}</span>
+                                    <span class="summary-label">Quizzes</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-number">{{ course_data.materials|length|default:"0" }}</span>
+                                    <span class="summary-label">Materials</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-number">{{ course_data.announcements|length|default:"0" }}</span>
+                                    <span class="summary-label">Announcements</span>
+                                </div>
+                                {% if course_data.enrollments %}
+                                <div class="summary-item">
+                                    <span class="summary-number">{{ course_data.enrollments|length }}</span>
+                                    <span class="summary-label">Enrollments</span>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Export Information -->
+                            <hr>
+                            <h5>Export Information</h5>
+                            <p><strong>Exported:</strong> {{ course_data.export_info.exported_at|date:"M d, Y H:i" }}</p>
+                            <p><strong>LMS Version:</strong> {{ course_data.export_info.lms_version }}</p>
+                            <p><strong>Format:</strong> v{{ course_data.export_info.export_format_version }}</p>
+                            
+                            {% if file_list %}
+                            <hr>
+                            <h5>Included Files</h5>
+                            <ul class="file-list">
+                                {% for file in file_list|slice:":5" %}
+                                <li>{{ file }}</li>
+                                {% endfor %}
+                                {% if file_list|length > 5 %}
+                                <li><em>... and {{ file_list|length|add:"-5" }} more files</em></li>
+                                {% endif %}
+                            </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.import-guidelines h5 {
+    color: var(--secondary-color);
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.import-guidelines h5:first-child {
+    margin-top: 0;
+}
+
+.import-guidelines ul {
+    margin-bottom: 15px;
+}
+
+.course-preview {
+    background: var(--secondary-bg);
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.course-preview h4 {
+    margin-top: 0;
+    color: var(--secondary-color);
+}
+
+.content-summary {
+    text-align: center;
+}
+
+.summary-item {
+    display: inline-block;
+    margin: 10px;
+    text-align: center;
+    min-width: 80px;
+}
+
+.summary-number {
+    display: block;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--secondary-color);
+}
+
+.summary-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.file-list {
+    list-style: none;
+    padding: 0;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.file-list li {
+    padding: 2px 0;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.checkbox input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+#course_code {
+    text-transform: uppercase;
+}
+</style>
+
+<script>
+// Auto-uppercase course code
+document.getElementById('course_code').addEventListener('input', function(e) {
+    e.target.value = e.target.value.toUpperCase();
+});
+</script>
+{% endblock %}

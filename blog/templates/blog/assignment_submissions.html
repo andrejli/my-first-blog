@@ -86,7 +86,7 @@
                         <h5 class="card-title mb-0">Assignment Instructions</h5>
                     </div>
                     <div class="card-body">
-                        {{ assignment.description|linebreaks }}
+                        {{ assignment.description|obsidian_markdown }}
                     </div>
                 </div>
                 {% endif %}

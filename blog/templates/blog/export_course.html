@@ -1,0 +1,205 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Export Course - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+            <!-- Header -->
+            <div class="page-header">
+                <h1>
+                    <i class="glyphicon glyphicon-export"></i> Export Course
+                    <small>{{ course.course_code }} - {{ course.title }}</small>
+                </h1>
+            </div>
+
+            <!-- Navigation -->
+            <div class="btn-toolbar mb-3" role="toolbar">
+                <div class="btn-group" role="group">
+                    <a href="{% url 'instructor_course_detail' course.id %}" class="btn btn-default">
+                        <i class="glyphicon glyphicon-arrow-left"></i> Back to Course
+                    </a>
+                    <a href="{% url 'instructor_dashboard' %}" class="btn btn-default">
+                        <i class="glyphicon glyphicon-dashboard"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Export Form -->
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">
+                                <i class="glyphicon glyphicon-download-alt"></i> Course Export Options
+                            </h3>
+                        </div>
+                        <div class="panel-body">
+                            <form method="post" action="{% url 'export_course' course.id %}">
+                                {% csrf_token %}
+                                
+                                <!-- Export Description -->
+                                <div class="alert alert-info">
+                                    <h4><i class="glyphicon glyphicon-info-sign"></i> About Course Export</h4>
+                                    <p>This will create a complete backup of your course including:</p>
+                                    <ul>
+                                        <li>Course information and settings</li>
+                                        <li>All lessons and content</li>
+                                        <li>Assignments and instructions</li>
+                                        <li>Quizzes with questions and answers</li>
+                                        <li>Course materials and files</li>
+                                        <li>Announcements</li>
+                                    </ul>
+                                    <p><strong>File Format:</strong> ZIP archive with JSON data and associated files</p>
+                                </div>
+
+                                <!-- Export Options -->
+                                <div class="form-group">
+                                    <label class="checkbox">
+                                        <input type="checkbox" name="include_user_data" id="include_user_data">
+                                        <strong>Include Student Data</strong>
+                                        <small class="text-muted">(enrollments, progress, submissions)</small>
+                                    </label>
+                                    <div class="help-block">
+                                        <strong>Warning:</strong> Including student data will export personal information including:
+                                        <ul>
+                                            <li>Student enrollments and grades</li>
+                                            <li>Lesson completion progress</li>
+                                            <li>Assignment submissions</li>
+                                            <li>Quiz attempts and scores</li>
+                                        </ul>
+                                        Only enable this for complete course backups or migrations.
+                                    </div>
+                                </div>
+
+                                <!-- Export Button -->
+                                <div class="form-group">
+                                    <button type="submit" class="btn btn-success btn-lg">
+                                        <i class="glyphicon glyphicon-export"></i> Export Course
+                                    </button>
+                                    <a href="{% url 'instructor_course_detail' course.id %}" class="btn btn-default">
+                                        Cancel
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Course Summary Sidebar -->
+                <div class="col-md-4">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <i class="glyphicon glyphicon-stats"></i> Course Summary
+                            </h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="export-stats">
+                                <div class="stat-item">
+                                    <span class="stat-number">{{ enrolled_count }}</span>
+                                    <span class="stat-label">Enrolled Students</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">{{ lesson_count }}</span>
+                                    <span class="stat-label">Lessons</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">{{ assignment_count }}</span>
+                                    <span class="stat-label">Assignments</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">{{ quiz_count }}</span>
+                                    <span class="stat-label">Quizzes</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">{{ material_count }}</span>
+                                    <span class="stat-label">Materials</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">{{ announcement_count }}</span>
+                                    <span class="stat-label">Announcements</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Tips -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <i class="glyphicon glyphicon-lightbulb"></i> Export Tips
+                            </h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul class="export-tips">
+                                <li><strong>Backup Regularly:</strong> Export your courses periodically as backups</li>
+                                <li><strong>Template Creation:</strong> Export without student data to create reusable templates</li>
+                                <li><strong>Migration Ready:</strong> Exported courses can be imported into other LMS instances</li>
+                                <li><strong>File Preservation:</strong> All course materials and attachments are included</li>
+                                <li><strong>Privacy Aware:</strong> Student data export is optional and clearly marked</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.export-stats {
+    text-align: center;
+}
+
+.stat-item {
+    display: inline-block;
+    margin: 10px;
+    text-align: center;
+    min-width: 80px;
+}
+
+.stat-number {
+    display: block;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--secondary-color);
+}
+
+.stat-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.export-tips {
+    list-style: none;
+    padding: 0;
+}
+
+.export-tips li {
+    margin-bottom: 10px;
+    padding-left: 20px;
+    position: relative;
+}
+
+.export-tips li:before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--secondary-color);
+    font-weight: bold;
+}
+
+.help-block ul {
+    margin-top: 10px;
+    margin-bottom: 0;
+}
+
+.checkbox input[type="checkbox"] {
+    margin-right: 8px;
+}
+</style>
+{% endblock %}

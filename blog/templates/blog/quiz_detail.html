@@ -107,7 +107,7 @@
                             </div>
                             <div class="card-body">
                                 {% if quiz.description %}
-                                    <p class="card-text">{{ quiz.description|linebreaks }}</p>
+                                    <p class="card-text">{{ quiz.description|obsidian_markdown }}</p>
                                 {% else %}
                                     <p class="text-muted">No description provided for this quiz.</p>
                                 {% endif %}

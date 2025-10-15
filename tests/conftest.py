@@ -164,3 +164,55 @@ def theme():
         description='A theme for testing purposes',
         is_default=False
     )
+
+
+@pytest.fixture
+def sample_course(instructor_user):
+    """Create a basic sample course for testing"""
+    from blog.models import Course
+    
+    return Course.objects.create(
+        title='Sample Course',
+        course_code='SAMPLE001',
+        description='A sample course for testing',
+        instructor=instructor_user,
+        status='published',
+        duration_weeks=4,
+        max_students=30
+    )
+
+
+@pytest.fixture
+def user_factory():
+    """Factory for creating users"""
+    from django.contrib.auth.models import User
+    
+    def _create_user(username=None, email=None, password='testpass123'):
+        if username is None:
+            username = f'user_{User.objects.count() + 1}'
+        if email is None:
+            email = f'{username}@test.com'
+        
+        return User.objects.create_user(
+            username=username,
+            email=email,
+            password=password
+        )
+    
+    return _create_user
+
+
+@pytest.fixture  
+def user_profile_factory():
+    """Factory for creating user profiles"""
+    from blog.models import UserProfile
+    
+    def _create_profile(user, role='student', bio='', phone=''):
+        return UserProfile.objects.create(
+            user=user,
+            role=role,
+            bio=bio,
+            phone=phone
+        )
+    
+    return _create_profile

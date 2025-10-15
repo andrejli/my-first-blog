@@ -20,7 +20,7 @@
                             {% endif %}
                             {{ forum.title }}
                         </h2>
-                        <p class="text-muted mb-2">{{ forum.description }}</p>
+                        <p class="text-muted mb-2">{{ forum.description|obsidian_markdown }}</p>
                         {% if forum.course %}
                             <div class="badge bg-info">{{ forum.course.course_code }} - {{ forum.course.title }}</div>
                         {% endif %}

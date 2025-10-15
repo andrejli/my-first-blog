@@ -40,9 +40,11 @@
                         <div class="form-group">
                             <label for="description" class="col-sm-3 control-label">Description *</label>
                             <div class="col-sm-9">
-                                <textarea class="form-control" id="description" name="description" rows="4" required
-                                          placeholder="Brief description of the assignment">{% if assignment %}{{ assignment.description }}{% endif %}</textarea>
-                                <small class="help-block">Provide a brief overview of what students need to do</small>
+                                <div id="description-editor">
+                                    <textarea class="form-control" id="description" name="description" rows="8" required
+                                              placeholder="Brief description of the assignment (supports Obsidian markdown: [[wiki links]], callouts, math equations)">{% if assignment %}{{ assignment.description }}{% endif %}</textarea>
+                                </div>
+                                <small class="help-block">Provide a brief overview of what students need to do. Supports [[Wiki Links]], > [!note] Callouts, and $math$ equations</small>
                             </div>
                         </div>
 
@@ -164,4 +166,20 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% load static %}
+{% block extra_js %}
+<script src="{% static 'js/markdown-editor.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize MarkdownEditor for description field
+    if (document.getElementById('description')) {
+        new MarkdownEditor('description-editor', 'description', {
+            showPreview: true,
+            height: '300px'
+        });
+    }
+});
+</script>
 {% endblock %}

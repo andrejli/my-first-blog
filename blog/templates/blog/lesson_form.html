@@ -323,5 +323,21 @@
     
     <!-- Enhanced Markdown Editor -->
     <script src="{% static 'js/markdown-editor.js' %}"></script>
+    <script>
+        // Initialize the enhanced markdown editor
+        $(document).ready(function() {
+            if (typeof MarkdownEditor !== 'undefined') {
+                const editor = new MarkdownEditor('content', {
+                    showPreview: true,
+                    enableToolbar: true,
+                    enableDragDrop: true,
+                    previewUpdateDelay: 300
+                });
+                console.log('MarkdownEditor initialized for lesson content');
+            } else {
+                console.warn('MarkdownEditor not found - falling back to basic textarea');
+            }
+        });
+    </script>
 </body>
 </html>

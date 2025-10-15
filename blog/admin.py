@@ -50,6 +50,7 @@ class CourseAdmin(admin.ModelAdmin):
     list_filter = ['status', 'created_date', 'instructor']
     search_fields = ['title', 'course_code', 'description', 'instructor__first_name', 'instructor__last_name']
     readonly_fields = ['created_date']
+    actions = ['export_courses', 'export_courses_with_data']
     
     def get_enrolled_count(self, obj):
         return obj.get_enrolled_count()
@@ -60,6 +61,80 @@ class CourseAdmin(admin.ModelAdmin):
             # Ensure only instructors are available
             kwargs["queryset"] = User.objects.filter(userprofile__role='instructor')
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+    
+    def export_courses(self, request, queryset):
+        """Export selected courses without student data"""
+        from .course_import_export import CourseExporter
+        import zipfile
+        from io import BytesIO
+        from django.http import HttpResponse
+        import json
+        from datetime import datetime
+        
+        if queryset.count() == 1:
+            # Single course export
+            course = queryset.first()
+            exporter = CourseExporter(course, include_user_data=False)
+            zip_data = exporter.create_zip_export()
+            
+            response = HttpResponse(zip_data, content_type='application/zip')
+            filename = f"{course.course_code}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        else:
+            # Batch export
+            zip_buffer = BytesIO()
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as batch_zip:
+                for course in queryset:
+                    exporter = CourseExporter(course, include_user_data=False)
+                    course_zip_data = exporter.create_zip_export()
+                    course_filename = f"{course.course_code}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+                    batch_zip.writestr(f"courses/{course_filename}", course_zip_data)
+            
+            zip_buffer.seek(0)
+            response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
+            filename = f"course_batch_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+    
+    export_courses.short_description = "Export selected courses (template only)"
+    
+    def export_courses_with_data(self, request, queryset):
+        """Export selected courses with student data"""
+        from .course_import_export import CourseExporter
+        import zipfile
+        from io import BytesIO
+        from django.http import HttpResponse
+        import json
+        from datetime import datetime
+        
+        if queryset.count() == 1:
+            # Single course export
+            course = queryset.first()
+            exporter = CourseExporter(course, include_user_data=True)
+            zip_data = exporter.create_zip_export()
+            
+            response = HttpResponse(zip_data, content_type='application/zip')
+            filename = f"{course.course_code}_FULL_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        else:
+            # Batch export
+            zip_buffer = BytesIO()
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as batch_zip:
+                for course in queryset:
+                    exporter = CourseExporter(course, include_user_data=True)
+                    course_zip_data = exporter.create_zip_export()
+                    course_filename = f"{course.course_code}_FULL_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+                    batch_zip.writestr(f"courses/{course_filename}", course_zip_data)
+            
+            zip_buffer.seek(0)
+            response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
+            filename = f"course_batch_FULL_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+    
+    export_courses_with_data.short_description = "Export selected courses (with student data)"
 
 
 # Enrollment Admin

@@ -31,7 +31,7 @@
                 <div class="course-header">
                     <h2>{{ course.title }}</h2>
                     <p class="course-code"><strong>Course Code:</strong> {{ course.course_code }}</p>
-                    <p class="lead">{{ course.description }}</p>
+                    <p class="lead">{{ course.description|obsidian_markdown }}</p>
                 </div>
 
                 <!-- Course Info -->

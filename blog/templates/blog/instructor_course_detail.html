@@ -125,6 +125,14 @@
                                 <a href="{% url 'create_quiz' course.id %}" class="btn btn-success btn-block">
                                     <i class="glyphicon glyphicon-plus"></i> Create Quiz
                                 </a>
+                                
+                                <h5><strong>Backup & Import</strong></h5>
+                                <a href="{% url 'export_course' course.id %}" class="btn btn-default btn-block">
+                                    <i class="glyphicon glyphicon-export"></i> Export Course
+                                </a>
+                                <a href="{% url 'import_course' %}" class="btn btn-default btn-block">
+                                    <i class="glyphicon glyphicon-import"></i> Import Course
+                                </a>
                             </div>
                         </div>
                     </div>

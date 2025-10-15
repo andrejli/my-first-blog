@@ -53,7 +53,7 @@
                     <div class="mb-4">
                         <h5>Instructions:</h5>
                         <div class="border p-3 bg-light rounded">
-                            {{ assignment.description|linebreaks }}
+                            {{ assignment.description|obsidian_markdown }}
                         </div>
                     </div>
                     {% endif %}
