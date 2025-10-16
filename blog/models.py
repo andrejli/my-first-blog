@@ -697,3 +697,147 @@ class ForumPost(models.Model):
         self.topic.last_post_by = self.author
         self.topic.save(update_fields=['last_post_date', 'last_post_by'])
 
+
+# Individual User Blog Models
+class BlogPost(models.Model):
+    """Individual blog posts by users - separate from courses"""
+    
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('published', 'Published'),
+        ('archived', 'Archived'),
+    ]
+    
+    # Core fields
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='blog_posts')
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=200, unique=True)
+    content = models.TextField(help_text="Supports Obsidian markdown: [[links]], callouts, math equations")
+    excerpt = models.TextField(max_length=300, blank=True, help_text="Brief description of the post")
+    
+    # Publication settings
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    featured_image = models.ImageField(upload_to='blog_images/', blank=True, null=True)
+    
+    # Metadata
+    created_date = models.DateTimeField(default=timezone.now)
+    updated_date = models.DateTimeField(auto_now=True)
+    published_date = models.DateTimeField(null=True, blank=True)
+    
+    # Settings
+    allow_comments = models.BooleanField(default=True)
+    view_count = models.PositiveIntegerField(default=0)
+    
+    class Meta:
+        ordering = ['-published_date', '-created_date']
+        indexes = [
+            models.Index(fields=['-published_date']),
+            models.Index(fields=['author', '-published_date']),
+            models.Index(fields=['status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.title} by {self.author.get_full_name() or self.author.username}"
+    
+    def save(self, *args, **kwargs):
+        """Set published_date when status changes to published"""
+        if self.status == 'published' and not self.published_date:
+            self.published_date = timezone.now()
+        elif self.status != 'published':
+            self.published_date = None
+        
+        # Generate slug if not provided
+        if not self.slug:
+            from django.utils.text import slugify
+            base_slug = slugify(self.title)
+            slug = base_slug
+            counter = 1
+            while BlogPost.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
+        
+        super().save(*args, **kwargs)
+    
+    def get_absolute_url(self):
+        """Return URL for this blog post"""
+        return f"/user/{self.author.username}/blog/{self.slug}/"
+    
+    def get_comment_count(self):
+        """Return number of approved comments"""
+        return self.comments.filter(is_approved=True).count()
+    
+    def is_published(self):
+        """Check if post is published"""
+        return self.status == 'published' and self.published_date is not None
+    
+    def can_edit(self, user):
+        """Check if user can edit this post"""
+        return user == self.author or (hasattr(user, 'userprofile') and user.userprofile.role == 'admin')
+    
+    def increment_view_count(self):
+        """Increment view count (thread-safe)"""
+        BlogPost.objects.filter(pk=self.pk).update(view_count=models.F('view_count') + 1)
+
+
+class BlogComment(models.Model):
+    """Comments on blog posts with moderation"""
+    
+    # Relationships
+    post = models.ForeignKey(BlogPost, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
+    
+    # Content
+    content = models.TextField(max_length=1000, help_text="Share your thoughts on this blog post")
+    
+    # Moderation
+    is_approved = models.BooleanField(default=True, help_text="Approved comments are visible to all users")
+    is_flagged = models.BooleanField(default=False, help_text="Flagged comments require admin review")
+    
+    # Metadata
+    created_date = models.DateTimeField(default=timezone.now)
+    updated_date = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['created_date']
+        indexes = [
+            models.Index(fields=['post', 'created_date']),
+            models.Index(fields=['author', 'created_date']),
+            models.Index(fields=['is_approved']),
+        ]
+    
+    def __str__(self):
+        return f"Comment by {self.author.get_full_name() or self.author.username} on {self.post.title}"
+    
+    def can_edit(self, user):
+        """Check if user can edit this comment"""
+        # Author can edit within 30 minutes of posting
+        if user == self.author:
+            time_limit = timezone.now() - timezone.timedelta(minutes=30)
+            return self.created_date > time_limit
+        
+        # Admin can always edit
+        return hasattr(user, 'userprofile') and user.userprofile.role == 'admin'
+    
+    def can_delete(self, user):
+        """Check if user can delete this comment"""
+        # Author can delete their own comments
+        if user == self.author:
+            return True
+        
+        # Blog post author can delete comments on their posts
+        if user == self.post.author:
+            return True
+        
+        # Admin can delete any comment
+        return hasattr(user, 'userprofile') and user.userprofile.role == 'admin'
+    
+    def get_reply_count(self):
+        """Return number of approved replies"""
+        return self.replies.filter(is_approved=True).count()
+    
+    def is_reply(self):
+        """Check if this is a reply to another comment"""
+        return self.parent is not None
+

@@ -106,4 +106,18 @@ urlpatterns = [
     path('instructor/course/<int:course_id>/export/', views.export_course, name='export_course'),
     path('instructor/course/import/', views.import_course, name='import_course'),
     path('instructor/course/import/confirm/', views.confirm_import_course, name='confirm_import_course'),
+    
+    # Phase 6: Individual User Blogs
+    path('blogs/', views.all_blogs, name='all_blogs'),
+    path('my-blog/', views.my_blog_dashboard, name='my_blog_dashboard'),
+    path('blog/dashboard/', views.my_blog_dashboard, name='blog_dashboard_alias'),  # Alias for dashboard
+    path('my-blog/create/', views.create_blog_post, name='create_blog_post'),
+    path('blog/create/', views.create_blog_post, name='create_blog_post_alias'),  # Alias for common URL pattern
+    path('my-blog/edit/<int:post_id>/', views.edit_blog_post, name='edit_blog_post'),
+    path('my-blog/delete/<int:post_id>/', views.delete_blog_post, name='delete_blog_post'),
+    path('user/<str:username>/', views.user_profile, name='user_profile'),
+    path('user/<str:username>/blog/', views.user_blog_list, name='user_blog_list'),
+    path('user/<str:username>/blog/<slug:slug>/', views.blog_post_detail, name='blog_post_detail'),
+    path('comment/<int:comment_id>/delete/', views.delete_blog_comment, name='delete_blog_comment'),
+    path('api/blog/upload-image/', views.upload_blog_image, name='upload_blog_image'),
 ]

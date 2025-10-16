@@ -20,6 +20,12 @@ class ObsidianExtension(Extension):
     
     def extendMarkdown(self, md):
         # Add processors for Obsidian-style features
+        # Note: Higher priority numbers run first!
+        md.preprocessors.register(
+            ImageEmbedPreprocessor(md),
+            'obsidian_image_embeds',
+            200  # Run BEFORE WikiLinks to catch ![[image]] patterns
+        )
         md.preprocessors.register(
             WikiLinkPreprocessor(md, self.getConfig('base_url', '')),
             'obsidian_wikilinks',
@@ -29,11 +35,6 @@ class ObsidianExtension(Extension):
             CalloutPreprocessor(md),
             'obsidian_callouts',
             150
-        )
-        md.preprocessors.register(
-            ImageEmbedPreprocessor(md),
-            'obsidian_image_embeds',
-            125
         )
 
 
@@ -171,8 +172,17 @@ class ImageEmbedPreprocessor(Preprocessor):
             path = image_path
             alt_text = path
         
-        # Create responsive image HTML
-        return f'<img src="/media/course_materials/{path}" alt="{alt_text}" class="img-responsive obsidian-image" title="{alt_text}">'
+        # Determine the correct media path based on file pattern
+        # Blog images uploaded via our system have user_id prefix
+        if path.startswith('user_') and '_' in path:
+            # Blog image format: user_123_abc12345.jpg
+            media_path = f"/media/blog_images/{path}"
+        else:
+            # Course material or external image
+            media_path = f"/media/course_materials/{path}"
+        
+        # Create responsive image HTML with proper CSS classes
+        return f'<img src="{media_path}" alt="{alt_text}" class="img-responsive obsidian-image blog-image" title="{alt_text}">'
 
 
 @register.filter

@@ -55,6 +55,23 @@
                             <span class="terminal-prompt">$</span> back to courses
                         </a>
                     </div>
+                    
+                    <!-- Community Teaser -->
+                    <div class="community-teaser mt-4">
+                        <h4 class="terminal-text">Join Our Learning Community</h4>
+                        <p class="terminal-subtext">Discover what our learners are sharing:</p>
+                        <div class="community-actions">
+                            <a href="{% url 'all_blogs' %}" class="btn btn-terminal-outline btn-sm">
+                                <span class="terminal-prompt">$</span> explore blogs
+                            </a>
+                            <a href="{% url 'forum_list' %}" class="btn btn-terminal-outline btn-sm">
+                                <span class="terminal-prompt">$</span> view forums
+                            </a>
+                        </div>
+                        <small class="terminal-subtext">
+                            Login to start your own blog and connect with fellow learners!
+                        </small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -127,6 +144,49 @@
     background-color: #006600;
     border-color: #32cd32;
     color: #ffffff;
+}
+
+.community-teaser {
+    border-top: 1px solid #32cd32;
+    padding-top: 20px;
+    text-align: center;
+}
+
+.community-teaser h4 {
+    color: #32cd32;
+    font-family: 'Ubuntu Mono', monospace;
+    margin-bottom: 10px;
+}
+
+.terminal-subtext {
+    color: #888888;
+    font-family: 'Ubuntu Mono', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.community-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 15px 0 10px 0;
+    flex-wrap: wrap;
+}
+
+.community-actions .btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 12px;
+}
+
+@media (max-width: 480px) {
+    .community-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .community-actions .btn {
+        width: 150px;
+    }
 }
 </style>
 {% endblock %}

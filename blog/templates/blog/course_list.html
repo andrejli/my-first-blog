@@ -17,6 +17,8 @@
             {% if user.is_authenticated %}
                 <span>user@lms:~$ whoami → {{ user.username }}</span>
                 <a href="{% url 'forum_list' %}" class="btn btn-default">forums</a>
+                <a href="{% url 'all_blogs' %}" class="btn btn-default">blogs</a>
+                <a href="{% url 'my_blog_dashboard' %}" class="btn btn-default">my blog</a>
                 {% if user.userprofile.role == 'admin' %}
                     <a href="/admin/" class="btn btn-default">admin</a>
                 {% elif user.userprofile.role == 'instructor' %}
@@ -26,6 +28,7 @@
                 {% endif %}
                 <a href="{% url 'logout' %}" class="btn btn-default">logout</a>
             {% else %}
+                <a href="{% url 'all_blogs' %}" class="btn btn-default">blogs</a>
                 <a href="{% url 'login' %}" class="btn btn-default">login</a>
                 <a href="{% url 'register' %}" class="btn btn-default">register</a>
             {% endif %}
@@ -110,6 +113,39 @@
                             {% if user.is_authenticated %}
                                 <p><strong>{{ user.enrollment_set.count }}</strong> course{% if user.enrollment_set.count != 1 %}s{% endif %} enrolled</p>
                             {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Community Section -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4><i class="fa fa-users"></i> Community</h4>
+                        </div>
+                        <div class="panel-body">
+                            <p><strong>Discover & Share Knowledge</strong></p>
+                            <div class="community-links">
+                                <a href="{% url 'all_blogs' %}" class="btn btn-info btn-block">
+                                    <i class="fa fa-globe"></i> Browse All Blogs
+                                </a>
+                                {% if user.is_authenticated %}
+                                <a href="{% url 'my_blog_dashboard' %}" class="btn btn-primary btn-block">
+                                    <i class="fa fa-edit"></i> My Blog Dashboard
+                                </a>
+                                <a href="{% url 'create_blog_post' %}" class="btn btn-success btn-block">
+                                    <i class="fa fa-plus"></i> Write New Post
+                                </a>
+                                {% else %}
+                                <a href="{% url 'login' %}" class="btn btn-primary btn-block">
+                                    <i class="fa fa-sign-in"></i> Login to Blog
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'forum_list' %}" class="btn btn-default btn-block">
+                                    <i class="fa fa-comments"></i> Discussion Forums
+                                </a>
+                            </div>
+                            <small class="text-muted">
+                                Share your learning journey, ask questions, and connect with fellow learners.
+                            </small>
                         </div>
                     </div>
                     

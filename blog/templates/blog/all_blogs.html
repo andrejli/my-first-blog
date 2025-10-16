@@ -1,0 +1,653 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+{% load markdown_extras %}
+
+{% block title %}All Blogs{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="row">
+            <div class="col-md-8">
+                <h1><i class="fa fa-globe"></i> Community Blogs</h1>
+                <p class="page-description">
+                    Discover knowledge, insights, and experiences shared by our learning community.
+                </p>
+            </div>
+            <div class="col-md-4 text-right">
+                <a href="{% url 'create_blog_post' %}" class="btn btn-primary">
+                    <i class="fa fa-plus"></i> Start Blogging
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Controls -->
+    <div class="blog-controls">
+        <div class="row">
+            <div class="col-md-8">
+                <form method="get" class="search-form">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="search" 
+                               value="{{ request.GET.search }}" 
+                               placeholder="Search blog posts, authors, or topics...">
+                        <span class="input-group-btn">
+                            <button type="submit" class="btn btn-default">
+                                <i class="fa fa-search"></i> Search
+                            </button>
+                        </span>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-4">
+                <div class="sort-controls">
+                    <label for="sort-select">Sort by:</label>
+                    <select id="sort-select" class="form-control" 
+                            onchange="window.location.href = updateUrlParameter(window.location.href, 'sort', this.value)">
+                        <option value="newest" {% if request.GET.sort == 'newest' or not request.GET.sort %}selected{% endif %}>
+                            Newest First
+                        </option>
+                        <option value="oldest" {% if request.GET.sort == 'oldest' %}selected{% endif %}>
+                            Oldest First
+                        </option>
+                        <option value="popular" {% if request.GET.sort == 'popular' %}selected{% endif %}>
+                            Most Popular
+                        </option>
+                        <option value="discussed" {% if request.GET.sort == 'discussed' %}selected{% endif %}>
+                            Most Discussed
+                        </option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Featured Posts -->
+    {% if featured_posts and not request.GET.search %}
+    <div class="featured-section">
+        <h3><i class="fa fa-star"></i> Featured Posts</h3>
+        <div class="featured-posts">
+            {% for post in featured_posts %}
+            <div class="featured-post">
+                <div class="featured-content">
+                    <h4>
+                        <a href="{% url 'blog_post_detail' post.author.username post.slug %}">
+                            {{ post.title }}
+                        </a>
+                    </h4>
+                    <p class="featured-excerpt">
+                        {% if post.excerpt %}
+                            {{ post.excerpt|truncatewords:25 }}
+                        {% else %}
+                            {{ post.content|truncatewords:25|striptags }}
+                        {% endif %}
+                    </p>
+                    <div class="featured-meta">
+                        <span class="author">
+                            <i class="fa fa-user"></i>
+                            <a href="{% url 'user_profile' post.author.username %}">
+                                {{ post.author.get_full_name|default:post.author.username }}
+                            </a>
+                        </span>
+                        <span class="date">
+                            <i class="fa fa-calendar"></i> {{ post.published_at|date:"M d, Y" }}
+                        </span>
+                        <span class="stats">
+                            <i class="fa fa-eye"></i> {{ post.view_count }}
+                            <i class="fa fa-comments"></i> {{ post.comments.count }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Blog Posts Grid -->
+    <div class="blog-posts-section">
+        {% if request.GET.search %}
+        <h3>
+            <i class="fa fa-search"></i> Search Results
+            {% if blog_posts %}
+            <small>({{ blog_posts|length }} post{{ blog_posts|length|pluralize }} found)</small>
+            {% endif %}
+        </h3>
+        {% else %}
+        <h3><i class="fa fa-file-text"></i> Latest Posts</h3>
+        {% endif %}
+
+        {% if blog_posts %}
+        <div class="blog-posts-grid">
+            {% for post in blog_posts %}
+            <article class="blog-post-card">
+                <div class="post-header">
+                    <h4 class="post-title">
+                        <a href="{% url 'blog_post_detail' post.author.username post.slug %}">
+                            {{ post.title }}
+                        </a>
+                    </h4>
+                    <div class="post-meta">
+                        <span class="author">
+                            <i class="fa fa-user"></i>
+                            <a href="{% url 'user_profile' post.author.username %}">
+                                {{ post.author.get_full_name|default:post.author.username }}
+                            </a>
+                        </span>
+                        <span class="date">
+                            <i class="fa fa-calendar"></i> 
+                            {{ post.published_at|date:"M d, Y" }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="post-content">
+                    {% if post.excerpt %}
+                    <p class="post-excerpt">{{ post.excerpt|truncatewords:30 }}</p>
+                    {% else %}
+                    <div class="post-preview">
+                        {{ post.content|truncatewords:30|striptags }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="post-footer">
+                    <div class="post-stats">
+                        <span class="stat">
+                            <i class="fa fa-eye"></i> {{ post.view_count }}
+                        </span>
+                        <span class="stat">
+                            <i class="fa fa-comments"></i> {{ post.comments.count }}
+                        </span>
+                        {% if post.updated_at != post.created_at %}
+                        <span class="stat">
+                            <i class="fa fa-edit"></i> Updated {{ post.updated_at|date:"M d" }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="post-actions">
+                        <a href="{% url 'blog_post_detail' post.author.username post.slug %}" 
+                           class="btn btn-sm btn-primary">
+                            Read More <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="pagination-wrapper">
+            <nav aria-label="Blog posts pagination">
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                    <li>
+                        <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}" 
+                           aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="active"><span>{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li>
+                        <a href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li>
+                        <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}" 
+                           aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            {% if request.GET.search %}
+            <div class="empty-icon">
+                <i class="fa fa-search"></i>
+            </div>
+            <h3>No posts found</h3>
+            <p>No blog posts match your search for "{{ request.GET.search }}".</p>
+            <div class="empty-actions">
+                <a href="{% url 'all_blogs' %}" class="btn btn-default">
+                    <i class="fa fa-refresh"></i> Clear Search
+                </a>
+                <a href="{% url 'create_blog_post' %}" class="btn btn-primary">
+                    <i class="fa fa-plus"></i> Create First Post
+                </a>
+            </div>
+            {% else %}
+            <div class="empty-icon">
+                <i class="fa fa-file-text-o"></i>
+            </div>
+            <h3>No blog posts yet</h3>
+            <p>Be the first to share your knowledge and experiences with the community!</p>
+            <a href="{% url 'create_blog_post' %}" class="btn btn-primary btn-lg">
+                <i class="fa fa-plus"></i> Create the First Post
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Popular Authors Sidebar -->
+    {% if popular_authors and not request.GET.search %}
+    <div class="popular-authors-section">
+        <h4><i class="fa fa-users"></i> Popular Authors</h4>
+        <div class="authors-grid">
+            {% for author in popular_authors %}
+            <div class="author-card">
+                <div class="author-info">
+                    <h5>
+                        <a href="{% url 'user_profile' author.username %}">
+                            {{ author.get_full_name|default:author.username }}
+                        </a>
+                    </h5>
+                    <p class="author-stats">
+                        {{ author.blog_posts.published.count }} post{{ author.blog_posts.published.count|pluralize }}
+                        • {{ author.total_blog_views|default:0 }} views
+                    </p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.page-header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #333;
+}
+
+.page-header h1 {
+    color: #00ff00;
+    margin-bottom: 10px;
+}
+
+.page-description {
+    color: #999;
+    margin: 0;
+}
+
+.blog-controls {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.search-form .form-control {
+    background: rgba(0, 0, 0, 0.9) !important;
+    border: 1px solid #555 !important;
+    color: #ccc !important;
+}
+
+.search-form .form-control:focus {
+    border-color: #00ff00 !important;
+    box-shadow: none !important;
+}
+
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sort-controls label {
+    color: #999;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.sort-controls select {
+    background: rgba(0, 0, 0, 0.9) !important;
+    border: 1px solid #555 !important;
+    color: #ccc !important;
+    font-size: 12px;
+}
+
+.featured-section {
+    margin-bottom: 40px;
+}
+
+.featured-section h3 {
+    color: #00ff00;
+    margin-bottom: 20px;
+}
+
+.featured-posts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.featured-post {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.featured-post:hover {
+    border-color: #00ff00;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+}
+
+.featured-post h4 {
+    margin-bottom: 10px;
+}
+
+.featured-post h4 a {
+    color: #ccc;
+    text-decoration: none;
+}
+
+.featured-post h4 a:hover {
+    color: #00ff00;
+}
+
+.featured-excerpt {
+    color: #999;
+    line-height: 1.5;
+    margin-bottom: 15px;
+}
+
+.featured-meta {
+    display: flex;
+    gap: 15px;
+    font-size: 12px;
+    color: #666;
+    flex-wrap: wrap;
+}
+
+.featured-meta span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.featured-meta a {
+    color: #999;
+    text-decoration: none;
+}
+
+.featured-meta a:hover {
+    color: #00ff00;
+}
+
+.blog-posts-section h3 {
+    color: #00ff00;
+    margin-bottom: 25px;
+}
+
+.blog-posts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.blog-post-card {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.blog-post-card:hover {
+    border-color: #00ff00;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+.post-title {
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+.post-title a {
+    color: #ccc;
+    text-decoration: none;
+    line-height: 1.3;
+}
+
+.post-title a:hover {
+    color: #00ff00;
+}
+
+.post-meta {
+    display: flex;
+    gap: 15px;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.post-meta span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.post-meta a {
+    color: #999;
+    text-decoration: none;
+}
+
+.post-meta a:hover {
+    color: #00ff00;
+}
+
+.post-content {
+    flex-grow: 1;
+    margin-bottom: 15px;
+}
+
+.post-excerpt {
+    color: #999;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.post-preview {
+    color: #999;
+    line-height: 1.5;
+}
+
+.post-preview p {
+    margin-bottom: 10px;
+}
+
+.post-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 15px;
+    border-top: 1px solid #333;
+    margin-top: auto;
+}
+
+.post-stats {
+    display: flex;
+    gap: 15px;
+    font-size: 12px;
+    color: #666;
+}
+
+.post-stats .stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+}
+
+.empty-icon {
+    font-size: 48px;
+    color: #444;
+    margin-bottom: 20px;
+}
+
+.empty-state h3 {
+    color: #ccc;
+    margin-bottom: 15px;
+}
+
+.empty-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.pagination-wrapper {
+    text-align: center;
+    margin-top: 40px;
+}
+
+.pagination > li > a,
+.pagination > li > span {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #444;
+    color: #999;
+}
+
+.pagination > li > a:hover {
+    background: rgba(0, 255, 0, 0.1);
+    border-color: #00ff00;
+    color: #00ff00;
+}
+
+.pagination > li.active > span {
+    background: #00ff00;
+    border-color: #00ff00;
+    color: #000;
+}
+
+.popular-authors-section {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 25px;
+    margin-top: 40px;
+}
+
+.popular-authors-section h4 {
+    color: #00ff00;
+    margin-bottom: 20px;
+}
+
+.authors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.author-card {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 15px;
+    transition: all 0.3s ease;
+}
+
+.author-card:hover {
+    border-color: #00ff00;
+}
+
+.author-card h5 {
+    margin-bottom: 5px;
+}
+
+.author-card h5 a {
+    color: #ccc;
+    text-decoration: none;
+}
+
+.author-card h5 a:hover {
+    color: #00ff00;
+}
+
+.author-stats {
+    color: #999;
+    font-size: 12px;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        text-align: center;
+    }
+    
+    .blog-controls .row {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .sort-controls {
+        justify-content: center;
+    }
+    
+    .blog-posts-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .featured-posts {
+        grid-template-columns: 1fr;
+    }
+    
+    .post-footer {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+    
+    .post-actions {
+        text-align: center;
+    }
+    
+    .empty-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateUrlParameter(url, param, value) {
+    const urlObj = new URL(url);
+    urlObj.searchParams.set(param, value);
+    return urlObj.toString();
+}
+</script>
+{% endblock %}

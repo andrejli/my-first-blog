@@ -1,0 +1,447 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block title %}Delete Blog Post{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-6 col-md-offset-3">
+            <!-- Delete Confirmation Header -->
+            <div class="delete-header">
+                <h1>
+                    <i class="fa fa-exclamation-triangle"></i> Delete Blog Post
+                </h1>
+                <p class="delete-subtitle">
+                    This action cannot be undone. Please confirm you want to delete this blog post.
+                </p>
+            </div>
+
+            <!-- Post Preview -->
+            <div class="post-preview-card">
+                <div class="preview-header">
+                    <h3>{{ blog_post.title }}</h3>
+                    <div class="preview-meta">
+                        <span class="created-date">
+                            <i class="fa fa-calendar"></i> 
+                            Created {{ blog_post.created_at|date:"M d, Y" }}
+                        </span>
+                        <span class="status-info">
+                            <i class="fa fa-{% if blog_post.status == 'published' %}eye{% elif blog_post.status == 'draft' %}edit{% else %}archive{% endif %}"></i>
+                            {{ blog_post.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="preview-content">
+                    {% if blog_post.excerpt %}
+                    <p class="post-excerpt">{{ blog_post.excerpt|truncatewords:25 }}</p>
+                    {% else %}
+                    <div class="post-snippet">
+                        {{ blog_post.content|truncatewords:25|striptags }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="preview-stats">
+                    <div class="stat-item">
+                        <i class="fa fa-eye"></i>
+                        <span>{{ blog_post.view_count }} view{{ blog_post.view_count|pluralize }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fa fa-comments"></i>
+                        <span>{{ blog_post.comments.count }} comment{{ blog_post.comments.count|pluralize }}</span>
+                    </div>
+                    {% if blog_post.updated_at != blog_post.created_at %}
+                    <div class="stat-item">
+                        <i class="fa fa-edit"></i>
+                        <span>Last updated {{ blog_post.updated_at|date:"M d, Y" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Warning Information -->
+            <div class="warning-info">
+                <h4><i class="fa fa-warning"></i> What will be deleted:</h4>
+                <ul class="deletion-list">
+                    <li>
+                        <i class="fa fa-file-text"></i>
+                        <strong>Blog Post:</strong> "{{ blog_post.title }}" and all its content
+                    </li>
+                    {% if blog_post.comments.count > 0 %}
+                    <li>
+                        <i class="fa fa-comments"></i>
+                        <strong>Comments:</strong> All {{ blog_post.comments.count }} comment{{ blog_post.comments.count|pluralize }} and replies
+                    </li>
+                    {% endif %}
+                    <li>
+                        <i class="fa fa-bar-chart"></i>
+                        <strong>Statistics:</strong> View counts and engagement data
+                    </li>
+                    <li>
+                        <i class="fa fa-link"></i>
+                        <strong>Links:</strong> All internal and external links to this post will be broken
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Alternatives Section -->
+            <div class="alternatives-section">
+                <h4><i class="fa fa-lightbulb-o"></i> Consider these alternatives:</h4>
+                <div class="alternative-options">
+                    <div class="option-card">
+                        <div class="option-icon">
+                            <i class="fa fa-archive"></i>
+                        </div>
+                        <div class="option-content">
+                            <h5>Archive Instead</h5>
+                            <p>Hide the post from public view while keeping it for future reference.</p>
+                            <form method="post" action="{% url 'edit_blog_post' blog_post.id %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="archived">
+                                <input type="hidden" name="title" value="{{ blog_post.title }}">
+                                <input type="hidden" name="content" value="{{ blog_post.content }}">
+                                <input type="hidden" name="excerpt" value="{{ blog_post.excerpt }}">
+                                <input type="hidden" name="allow_comments" value="{{ blog_post.allow_comments }}">
+                                <button type="submit" class="btn btn-warning btn-sm">
+                                    <i class="fa fa-archive"></i> Archive Post
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="option-card">
+                        <div class="option-icon">
+                            <i class="fa fa-edit"></i>
+                        </div>
+                        <div class="option-content">
+                            <h5>Edit Content</h5>
+                            <p>Modify the post content instead of deleting it completely.</p>
+                            <a href="{% url 'edit_blog_post' blog_post.id %}" class="btn btn-info btn-sm">
+                                <i class="fa fa-edit"></i> Edit Post
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confirmation Form -->
+            <div class="confirmation-section">
+                <form method="post" class="delete-form">
+                    {% csrf_token %}
+                    
+                    <div class="confirmation-checkbox">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="confirm-delete" name="confirm_delete" required>
+                            <span class="checkmark"></span>
+                            I understand that this action cannot be undone and I want to permanently delete this blog post.
+                        </label>
+                    </div>
+
+                    <div class="form-actions">
+                        <div class="danger-actions">
+                            <button type="submit" class="btn btn-danger btn-lg" id="delete-button" disabled>
+                                <i class="fa fa-trash"></i> 
+                                Permanently Delete Post
+                            </button>
+                        </div>
+                        
+                        <div class="safe-actions">
+                            <a href="{% url 'my_blog_dashboard' %}" class="btn btn-default btn-lg">
+                                <i class="fa fa-arrow-left"></i> Cancel
+                            </a>
+                            <a href="{% url 'edit_blog_post' blog_post.id %}" class="btn btn-primary btn-lg">
+                                <i class="fa fa-edit"></i> Edit Instead
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.delete-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #dc3545;
+}
+
+.delete-header h1 {
+    color: #dc3545;
+    margin-bottom: 10px;
+}
+
+.delete-header .fa-exclamation-triangle {
+    color: #ffc107;
+}
+
+.delete-subtitle {
+    color: #999;
+    margin: 0;
+    font-size: 14px;
+}
+
+.post-preview-card {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.preview-header h3 {
+    color: #ccc;
+    margin-bottom: 10px;
+    font-size: 20px;
+}
+
+.preview-meta {
+    display: flex;
+    gap: 20px;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.preview-meta span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.preview-content {
+    margin-bottom: 15px;
+    padding: 15px 0;
+    border-top: 1px solid #333;
+    border-bottom: 1px solid #333;
+}
+
+.post-excerpt, .post-snippet {
+    color: #999;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.preview-stats {
+    display: flex;
+    gap: 20px;
+    font-size: 12px;
+    color: #666;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.warning-info {
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid #dc3545;
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.warning-info h4 {
+    color: #dc3545;
+    margin-bottom: 15px;
+}
+
+.warning-info .fa-warning {
+    color: #ffc107;
+}
+
+.deletion-list {
+    margin: 0;
+    padding-left: 15px;
+    color: #ccc;
+}
+
+.deletion-list li {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.deletion-list i {
+    color: #dc3545;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.alternatives-section {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.alternatives-section h4 {
+    color: #00ff00;
+    margin-bottom: 15px;
+}
+
+.alternative-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.option-card {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 15px;
+    display: flex;
+    gap: 10px;
+    transition: all 0.3s ease;
+}
+
+.option-card:hover {
+    border-color: #00ff00;
+}
+
+.option-icon {
+    color: #00ff00;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.option-content h5 {
+    color: #ccc;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.option-content p {
+    color: #999;
+    font-size: 12px;
+    line-height: 1.4;
+    margin-bottom: 10px;
+}
+
+.confirmation-section {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 25px;
+}
+
+.confirmation-checkbox {
+    margin-bottom: 25px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: #ccc;
+    font-size: 14px;
+    line-height: 1.5;
+    cursor: pointer;
+    user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+    margin: 0;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.form-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.danger-actions {
+    display: flex;
+    justify-content: center;
+}
+
+.safe-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.btn-danger:disabled {
+    background-color: #666;
+    border-color: #666;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.btn-danger:disabled:hover {
+    background-color: #666;
+    border-color: #666;
+}
+
+@media (max-width: 768px) {
+    .preview-meta {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .preview-stats {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .alternative-options {
+        grid-template-columns: 1fr;
+    }
+    
+    .safe-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .safe-actions .btn {
+        width: 100%;
+        max-width: 250px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmCheckbox = document.getElementById('confirm-delete');
+    const deleteButton = document.getElementById('delete-button');
+    
+    confirmCheckbox.addEventListener('change', function() {
+        deleteButton.disabled = !this.checked;
+        
+        if (this.checked) {
+            deleteButton.classList.remove('btn-secondary');
+            deleteButton.classList.add('btn-danger');
+        } else {
+            deleteButton.classList.remove('btn-danger');
+            deleteButton.classList.add('btn-secondary');
+        }
+    });
+    
+    // Add extra confirmation on form submit
+    document.querySelector('.delete-form').addEventListener('submit', function(e) {
+        if (!confirm('Are you absolutely sure you want to permanently delete this blog post? This action cannot be undone.')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,638 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block title %}{{ action }} Blog Post{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+            <!-- Header -->
+            <div class="page-header">
+                <h1>
+                    <i class="fa fa-edit"></i> {{ action }} Blog Post
+                </h1>
+                <p class="page-description">
+                    {% if action == "Create" %}
+                        Share your thoughts, knowledge, and experiences with the community.
+                    {% else %}
+                        Update your blog post content and settings.
+                    {% endif %}
+                </p>
+            </div>
+
+            <!-- Blog Post Form -->
+            <div class="blog-form-container">
+                <form method="post" class="blog-post-form">
+                    {% csrf_token %}
+                    
+                    <div class="form-section">
+                        <h3>Post Content</h3>
+                        
+                        <!-- Title -->
+                        <div class="form-group">
+                            <label for="title" class="control-label">Title *</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   value="{% if blog_post %}{{ blog_post.title }}{% endif %}" 
+                                   placeholder="Enter a compelling title for your blog post" required>
+                            <small class="help-block">
+                                Choose a clear, descriptive title that captures your post's main topic.
+                            </small>
+                        </div>
+
+                        <!-- Content -->
+                        <div class="form-group">
+                            <label for="content" class="control-label">Content *</label>
+                            <div id="content-editor">
+                                <textarea class="form-control" id="content" name="content" rows="20" 
+                                          placeholder="Write your blog post content here... (Supports Obsidian markdown: [[links]], callouts, math equations)" 
+                                          required>{% if blog_post %}{{ blog_post.content }}{% endif %}</textarea>
+                            </div>
+                            <small class="help-block">
+                                Supports [[Wiki Links]], > [!note] Callouts, $math$ equations, and standard markdown formatting.
+                            </small>
+                        </div>
+
+                        <!-- Image Upload -->
+                        <div class="form-group">
+                            <label class="control-label">
+                                <i class="fa fa-image"></i> Add Images
+                            </label>
+                            <div class="image-upload-section">
+                                <div class="file-upload-area">
+                                    <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                                    <button type="button" class="btn btn-info btn-upload" onclick="document.getElementById('imageUpload').click();">
+                                        <i class="fa fa-upload"></i> Upload Image
+                                    </button>
+                                    <span class="upload-status" id="uploadStatus"></span>
+                                </div>
+                                
+                                <!-- Upload progress -->
+                                <div class="upload-progress" id="uploadProgress" style="display: none;">
+                                    <div class="progress">
+                                        <div class="progress-bar progress-bar-success" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Recently uploaded images -->
+                                <div class="recent-images" id="recentImages" style="display: none;">
+                                    <h5><i class="fa fa-clock-o"></i> Recently Uploaded</h5>
+                                    <div class="image-grid" id="imageGrid"></div>
+                                </div>
+                            </div>
+                            <small class="help-block">
+                                Upload images to use in your blog post. Supports JPG, PNG, GIF, and WebP (max 2MB).
+                                <br><strong>Usage:</strong> Click images below to copy markdown code, or use ![[filename.jpg]] for Obsidian-style embedding.
+                            </small>
+                        </div>
+
+                        <!-- Excerpt -->
+                        <div class="form-group">
+                            <label for="excerpt" class="control-label">Excerpt</label>
+                            <textarea class="form-control" id="excerpt" name="excerpt" rows="3" 
+                                      placeholder="Optional brief description (max 300 characters)">{% if blog_post %}{{ blog_post.excerpt }}{% endif %}</textarea>
+                            <small class="help-block">
+                                A short summary that appears in blog listings. If empty, the first 30 words will be used.
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>Post Settings</h3>
+                        
+                        <div class="row">
+                            <!-- Status -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="status" class="control-label">Status *</label>
+                                    <select class="form-control" id="status" name="status" required>
+                                        <option value="draft" {% if not blog_post or blog_post.status == "draft" %}selected{% endif %}>
+                                            Draft (Private)
+                                        </option>
+                                        <option value="published" {% if blog_post and blog_post.status == "published" %}selected{% endif %}>
+                                            Published (Public)
+                                        </option>
+                                        {% if blog_post and blog_post.status == "archived" %}
+                                        <option value="archived" selected>
+                                            Archived
+                                        </option>
+                                        {% endif %}
+                                    </select>
+                                    <small class="help-block">
+                                        Drafts are only visible to you. Published posts are visible to everyone.
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <!-- Comments -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <div class="checkbox">
+                                        <label>
+                                            <input type="checkbox" id="allow_comments" name="allow_comments" 
+                                                   {% if not blog_post or blog_post.allow_comments %}checked{% endif %}>
+                                            Allow Comments
+                                        </label>
+                                    </div>
+                                    <small class="help-block">
+                                        Let other users comment on your blog post.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <div class="btn-group">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fa fa-save"></i> 
+                                {% if action == "Create" %}Create Post{% else %}Update Post{% endif %}
+                            </button>
+                            
+                            {% if action == "Edit" and blog_post.status == "published" %}
+                            <button type="button" class="btn btn-info btn-lg" 
+                                    onclick="document.getElementById('status').value='published'; this.form.submit();">
+                                <i class="fa fa-eye"></i> Save & View Post
+                            </button>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="btn-group">
+                            <a href="{% url 'my_blog_dashboard' %}" class="btn btn-default btn-lg">
+                                <i class="fa fa-times"></i> Cancel
+                            </a>
+                            
+                            {% if blog_post and blog_post.status == "published" %}
+                            <a href="{% url 'blog_post_detail' user.username blog_post.slug %}" 
+                               class="btn btn-link btn-lg">
+                                <i class="fa fa-external-link"></i> View Post
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Writing Tips -->
+            <div class="writing-tips">
+                <h4><i class="fa fa-lightbulb-o"></i> Writing Tips</h4>
+                <div class="tips-grid">
+                    <div class="tip-card">
+                        <h5>Obsidian Features</h5>
+                        <ul>
+                            <li><code>[[Link to Course]]</code> - Link to courses</li>
+                            <li><code>[[Lesson: Title]]</code> - Link to lessons</li>
+                            <li><code>![[image.png]]</code> - Embed images</li>
+                            <li><code>$E=mc^2$</code> - Math equations</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="tip-card">
+                        <h5>Callouts</h5>
+                        <ul>
+                            <li><code>&gt; [!note] Note</code> - Information</li>
+                            <li><code>&gt; [!tip] Tip</code> - Helpful advice</li>
+                            <li><code>&gt; [!warning] Warning</code> - Caution</li>
+                            <li><code>&gt; [!example] Example</code> - Examples</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="tip-card">
+                        <h5>Good Practices</h5>
+                        <ul>
+                            <li>Use clear, descriptive titles</li>
+                            <li>Break content into sections</li>
+                            <li>Add relevant examples</li>
+                            <li>Proofread before publishing</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #333;
+}
+
+.page-header h1 {
+    color: #00ff00;
+    margin-bottom: 10px;
+}
+
+.page-description {
+    color: #999;
+    margin: 0;
+}
+
+.blog-form-container {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 30px;
+    margin-bottom: 30px;
+}
+
+.form-section {
+    margin-bottom: 30px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #444;
+}
+
+.form-section:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.form-section h3 {
+    color: #00ff00;
+    margin-bottom: 20px;
+    font-size: 18px;
+}
+
+.control-label {
+    color: #00ff00;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.form-control {
+    background: rgba(0, 0, 0, 0.9) !important;
+    border: 1px solid #555 !important;
+    color: #ccc !important;
+    border-radius: 3px;
+}
+
+.form-control:focus {
+    border-color: #00ff00 !important;
+    box-shadow: 0 0 5px rgba(0, 255, 0, 0.3) !important;
+    background: rgba(0, 0, 0, 0.9) !important;
+    color: #fff !important;
+}
+
+.form-control::placeholder {
+    color: #666 !important;
+}
+
+#content {
+    font-family: 'Ubuntu Mono', monospace;
+    line-height: 1.6;
+    min-height: 400px;
+}
+
+.help-block {
+    color: #999;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+.checkbox label {
+    color: #ccc;
+    font-weight: normal;
+}
+
+.checkbox input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.form-actions {
+    margin-top: 30px;
+    padding-top: 25px;
+    border-top: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.btn-group {
+    display: flex;
+    gap: 10px;
+}
+
+.writing-tips {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 25px;
+}
+
+.writing-tips h4 {
+    color: #00ff00;
+    margin-bottom: 20px;
+}
+
+/* Image Upload Styles */
+.image-upload-section {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 15px;
+    margin-top: 10px;
+}
+
+.file-upload-area {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.btn-upload {
+    background: #007bff;
+    border-color: #007bff;
+    color: white;
+    padding: 8px 15px;
+}
+
+.btn-upload:hover {
+    background: #0056b3;
+    border-color: #0056b3;
+}
+
+.upload-status {
+    font-size: 12px;
+}
+
+.upload-progress {
+    margin-bottom: 15px;
+}
+
+.progress {
+    background: rgba(0, 0, 0, 0.6);
+    height: 4px;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    background: #28a745;
+    transition: width 0.3s ease;
+}
+
+.recent-images h5 {
+    color: #32cd32;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+.image-item {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #555;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.image-preview {
+    position: relative;
+}
+
+.image-preview img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    display: block;
+}
+
+.image-actions {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 5px;
+    display: flex;
+    gap: 5px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.image-preview:hover .image-actions {
+    opacity: 1;
+}
+
+.image-actions .btn {
+    font-size: 10px;
+    padding: 2px 5px;
+    min-width: auto;
+}
+
+.image-name {
+    padding: 8px;
+    font-size: 11px;
+    color: #ccc;
+    text-align: center;
+    word-break: break-all;
+}
+
+.tips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.tip-card {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 15px;
+}
+
+.tip-card h5 {
+    color: #32cd32;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.tip-card ul {
+    margin: 0;
+    padding-left: 15px;
+    color: #ccc;
+    font-size: 12px;
+}
+
+.tip-card li {
+    margin-bottom: 5px;
+}
+
+.tip-card code {
+    background: rgba(0, 255, 0, 0.1);
+    color: #00ff00;
+    padding: 1px 3px;
+    border-radius: 2px;
+    font-size: 11px;
+}
+
+@media (max-width: 768px) {
+    .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .btn-group {
+        justify-content: center;
+    }
+    
+    .tips-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/markdown-editor.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize MarkdownEditor for content field
+    if (document.getElementById('content')) {
+        new MarkdownEditor('content-editor', 'content', {
+            showPreview: true,
+            height: '400px'
+        });
+    }
+    
+    // Character counter for excerpt
+    const excerptField = document.getElementById('excerpt');
+    if (excerptField) {
+        const maxLength = 300;
+        
+        function updateCharCounter() {
+            const remaining = maxLength - excerptField.value.length;
+            let counter = document.getElementById('excerpt-counter');
+            
+            if (!counter) {
+                counter = document.createElement('small');
+                counter.id = 'excerpt-counter';
+                counter.className = 'help-block';
+                excerptField.parentNode.appendChild(counter);
+            }
+            
+            counter.textContent = `${remaining} characters remaining`;
+            counter.style.color = remaining < 0 ? '#dc3545' : '#999';
+        }
+        
+        excerptField.addEventListener('input', updateCharCounter);
+        updateCharCounter();
+    }
+    
+    // Image Upload Functionality
+    const imageUpload = document.getElementById('imageUpload');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const recentImages = document.getElementById('recentImages');
+    const imageGrid = document.getElementById('imageGrid');
+    const contentTextarea = document.getElementById('content');
+    
+    if (imageUpload) {
+        imageUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // Show progress
+            uploadProgress.style.display = 'block';
+            uploadStatus.textContent = 'Uploading...';
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            
+            fetch('{% url "upload_blog_image" %}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Hide progress
+                    uploadProgress.style.display = 'none';
+                    uploadStatus.innerHTML = '<span style="color: #28a745;"><i class="fa fa-check"></i> Upload successful!</span>';
+                    
+                    // Add image to recent images
+                    addImageToGrid(data);
+                    
+                    // Show recent images section
+                    recentImages.style.display = 'block';
+                    
+                    // Clear status after 3 seconds
+                    setTimeout(() => {
+                        uploadStatus.textContent = '';
+                    }, 3000);
+                } else {
+                    uploadProgress.style.display = 'none';
+                    uploadStatus.innerHTML = '<span style="color: #dc3545;"><i class="fa fa-times"></i> ' + data.error + '</span>';
+                }
+            })
+            .catch(error => {
+                uploadProgress.style.display = 'none';
+                uploadStatus.innerHTML = '<span style="color: #dc3545;"><i class="fa fa-times"></i> Upload failed</span>';
+                console.error('Upload error:', error);
+            });
+            
+            // Reset file input
+            imageUpload.value = '';
+        });
+    }
+    
+    function addImageToGrid(imageData) {
+        const imageItem = document.createElement('div');
+        imageItem.className = 'image-item';
+        imageItem.innerHTML = `
+            <div class="image-preview">
+                <img src="${imageData.image_url}" alt="${imageData.filename}" loading="lazy">
+                <div class="image-actions">
+                    <button type="button" class="btn btn-xs btn-info" onclick="copyMarkdown('${imageData.markdown_embed}', 'Obsidian')" title="Copy Obsidian syntax">
+                        <i class="fa fa-copy"></i> ![[]]
+                    </button>
+                    <button type="button" class="btn btn-xs btn-primary" onclick="copyMarkdown('${imageData.markdown_standard}', 'Standard')" title="Copy Standard markdown">
+                        <i class="fa fa-copy"></i> ![](url)
+                    </button>
+                </div>
+            </div>
+            <div class="image-name">${imageData.filename}</div>
+        `;
+        
+        imageGrid.insertBefore(imageItem, imageGrid.firstChild);
+    }
+    
+    window.copyMarkdown = function(markdownText, type) {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(markdownText).then(() => {
+                // Show temporary success message
+                const tempMsg = document.createElement('span');
+                tempMsg.innerHTML = ` <span style="color: #28a745;"><i class="fa fa-check"></i> ${type} markdown copied!</span>`;
+                uploadStatus.appendChild(tempMsg);
+                
+                setTimeout(() => {
+                    if (tempMsg.parentNode) {
+                        tempMsg.parentNode.removeChild(tempMsg);
+                    }
+                }, 2000);
+            });
+        } else {
+            // Fallback for older browsers
+            const textarea = document.createElement('textarea');
+            textarea.value = markdownText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            
+            uploadStatus.innerHTML += ` <span style="color: #28a745;"><i class="fa fa-check"></i> ${type} markdown copied!</span>`;
+        }
+    };
+});
+</script>
+{% endblock %}

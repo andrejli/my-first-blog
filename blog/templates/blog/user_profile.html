@@ -1,0 +1,258 @@
+{% extends 'blog/base.html' %}
+{% load markdown_extras %}
+
+{% block title %}{{ profile_user.get_full_name|default:profile_user.username }} - User Profile{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+            <!-- User Profile Header -->
+            <div class="profile-header">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <div class="profile-avatar">
+                            <i class="fa fa-user-circle fa-5x text-primary"></i>
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <h1 class="profile-name">
+                            {{ profile_user.get_full_name|default:profile_user.username }}
+                            {% if user_profile %}
+                                <span class="badge badge-{{ user_profile.role|lower }}">{{ user_profile.get_role_display }}</span>
+                            {% endif %}
+                        </h1>
+                        
+                        {% if user_profile and user_profile.bio %}
+                        <div class="profile-bio">
+                            <p>{{ user_profile.bio }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="profile-stats">
+                            <span class="stat-item">
+                                <i class="fa fa-edit"></i> {{ total_blog_posts }} Blog Post{{ total_blog_posts|pluralize }}
+                            </span>
+                            {% if user_profile %}
+                            <span class="stat-item">
+                                <i class="fa fa-calendar"></i> Member since {{ user_profile.created_date|date:"F Y" }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Blog Posts Section -->
+            <div class="profile-section">
+                <div class="section-header">
+                    <h3>
+                        <i class="fa fa-newspaper-o"></i> Recent Blog Posts
+                        {% if total_blog_posts > 0 %}
+                            <a href="{% url 'user_blog_list' profile_user.username %}" class="btn btn-sm btn-default pull-right">
+                                View All Posts
+                            </a>
+                        {% endif %}
+                    </h3>
+                </div>
+                
+                {% if blog_posts %}
+                    <div class="blog-posts-grid">
+                        {% for post in blog_posts %}
+                        <div class="blog-post-card">
+                            <div class="post-header">
+                                <h4>
+                                    <a href="{% url 'blog_post_detail' profile_user.username post.slug %}" 
+                                       class="post-title">{{ post.title }}</a>
+                                </h4>
+                                <div class="post-meta">
+                                    <span class="post-date">
+                                        <i class="fa fa-calendar"></i> {{ post.published_date|date:"M d, Y" }}
+                                    </span>
+                                    <span class="post-views">
+                                        <i class="fa fa-eye"></i> {{ post.view_count }} view{{ post.view_count|pluralize }}
+                                    </span>
+                                    <span class="post-comments">
+                                        <i class="fa fa-comments"></i> {{ post.get_comment_count }} comment{{ post.get_comment_count|pluralize }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            {% if post.excerpt %}
+                            <div class="post-excerpt">
+                                {{ post.excerpt }}
+                            </div>
+                            {% else %}
+                            <div class="post-excerpt">
+                                {{ post.content|obsidian_markdown|truncatewords:30|striptags }}
+                            </div>
+                            {% endif %}
+                            
+                            <div class="post-footer">
+                                <a href="{% url 'blog_post_detail' profile_user.username post.slug %}" 
+                                   class="btn btn-sm btn-primary">
+                                    Read More <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fa fa-edit fa-3x text-muted"></i>
+                        <h4>No Blog Posts Yet</h4>
+                        <p class="text-muted">
+                            {% if profile_user == user %}
+                                You haven't written any blog posts yet. 
+                                <a href="{% url 'create_blog_post' %}">Write your first post!</a>
+                            {% else %}
+                                {{ profile_user.get_full_name|default:profile_user.username }} hasn't written any blog posts yet.
+                            {% endif %}
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Actions for Current User -->
+            {% if profile_user == user %}
+            <div class="profile-actions">
+                <a href="{% url 'my_blog_dashboard' %}" class="btn btn-primary">
+                    <i class="fa fa-dashboard"></i> Manage My Blog
+                </a>
+                <a href="{% url 'create_blog_post' %}" class="btn btn-success">
+                    <i class="fa fa-plus"></i> Write New Post
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.profile-header {
+    background: rgba(0, 255, 0, 0.1);
+    padding: 30px;
+    border-radius: 5px;
+    margin-bottom: 30px;
+    border: 1px solid #333;
+}
+
+.profile-name {
+    color: #00ff00;
+    margin-bottom: 10px;
+}
+
+.badge-student {
+    background-color: #17a2b8;
+}
+
+.badge-instructor {
+    background-color: #007bff;
+}
+
+.badge-admin {
+    background-color: #dc3545;
+}
+
+.profile-bio {
+    margin: 15px 0;
+    color: #ccc;
+}
+
+.profile-stats {
+    margin-top: 15px;
+}
+
+.stat-item {
+    display: inline-block;
+    margin-right: 20px;
+    color: #999;
+}
+
+.stat-item i {
+    margin-right: 5px;
+    color: #00ff00;
+}
+
+.profile-section {
+    margin-bottom: 30px;
+}
+
+.section-header {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #333;
+}
+
+.section-header h3 {
+    color: #00ff00;
+    margin: 0;
+}
+
+.blog-posts-grid {
+    display: grid;
+    gap: 20px;
+}
+
+.blog-post-card {
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 20px;
+    transition: border-color 0.3s;
+}
+
+.blog-post-card:hover {
+    border-color: #00ff00;
+}
+
+.post-title {
+    color: #00ff00;
+    text-decoration: none;
+    font-size: 18px;
+}
+
+.post-title:hover {
+    color: #32cd32;
+    text-decoration: none;
+}
+
+.post-meta {
+    margin: 10px 0;
+    font-size: 12px;
+    color: #999;
+}
+
+.post-meta span {
+    margin-right: 15px;
+}
+
+.post-excerpt {
+    color: #ccc;
+    margin: 15px 0;
+    line-height: 1.5;
+}
+
+.post-footer {
+    margin-top: 15px;
+    text-align: right;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 50px 20px;
+    color: #999;
+}
+
+.profile-actions {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #333;
+}
+
+.profile-actions .btn {
+    margin: 0 10px;
+}
+</style>
+{% endblock %}

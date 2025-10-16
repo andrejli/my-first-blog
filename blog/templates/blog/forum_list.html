@@ -118,6 +118,32 @@
                             {% endif %}
                         </div>
                     </div>
+                    
+                    <!-- Community Cross-Promotion -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fa fa-globe"></i> Explore More</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">Beyond forums, discover what the community is sharing:</p>
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'all_blogs' %}" class="btn btn-outline-info">
+                                    <i class="fa fa-blog"></i> Browse Community Blogs
+                                </a>
+                                {% if user.is_authenticated %}
+                                <a href="{% url 'my_blog_dashboard' %}" class="btn btn-outline-primary">
+                                    <i class="fa fa-edit"></i> Manage My Blog
+                                </a>
+                                <a href="{% url 'create_blog_post' %}" class="btn btn-outline-success">
+                                    <i class="fa fa-plus"></i> Write Blog Post
+                                </a>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted mt-2 d-block">
+                                Share longer thoughts, tutorials, and experiences through personal blogs!
+                            </small>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,0 +1,624 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block title %}My Blog Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="row">
+            <div class="col-md-8">
+                <h1><i class="fa fa-dashboard"></i> My Blog Dashboard</h1>
+                <p class="dashboard-subtitle">
+                    Manage your blog posts, track your readership, and engage with your community.
+                </p>
+            </div>
+            <div class="col-md-4 text-right">
+                <a href="{% url 'create_blog_post' %}" class="btn btn-primary btn-lg">
+                    <i class="fa fa-plus"></i> New Blog Post
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="stats-overview">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fa fa-file-text"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ total_posts }}</h3>
+                        <p>Total Posts</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fa fa-eye"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ total_views }}</h3>
+                        <p>Total Views</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fa fa-comments"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ total_comments }}</h3>
+                        <p>Total Comments</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fa fa-calendar"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>{{ posts_this_month }}</h3>
+                        <p>This Month</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter and Search -->
+    <div class="blog-controls">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="filter-tabs">
+                    <a href="?status=all" class="filter-tab {% if not request.GET.status or request.GET.status == 'all' %}active{% endif %}">
+                        All Posts ({{ total_posts }})
+                    </a>
+                    <a href="?status=published" class="filter-tab {% if request.GET.status == 'published' %}active{% endif %}">
+                        Published ({{ published_count }})
+                    </a>
+                    <a href="?status=draft" class="filter-tab {% if request.GET.status == 'draft' %}active{% endif %}">
+                        Drafts ({{ draft_count }})
+                    </a>
+                    <a href="?status=archived" class="filter-tab {% if request.GET.status == 'archived' %}active{% endif %}">
+                        Archived ({{ archived_count }})
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <form method="get" class="search-form">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="search" 
+                               value="{{ request.GET.search }}" 
+                               placeholder="Search your posts...">
+                        <span class="input-group-btn">
+                            <button type="submit" class="btn btn-default">
+                                <i class="fa fa-search"></i>
+                            </button>
+                        </span>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Blog Posts Table -->
+    <div class="blog-posts-table">
+        {% if blog_posts %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Status</th>
+                        <th>Views</th>
+                        <th>Comments</th>
+                        <th>Created</th>
+                        <th>Updated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for post in blog_posts %}
+                    <tr class="post-row" data-status="{{ post.status }}">
+                        <td class="post-title">
+                            <h4>
+                                {% if post.status == 'published' %}
+                                <a href="{% url 'blog_post_detail' user.username post.slug %}">
+                                    {{ post.title }}
+                                </a>
+                                {% else %}
+                                {{ post.title }}
+                                {% endif %}
+                            </h4>
+                            {% if post.excerpt %}
+                            <p class="post-excerpt">{{ post.excerpt|truncatewords:15 }}</p>
+                            {% else %}
+                            <p class="post-excerpt">{{ post.content|truncatewords:15|striptags }}</p>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ post.status }}">
+                                {% if post.status == 'published' %}
+                                <i class="fa fa-eye"></i> Published
+                                {% elif post.status == 'draft' %}
+                                <i class="fa fa-edit"></i> Draft
+                                {% elif post.status == 'archived' %}
+                                <i class="fa fa-archive"></i> Archived
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="metric-value">
+                                <i class="fa fa-eye"></i> {{ post.view_count }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="metric-value">
+                                <i class="fa fa-comments"></i> {{ post.comments.count }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="date-value">
+                                {{ post.created_at|date:"M d, Y" }}
+                                <small>{{ post.created_at|date:"H:i" }}</small>
+                            </span>
+                        </td>
+                        <td>
+                            <span class="date-value">
+                                {{ post.updated_at|date:"M d, Y" }}
+                                <small>{{ post.updated_at|date:"H:i" }}</small>
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                {% if post.status == 'published' %}
+                                <a href="{% url 'blog_post_detail' user.username post.slug %}" 
+                                   class="btn btn-xs btn-info" title="View Post">
+                                    <i class="fa fa-eye"></i>
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'edit_blog_post' post.id %}" 
+                                   class="btn btn-xs btn-warning" title="Edit Post">
+                                    <i class="fa fa-edit"></i>
+                                </a>
+                                <a href="{% url 'delete_blog_post' post.id %}" 
+                                   class="btn btn-xs btn-danger" title="Delete Post"
+                                   onclick="return confirm('Are you sure you want to delete this post?')">
+                                    <i class="fa fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="pagination-wrapper">
+            <nav aria-label="Blog posts pagination">
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                    <li>
+                        <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                           aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="active"><span>{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li>
+                        <a href="?page={{ num }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li>
+                        <a href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                           aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            {% if request.GET.search %}
+            <div class="empty-icon">
+                <i class="fa fa-search"></i>
+            </div>
+            <h3>No posts found</h3>
+            <p>No blog posts match your search criteria "{{ request.GET.search }}".</p>
+            <a href="{% url 'my_blog_dashboard' %}" class="btn btn-default">
+                <i class="fa fa-refresh"></i> Clear Search
+            </a>
+            {% else %}
+            <div class="empty-icon">
+                <i class="fa fa-file-text-o"></i>
+            </div>
+            <h3>No blog posts yet</h3>
+            <p>You haven't created any blog posts yet. Start sharing your knowledge and experiences!</p>
+            <a href="{% url 'create_blog_post' %}" class="btn btn-primary btn-lg">
+                <i class="fa fa-plus"></i> Create Your First Post
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick Tips -->
+    <div class="dashboard-tips">
+        <h4><i class="fa fa-lightbulb-o"></i> Blog Tips</h4>
+        <div class="tips-grid">
+            <div class="tip">
+                <strong>Consistency:</strong> Regular posting helps build your audience and improve your writing skills.
+            </div>
+            <div class="tip">
+                <strong>Engagement:</strong> Respond to comments on your posts to build community and encourage discussion.
+            </div>
+            <div class="tip">
+                <strong>SEO:</strong> Use descriptive titles and excerpts to help people discover your content.
+            </div>
+            <div class="tip">
+                <strong>Quality:</strong> Focus on providing value to your readers with well-researched, helpful content.
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.dashboard-header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #333;
+}
+
+.dashboard-header h1 {
+    color: #00ff00;
+    margin-bottom: 10px;
+}
+
+.dashboard-subtitle {
+    color: #999;
+    margin: 0;
+}
+
+.stats-overview {
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    border-color: #00ff00;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+}
+
+.stat-icon {
+    margin-right: 15px;
+    font-size: 24px;
+    color: #00ff00;
+    width: 40px;
+    text-align: center;
+}
+
+.stat-content h3 {
+    color: #fff;
+    margin: 0;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.stat-content p {
+    color: #999;
+    margin: 0;
+    font-size: 12px;
+}
+
+.blog-controls {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #333;
+    border-radius: 5px;
+}
+
+.filter-tabs {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.filter-tab {
+    padding: 8px 15px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #999;
+    text-decoration: none;
+    border: 1px solid #444;
+    border-radius: 3px;
+    font-size: 12px;
+    transition: all 0.3s ease;
+}
+
+.filter-tab:hover {
+    color: #00ff00;
+    border-color: #00ff00;
+    text-decoration: none;
+}
+
+.filter-tab.active {
+    background: #00ff00;
+    color: #000;
+    border-color: #00ff00;
+}
+
+.search-form .form-control {
+    background: rgba(0, 0, 0, 0.9) !important;
+    border: 1px solid #555 !important;
+    color: #ccc !important;
+}
+
+.search-form .form-control:focus {
+    border-color: #00ff00 !important;
+    box-shadow: none !important;
+}
+
+.blog-posts-table {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #333;
+    border-radius: 5px;
+    margin-bottom: 30px;
+}
+
+.table {
+    color: #ccc;
+    margin: 0;
+}
+
+.table thead tr {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+.table thead th {
+    border-color: #333;
+    color: #00ff00;
+    font-weight: bold;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.table tbody tr {
+    border-color: #333;
+}
+
+.table tbody tr:hover {
+    background: rgba(0, 255, 0, 0.05);
+}
+
+.post-title h4 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+}
+
+.post-title h4 a {
+    color: #ccc;
+    text-decoration: none;
+}
+
+.post-title h4 a:hover {
+    color: #00ff00;
+}
+
+.post-excerpt {
+    color: #999;
+    font-size: 12px;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.status-published {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+    border: 1px solid #28a745;
+}
+
+.status-draft {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    border: 1px solid #ffc107;
+}
+
+.status-archived {
+    background: rgba(108, 117, 125, 0.2);
+    color: #6c757d;
+    border: 1px solid #6c757d;
+}
+
+.metric-value, .date-value {
+    color: #999;
+    font-size: 12px;
+}
+
+.date-value small {
+    display: block;
+    color: #666;
+    font-size: 10px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.action-buttons .btn {
+    padding: 2px 6px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+}
+
+.empty-icon {
+    font-size: 48px;
+    color: #444;
+    margin-bottom: 20px;
+}
+
+.empty-state h3 {
+    color: #ccc;
+    margin-bottom: 15px;
+}
+
+.pagination-wrapper {
+    padding: 20px;
+    text-align: center;
+    border-top: 1px solid #333;
+}
+
+.pagination > li > a,
+.pagination > li > span {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #444;
+    color: #999;
+}
+
+.pagination > li > a:hover {
+    background: rgba(0, 255, 0, 0.1);
+    border-color: #00ff00;
+    color: #00ff00;
+}
+
+.pagination > li.active > span {
+    background: #00ff00;
+    border-color: #00ff00;
+    color: #000;
+}
+
+.dashboard-tips {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 25px;
+}
+
+.dashboard-tips h4 {
+    color: #00ff00;
+    margin-bottom: 20px;
+}
+
+.tips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.tip {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 15px;
+    color: #ccc;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.tip strong {
+    color: #00ff00;
+}
+
+@media (max-width: 768px) {
+    .dashboard-header {
+        text-align: center;
+    }
+    
+    .filter-tabs {
+        justify-content: center;
+        margin-bottom: 15px;
+    }
+    
+    .table-responsive {
+        font-size: 12px;
+    }
+    
+    .post-title h4 {
+        font-size: 14px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh dashboard every 5 minutes if user is active
+    let lastActivity = Date.now();
+    let refreshInterval;
+    
+    function updateLastActivity() {
+        lastActivity = Date.now();
+    }
+    
+    function checkRefresh() {
+        // Only refresh if user has been active in the last 10 minutes
+        if (Date.now() - lastActivity < 600000) {
+            location.reload();
+        }
+    }
+    
+    // Track user activity
+    document.addEventListener('click', updateLastActivity);
+    document.addEventListener('keypress', updateLastActivity);
+    document.addEventListener('mousemove', updateLastActivity);
+    
+    // Set refresh interval for 5 minutes
+    refreshInterval = setInterval(checkRefresh, 300000);
+    
+    // Clear interval when leaving page
+    window.addEventListener('beforeunload', function() {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+        }
+    });
+});
+</script>
+{% endblock %}

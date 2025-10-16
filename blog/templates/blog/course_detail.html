@@ -452,6 +452,36 @@
                             <p><strong>{{ course.duration_weeks }}</strong> week duration</p>
                         </div>
                     </div>
+
+                    <!-- Community -->
+                    {% if user.is_authenticated %}
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Community</h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="profile-quick-access">
+                                <h5><i class="glyphicon glyphicon-user"></i> My Profile</h5>
+                                <div class="profile-links">
+                                    <a href="{% url 'user_profile' user.username %}" class="btn btn-info btn-sm">
+                                        <i class="glyphicon glyphicon-eye-open"></i> View Profile
+                                    </a>
+                                    <a href="{% url 'my_blog_dashboard' %}" class="btn btn-primary btn-sm">
+                                        <i class="glyphicon glyphicon-edit"></i> My Blog
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="community-links">
+                                <a href="{% url 'all_blogs' %}" class="btn btn-default btn-sm">
+                                    <i class="glyphicon glyphicon-globe"></i> All Blogs
+                                </a>
+                                <a href="{% url 'forum_list' %}" class="btn btn-default btn-sm">
+                                    <i class="glyphicon glyphicon-comment"></i> Forums
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
