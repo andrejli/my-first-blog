@@ -7,11 +7,14 @@ urlpatterns = [
     path('logout/', views.user_logout, name='logout'),
     path('register/', views.user_register, name='register'),
     
+    # Public landing page
+    path('', views.landing_page, name='landing'),
+    
     # Legacy blog view
     path('posts/', views.post_list, name='post_list'),
     
     # Course views (main LMS functionality)
-    path('', views.course_list, name='course_list'),
+    path('courses/', views.course_list, name='course_list'),
     path('course/<int:course_id>/', views.course_detail, name='course_detail'),
     
     # Enrollment system
@@ -62,12 +65,14 @@ urlpatterns = [
     # Quiz Management Views
     path('instructor/course/<int:course_id>/quizzes/', views.course_quizzes, name='course_quizzes'),
     path('instructor/course/<int:course_id>/quiz/create/', views.create_quiz, name='create_quiz'),
+    path('course/<int:course_id>/quiz/create/', views.create_quiz, name='create_quiz_alt'),  # Alternative URL for tests
     path('instructor/quiz/<int:quiz_id>/', views.quiz_detail, name='quiz_detail'),
     path('instructor/quiz/<int:quiz_id>/edit/', views.edit_quiz, name='edit_quiz'),
     path('instructor/quiz/<int:quiz_id>/toggle-publish/', views.toggle_quiz_publish, name='toggle_quiz_publish'),
     
     # Question Management Views
     path('instructor/quiz/<int:quiz_id>/question/add/', views.add_question, name='add_question'),
+    path('quiz/<int:quiz_id>/question/create/', views.add_question, name='create_question'),  # Alternative URL for tests
     path('instructor/question/<int:question_id>/edit/', views.edit_question, name='edit_question'),
     path('instructor/question/<int:question_id>/delete/', views.delete_question, name='delete_question'),
     path('instructor/quiz/<int:quiz_id>/questions/reorder/', views.reorder_questions, name='reorder_questions'),

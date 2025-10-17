@@ -38,7 +38,7 @@ def admin_user():
         profile.role = 'admin'
         profile.save()
     except UserProfile.DoesNotExist:
-        UserProfile.objects.create(user=user, role='admin')
+        UserProfile.objects.get_or_create(user=user, defaults={'role': 'admin'})
     
     return user
 
@@ -65,11 +65,13 @@ def instructor_user():
         profile.phone = '555-0123'
         profile.save()
     except UserProfile.DoesNotExist:
-        UserProfile.objects.create(
+        UserProfile.objects.get_or_create(
             user=user,
-            role='instructor',
-            bio='Experienced instructor with 10+ years in computer science.',
-            phone='555-0123'
+            defaults={
+                'role': 'instructor',
+                'bio': 'Experienced instructor with 10+ years in computer science.',
+                'phone': '555-0123'
+            }
         )
     
     return user
@@ -97,11 +99,13 @@ def student_user():
         profile.phone = '555-0456'
         profile.save()
     except UserProfile.DoesNotExist:
-        UserProfile.objects.create(
+        UserProfile.objects.get_or_create(
             user=user,
-            role='student',
-            bio='Computer science student interested in web development.',
-            phone='555-0456'
+            defaults={
+                'role': 'student',
+                'bio': 'Computer science student interested in web development.',
+                'phone': '555-0456'
+            }
         )
     
     return user
@@ -208,11 +212,20 @@ def user_profile_factory():
     from blog.models import UserProfile
     
     def _create_profile(user, role='student', bio='', phone=''):
-        return UserProfile.objects.create(
+        profile, created = UserProfile.objects.get_or_create(
             user=user,
-            role=role,
-            bio=bio,
-            phone=phone
+            defaults={
+                'role': role,
+                'bio': bio,
+                'phone': phone
+            }
         )
+        # Update the profile if it already existed with different values
+        if not created and (profile.role != role or profile.bio != bio or profile.phone != phone):
+            profile.role = role
+            profile.bio = bio  
+            profile.phone = phone
+            profile.save()
+        return profile
     
     return _create_profile

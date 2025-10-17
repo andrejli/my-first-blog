@@ -37,7 +37,7 @@ class TestStudentEnrollmentWorkflow:
         """Test complete student journey from registration to course completion"""
         # Create instructor and course
         instructor = User.objects.create_user(username='prof', password='profpass')
-        UserProfile.objects.create(user=instructor, role='instructor')
+        UserProfile.objects.get_or_create(user=instructor, defaults={'role': 'instructor'})
         
         course = Course.objects.create(
             title='Introduction to Python',
@@ -84,7 +84,7 @@ class TestStudentEnrollmentWorkflow:
         
         question1 = Question.objects.create(
             quiz=quiz,
-            text='What is Python?',
+            question_text='What is Python?',
             question_type='multiple_choice',
             points=10,
             order=1
@@ -103,7 +103,7 @@ class TestStudentEnrollmentWorkflow:
         
         question2 = Question.objects.create(
             quiz=quiz,
-            text='Python is case-sensitive',
+            question_text='Python is case-sensitive',
             question_type='true_false',
             points=5,
             order=2
@@ -234,7 +234,7 @@ class TestInstructorWorkflow:
         """Test instructor creating and managing a complete course"""
         # Step 1: Instructor Registration/Login
         instructor = User.objects.create_user(username='prof', password='profpass')
-        UserProfile.objects.create(user=instructor, role='instructor')
+        UserProfile.objects.get_or_create(user=instructor, defaults={'role': 'instructor'})
         
         client.login(username='prof', password='profpass')
         
@@ -307,7 +307,7 @@ class TestInstructorWorkflow:
         
         # Add questions to quiz
         question_data = {
-            'text': 'What does "const" keyword do in JavaScript?',
+            'question_text': 'What does "const" keyword do in JavaScript?',
             'question_type': 'multiple_choice',
             'points': 10,
             'order': 1,
@@ -324,7 +324,7 @@ class TestInstructorWorkflow:
         )
         assert response.status_code == 302
         
-        question = Question.objects.get(quiz=quiz, text__contains='const keyword')
+        question = Question.objects.get(quiz=quiz, question_text__contains='const keyword')
         assert question.points == 10
         
         answers = Answer.objects.filter(question=question)
@@ -352,11 +352,11 @@ class TestInstructorWorkflow:
         
         # Step 9: Monitor Student Enrollments (simulate students enrolling)
         student1 = User.objects.create_user(username='student1', password='pass123')
-        UserProfile.objects.create(user=student1, role='student')
+        UserProfile.objects.get_or_create(user=student1, defaults={'role': 'student'})
         Enrollment.objects.create(student=student1, course=course, status='enrolled')
         
         student2 = User.objects.create_user(username='student2', password='pass123')
-        UserProfile.objects.create(user=student2, role='student')
+        UserProfile.objects.get_or_create(user=student2, defaults={'role': 'student'})
         Enrollment.objects.create(student=student2, course=course, status='enrolled')
         
         response = client.get(reverse('course_enrollments', kwargs={'course_id': course.id}))
@@ -381,7 +381,7 @@ class TestQuizTakingWorkflow:
         # Setup
         instructor = User.objects.create_user(username='prof')
         student = User.objects.create_user(username='student', password='testpass')
-        UserProfile.objects.create(user=student, role='student')
+        UserProfile.objects.get_or_create(user=student, defaults={'role': 'student'})
         
         course = Course.objects.create(
             title='Test Course',
@@ -403,27 +403,27 @@ class TestQuizTakingWorkflow:
         # Question 1: Multiple choice
         q1 = Question.objects.create(
             quiz=quiz,
-            text='What is 2 + 2?',
+            question_text='What is 2 + 2?',
             question_type='multiple_choice',
             points=10,
             order=1
         )
         
-        Answer.objects.create(question=q1, text='3', is_correct=False)
-        correct_answer_q1 = Answer.objects.create(question=q1, text='4', is_correct=True)
-        Answer.objects.create(question=q1, text='5', is_correct=False)
+        Answer.objects.create(question=q1, answer_text='3', is_correct=False)
+        correct_answer_q1 = Answer.objects.create(question=q1, answer_text='4', is_correct=True)
+        Answer.objects.create(question=q1, answer_text='5', is_correct=False)
         
         # Question 2: True/False
         q2 = Question.objects.create(
             quiz=quiz,
-            text='The square root of 16 is 4',
+            question_text='The square root of 16 is 4',
             question_type='true_false',
             points=5,
             order=2
         )
         
-        correct_answer_q2 = Answer.objects.create(question=q2, text='True', is_correct=True)
-        Answer.objects.create(question=q2, text='False', is_correct=False)
+        correct_answer_q2 = Answer.objects.create(question=q2, answer_text='True', is_correct=True)
+        Answer.objects.create(question=q2, answer_text='False', is_correct=False)
         
         client.login(username='student', password='testpass')
         
@@ -533,10 +533,10 @@ class TestAssignmentGradingWorkflow:
         """Test student submitting assignment and instructor grading it"""
         # Setup
         instructor = User.objects.create_user(username='prof', password='profpass')
-        UserProfile.objects.create(user=instructor, role='instructor')
+        UserProfile.objects.get_or_create(user=instructor, defaults={'role': 'instructor'})
         
         student = User.objects.create_user(username='student', password='studpass')
-        UserProfile.objects.create(user=student, role='student')
+        UserProfile.objects.get_or_create(user=student, defaults={'role': 'student'})
         
         course = Course.objects.create(
             title='Programming Course',
@@ -651,7 +651,7 @@ class TestMultiUserInteractions:
         """Test multiple students enrolled in the same course"""
         # Setup
         instructor = User.objects.create_user(username='prof')
-        UserProfile.objects.create(user=instructor, role='instructor')
+        UserProfile.objects.get_or_create(user=instructor, defaults={'role': 'instructor'})
         
         course = Course.objects.create(
             title='Data Science',
@@ -669,15 +669,15 @@ class TestMultiUserInteractions:
         
         question = Question.objects.create(
             quiz=quiz,
-            text='What is the mean of [1, 2, 3, 4, 5]?',
+            question_text='What is the mean of [1, 2, 3, 4, 5]?',
             question_type='multiple_choice',
             points=10,
             order=1
         )
         
-        correct_answer = Answer.objects.create(question=question, text='3', is_correct=True)
-        Answer.objects.create(question=question, text='2.5', is_correct=False)
-        Answer.objects.create(question=question, text='4', is_correct=False)
+        correct_answer = Answer.objects.create(question=question, answer_text='3', is_correct=True)
+        Answer.objects.create(question=question, answer_text='2.5', is_correct=False)
+        Answer.objects.create(question=question, answer_text='4', is_correct=False)
         
         # Create multiple students
         students = []
@@ -686,7 +686,7 @@ class TestMultiUserInteractions:
                 username=f'student{i+1}',
                 password=f'pass{i+1}'
             )
-            UserProfile.objects.create(user=student, role='student')
+            UserProfile.objects.get_or_create(user=student, defaults={'role': 'student'})
             Enrollment.objects.create(student=student, course=course, status='enrolled')
             students.append(student)
         
@@ -736,7 +736,7 @@ class TestMultiUserInteractions:
     def test_instructor_managing_multiple_courses(self, client):
         """Test instructor managing multiple courses with different students"""
         instructor = User.objects.create_user(username='prof', password='profpass')
-        UserProfile.objects.create(user=instructor, role='instructor')
+        UserProfile.objects.get_or_create(user=instructor, defaults={'role': 'instructor'})
         
         # Create multiple courses
         course1 = Course.objects.create(
@@ -774,15 +774,15 @@ class TestMultiUserInteractions:
         
         # Create students for different courses
         student1 = User.objects.create_user(username='student1', password='pass1')
-        UserProfile.objects.create(user=student1, role='student')
+        UserProfile.objects.get_or_create(user=student1, defaults={'role': 'student'})
         Enrollment.objects.create(student=student1, course=course1, status='enrolled')
         
         student2 = User.objects.create_user(username='student2', password='pass2')
-        UserProfile.objects.create(user=student2, role='student')
+        UserProfile.objects.get_or_create(user=student2, defaults={'role': 'student'})
         Enrollment.objects.create(student=student2, course=course2, status='enrolled')
         
         student3 = User.objects.create_user(username='student3', password='pass3')
-        UserProfile.objects.create(user=student3, role='student')
+        UserProfile.objects.get_or_create(user=student3, defaults={'role': 'student'})
         # Student 3 enrolled in both courses
         Enrollment.objects.create(student=student3, course=course1, status='enrolled')
         Enrollment.objects.create(student=student3, course=course2, status='enrolled')

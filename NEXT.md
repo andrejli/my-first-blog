@@ -119,7 +119,7 @@
 - ✅ **Responsive Design**: Mobile-friendly blog layouts and interfaces
 
 #### **🎨 Visual Theming System** ⭐ **ENHANCED!**
-- ✅ **Multiple Color Schemes**: 5 built-in themes (Terminal Green, Dark Blue, Light, Cyberpunk, Matrix)
+- ✅ **Multiple Color Schemes**: 5 built-in themes (Terminal Amber, Dark Blue, Light, Cyberpunk, Matrix)
 - ✅ **CSS Custom Properties**: Flexible variable-based styling system
 - ✅ **Live Theme Switching**: Instant theme changes with smooth transitions
 - ✅ **Database Storage**: User theme preferences saved to database ⭐ **NEW!**
@@ -1383,7 +1383,7 @@ The Terminal LMS now includes a professional-grade testing infrastructure ensuri
 ---
 
 *End of NEXT.md - Terminal LMS Development Complete* 🎉
-1. **Terminal Green** (Default) - Classic dark terminal with green accents
+1. **Terminal Amber** (Default) - Classic dark terminal with amber accents
 2. **Dark Blue** - GitHub-inspired dark blue theme
 3. **Light Mode** - Clean light theme for daytime use
 4. **Cyberpunk** - Futuristic magenta/cyan theme

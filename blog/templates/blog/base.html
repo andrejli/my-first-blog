@@ -16,8 +16,9 @@
 <body>
     {% csrf_token %}
     <div class="page-header">
-        <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
+        <h1><a href="{% url 'landing' %}">⚡ Terminal LMS</a></h1>
         <div class="top-menu">
+            <span class="zulu-time">ZULU: <span id="watch">--:--:--:---</span></span>
             {% if user.is_authenticated %}
                 <span>user@lms:~$ whoami → {{ user.username }}</span>
                 <a href="{% url 'forum_list' %}" class="btn btn-default">forums</a>
@@ -34,7 +35,6 @@
                 {% endif %}
                 <a href="{% url 'logout' %}" class="btn btn-default">logout</a>
             {% else %}
-                <a href="{% url 'all_blogs' %}" class="btn btn-default">blogs</a>
                 <a href="{% url 'login' %}" class="btn btn-default">login</a>
                 <a href="{% url 'register' %}" class="btn btn-default">register</a>
             {% endif %}
@@ -88,6 +88,38 @@
     </script>
     
     <script src="{% static 'js/theme-switcher.js' %}"></script>
+    
+    <!-- ZULU/GMT Time Clock -->
+    <script>
+        function ActualTime() {
+            var now = new Date();
+            // Get UTC time components
+            var hours = now.getUTCHours();
+            var minutes = now.getUTCMinutes();
+            var seconds = now.getUTCSeconds();
+            var milliseconds = now.getUTCMilliseconds();
+            
+            minutes = actualizeTime(minutes);
+            seconds = actualizeTime(seconds);
+            // Format milliseconds to 3 digits
+            milliseconds = String(milliseconds).padStart(3, '0');
+            
+            document.getElementById('watch').innerHTML =
+                hours + ":" + minutes + ":" + seconds + ":" + milliseconds;
+            var timer = setTimeout(ActualTime, 1);
+        }
+        
+        function actualizeTime(i) {
+            if (i < 10) {i = "0" + i}
+            return i;
+        }
+        
+        // Start the clock when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            ActualTime();
+        });
+    </script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html>

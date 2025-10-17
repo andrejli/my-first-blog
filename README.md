@@ -2,7 +2,7 @@
 
 An ultralight Learning Management System (LMS) built with Django, featuring a terminal-inspired dark theme and focused on simplicity and educational use.
 
-![Terminal Theme](https://img.shields.io/badge/Theme-Terminal-green?style=flat-square&logo=linux)
+![Terminal Theme](https://img.shields.io/badge/Theme-Terminal-orange?style=flat-square&logo=linux)
 ![Django](https://img.shields.io/badge/Django-5.2+-success?style=flat-square&logo=django)
 ![Python](https://img.shields.io/badge/Python-3.8+-blue?style=flat-square&logo=python)
 ![License](https://img.shields.io/badge/License-GPL%20v3-blue?style=flat-square)

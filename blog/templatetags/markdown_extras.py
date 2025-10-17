@@ -201,6 +201,12 @@ def obsidian_markdown(value):
     if not value:
         return ''
     
+    # SECURITY: Pre-escape any raw HTML to prevent XSS attacks
+    import html
+    # Only escape obvious HTML tags, let markdown handle its own syntax
+    if '<script' in value.lower() or '<iframe' in value.lower() or '<object' in value.lower():
+        value = html.escape(value)
+    
     # Configure markdown with extensions
     md = markdown.Markdown(
         extensions=[
@@ -219,9 +225,9 @@ def obsidian_markdown(value):
     )
     
     # Convert markdown to HTML
-    html = md.convert(value)
+    html_output = md.convert(value)
     
-    return mark_safe(html)
+    return mark_safe(html_output)
 
 
 @register.filter

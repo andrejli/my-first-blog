@@ -7,20 +7,20 @@
    COLOR SCHEME DEFINITIONS
    ================================= */
 
-/* Default Theme: Terminal Green */
+/* Default Theme: Amber Orange */
 :root {
     --primary-bg: #000000;
     --secondary-bg: #0f0f0f;
     --tertiary-bg: #111111;
     --quaternary-bg: #1a1a1a;
     
-    --primary-color: #ffc107;
-    --secondary-color: #32cd32;
-    --accent-color: #00ff00;
+    --primary-color: #ff8c00;
+    --secondary-color: #ffa500;
+    --accent-color: #ff6600;
     --muted-color: #888888;
     --text-light: #ffffff;
     
-    --border-color: #32cd32;
+    --border-color: #ffa500;
     --border-secondary: #333333;
     
     --success-color: #28a745;
@@ -28,9 +28,9 @@
     --danger-color: #dc3545;
     --info-color: #17a2b8;
     
-    --shadow-primary: rgba(50, 205, 50, 0.2);
-    --shadow-secondary: rgba(50, 205, 50, 0.3);
-    --shadow-accent: rgba(50, 205, 50, 0.5);
+    --shadow-primary: rgba(255, 165, 0, 0.2);
+    --shadow-secondary: rgba(255, 165, 0, 0.3);
+    --shadow-accent: rgba(255, 102, 0, 0.5);
     
     --font-family-primary: 'Ubuntu', sans-serif;
     --font-family-mono: 'Ubuntu Mono', monospace;
@@ -221,10 +221,40 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 14px;
 }
 
+/* ZULU Time Clock Styling */
+.zulu-time {
+    background-color: var(--tertiary-bg) !important;
+    color: var(--accent-color) !important;
+    border: 1px solid var(--accent-color) !important;
+    padding: 4px 8px !important;
+    border-radius: 3px !important;
+    font-family: 'Ubuntu Mono', monospace !important;
+    font-weight: 700 !important;
+    text-shadow: 0 0 5px var(--shadow-accent) !important;
+    box-shadow: inset 0 0 5px var(--shadow-primary) !important;
+    animation: zulu-glow 2s infinite alternate;
+}
+
+#watch {
+    color: var(--accent-color);
+    font-family: 'Ubuntu Mono', monospace;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+@keyframes zulu-glow {
+    0% { 
+        box-shadow: inset 0 0 5px var(--shadow-primary), 0 0 3px var(--shadow-accent); 
+    }
+    100% { 
+        box-shadow: inset 0 0 10px var(--shadow-primary), 0 0 6px var(--shadow-accent); 
+    }
+}
+
 .top-menu .btn {
-    background-color: #1a1a1a;
-    color: #32cd32;
-    border: 1px solid #32cd32;
+    background-color: var(--quaternary-bg);
+    color: var(--secondary-color);
+    border: 1px solid var(--secondary-color);
     font-family: 'Ubuntu Mono', monospace;
     transition: all 0.3s ease;
 }

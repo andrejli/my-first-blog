@@ -85,7 +85,7 @@ class TestAuthenticationViews:
     def test_user_login_post_success(self, client):
         """Test successful user login"""
         user = User.objects.create_user(username='testuser', password='testpass123')
-        UserProfile.objects.create(user=user, role='student')
+        UserProfile.objects.get_or_create(user=user, defaults={'role': 'student'})
         
         login_data = {
             'username': 'testuser',
@@ -176,7 +176,9 @@ class TestCourseViews:
     def test_course_detail_view_draft_as_instructor(self, client):
         """Test course detail view for draft course as instructor"""
         instructor = User.objects.create_user(username='prof', password='testpass')
-        UserProfile.objects.create(user=instructor, role='instructor')
+        profile, created = UserProfile.objects.get_or_create(user=instructor, defaults={'role': 'instructor'})
+        profile.role = 'instructor'
+        profile.save()
         course = Course.objects.create(
             title='Draft Course',
             course_code='DRA101',
@@ -195,7 +197,7 @@ class TestCourseViews:
         """Test course detail view for draft course as non-instructor"""
         instructor = User.objects.create_user(username='prof')
         other_user = User.objects.create_user(username='student', password='testpass')
-        UserProfile.objects.create(user=other_user, role='student')
+        UserProfile.objects.get_or_create(user=other_user, defaults={'role': 'student'})
         
         course = Course.objects.create(
             title='Draft Course',
@@ -215,7 +217,7 @@ class TestCourseViews:
         """Test course detail view with enrolled student"""
         instructor = User.objects.create_user(username='prof')
         student = User.objects.create_user(username='student', password='testpass')
-        UserProfile.objects.create(user=student, role='student')
+        UserProfile.objects.get_or_create(user=student, defaults={'role': 'student'})
         
         course = Course.objects.create(
             title='Test Course',
@@ -248,7 +250,7 @@ class TestLessonViews:
         """Test lesson detail view for authenticated user"""
         instructor = User.objects.create_user(username='prof')
         student = User.objects.create_user(username='student', password='testpass')
-        UserProfile.objects.create(user=student, role='student')
+        UserProfile.objects.get_or_create(user=student, defaults={'role': 'student'})
         
         course = Course.objects.create(
             title='Test Course',
@@ -303,7 +305,7 @@ class TestLessonViews:
         """Test lesson detail view for non-enrolled student"""
         instructor = User.objects.create_user(username='prof')
         student = User.objects.create_user(username='student', password='testpass')
-        UserProfile.objects.create(user=student, role='student')
+        UserProfile.objects.get_or_create(user=student, defaults={'role': 'student'})
         
         course = Course.objects.create(
             title='Test Course',
@@ -341,7 +343,7 @@ class TestAssignmentViews:
         """Test assignment detail view"""
         instructor = User.objects.create_user(username='prof')
         student = User.objects.create_user(username='student', password='testpass')
-        UserProfile.objects.create(user=student, role='student')
+        UserProfile.objects.get_or_create(user=student, defaults={'role': 'student'})
         
         course = Course.objects.create(
             title='Test Course',
@@ -373,7 +375,7 @@ class TestAssignmentViews:
         """Test GET request to submit assignment"""
         instructor = User.objects.create_user(username='prof')
         student = User.objects.create_user(username='student', password='testpass')
-        UserProfile.objects.create(user=student, role='student')
+        UserProfile.objects.get_or_create(user=student, defaults={'role': 'student'})
         
         course = Course.objects.create(
             title='Test Course',
@@ -403,7 +405,7 @@ class TestAssignmentViews:
         """Test POST request to submit assignment"""
         instructor = User.objects.create_user(username='prof')
         student = User.objects.create_user(username='student', password='testpass')
-        UserProfile.objects.create(user=student, role='student')
+        UserProfile.objects.get_or_create(user=student, defaults={'role': 'student'})
         
         course = Course.objects.create(
             title='Test Course',
@@ -458,7 +460,7 @@ class TestQuizViews:
         """Test quiz list view for students"""
         instructor = User.objects.create_user(username='prof')
         student = User.objects.create_user(username='student', password='testpass')
-        UserProfile.objects.create(user=student, role='student')
+        UserProfile.objects.get_or_create(user=student, defaults={'role': 'student'})
         
         course = Course.objects.create(
             title='Test Course',
@@ -495,7 +497,7 @@ class TestQuizViews:
         """Test starting a quiz"""
         instructor = User.objects.create_user(username='prof')
         student = User.objects.create_user(username='student', password='testpass')
-        UserProfile.objects.create(user=student, role='student')
+        UserProfile.objects.get_or_create(user=student, defaults={'role': 'student'})
         
         course = Course.objects.create(
             title='Test Course',
@@ -529,7 +531,7 @@ class TestQuizViews:
         """Test starting quiz when max attempts reached"""
         instructor = User.objects.create_user(username='prof')
         student = User.objects.create_user(username='student', password='testpass')
-        UserProfile.objects.create(user=student, role='student')
+        UserProfile.objects.get_or_create(user=student, defaults={'role': 'student'})
         
         course = Course.objects.create(
             title='Test Course',
@@ -574,8 +576,8 @@ class TestDashboardViews:
     
     def test_student_dashboard(self, client):
         """Test student dashboard view"""
-        student = User.objects.create_user(username='student', password='testpass')
-        UserProfile.objects.create(user=student, role='student')
+        student = User.objects.create_user(username='student_dashboard', password='testpass')
+        UserProfile.objects.get_or_create(user=student, defaults={'role': 'student'})
         
         instructor = User.objects.create_user(username='prof')
         course = Course.objects.create(
@@ -589,7 +591,7 @@ class TestDashboardViews:
         # Enroll student
         Enrollment.objects.create(student=student, course=course, status='enrolled')
         
-        client.login(username='student', password='testpass')
+        client.login(username='student_dashboard', password='testpass')
         response = client.get(reverse('student_dashboard'))
         
         assert response.status_code == 200
@@ -598,8 +600,11 @@ class TestDashboardViews:
     
     def test_instructor_dashboard(self, client):
         """Test instructor dashboard view"""
-        instructor = User.objects.create_user(username='prof', password='testpass')
-        UserProfile.objects.create(user=instructor, role='instructor')
+        instructor = User.objects.create_user(username='prof_dashboard', password='testpass')
+        profile, created = UserProfile.objects.get_or_create(user=instructor, defaults={'role': 'instructor'})
+        if not created:
+            profile.role = 'instructor'
+            profile.save()
         
         course = Course.objects.create(
             title='Test Course',
@@ -608,19 +613,22 @@ class TestDashboardViews:
             instructor=instructor
         )
         
-        client.login(username='prof', password='testpass')
+        client.login(username='prof_dashboard', password='testpass')
         response = client.get(reverse('instructor_dashboard'))
         
         assert response.status_code == 200
-        assert 'courses' in response.context
-        assert course in response.context['courses']
+        assert 'course_stats' in response.context
+        # The course should be in the first course_stats entry
+        assert len(response.context['course_stats']) == 1
+        assert response.context['course_stats'][0]['course'] == course
     
     def test_student_dashboard_no_profile(self, client):
         """Test student dashboard redirect when no profile exists"""
-        student = User.objects.create_user(username='student', password='testpass')
-        # Don't create profile
+        student = User.objects.create_user(username='student_no_profile', password='testpass')
+        # Delete the automatically created profile to test no profile scenario
+        UserProfile.objects.filter(user=student).delete()
         
-        client.login(username='student', password='testpass')
+        client.login(username='student_no_profile', password='testpass')
         response = client.get(reverse('student_dashboard'))
         
         # Should redirect to course list with warning
@@ -639,10 +647,10 @@ class TestEnrollmentViews:
     
     def test_enroll_in_course(self, client):
         """Test enrolling in a course"""
-        student = User.objects.create_user(username='student', password='testpass')
-        UserProfile.objects.create(user=student, role='student')
+        student = User.objects.create_user(username='student_enroll', password='testpass')
+        UserProfile.objects.get_or_create(user=student, defaults={'role': 'student'})
         
-        instructor = User.objects.create_user(username='prof')
+        instructor = User.objects.create_user(username='prof_enroll')
         course = Course.objects.create(
             title='Test Course',
             course_code='CS101',
@@ -651,7 +659,7 @@ class TestEnrollmentViews:
             status='published'
         )
         
-        client.login(username='student', password='testpass')
+        client.login(username='student_enroll', password='testpass')
         response = client.post(reverse('enroll_course', kwargs={'course_id': course.id}))
         
         # Should redirect to course detail
@@ -664,10 +672,10 @@ class TestEnrollmentViews:
     
     def test_enroll_already_enrolled(self, client):
         """Test enrolling when already enrolled"""
-        student = User.objects.create_user(username='student', password='testpass')
-        UserProfile.objects.create(user=student, role='student')
+        student = User.objects.create_user(username='student_already', password='testpass')
+        UserProfile.objects.get_or_create(user=student, defaults={'role': 'student'})
         
-        instructor = User.objects.create_user(username='prof')
+        instructor = User.objects.create_user(username='prof_already')
         course = Course.objects.create(
             title='Test Course',
             course_code='CS101',
@@ -690,10 +698,10 @@ class TestEnrollmentViews:
     
     def test_drop_course(self, client):
         """Test dropping from a course"""
-        student = User.objects.create_user(username='student', password='testpass')
-        UserProfile.objects.create(user=student, role='student')
+        student = User.objects.create_user(username='student_drop', password='testpass')
+        UserProfile.objects.get_or_create(user=student, defaults={'role': 'student'})
         
-        instructor = User.objects.create_user(username='prof')
+        instructor = User.objects.create_user(username='prof_drop')
         course = Course.objects.create(
             title='Test Course',
             course_code='CS101',
@@ -705,7 +713,7 @@ class TestEnrollmentViews:
         # Enroll student first
         Enrollment.objects.create(student=student, course=course, status='enrolled')
         
-        client.login(username='student', password='testpass')
+        client.login(username='student_drop', password='testpass')
         response = client.post(reverse('drop_course', kwargs={'course_id': course.id}))
         
         # Should redirect to course detail

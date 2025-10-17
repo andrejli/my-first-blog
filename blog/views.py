@@ -77,7 +77,17 @@ def post_list(request):
     return render(request, 'blog/post_list.html', {'posts': posts})
 
 
+# Public landing page
+def landing_page(request):
+    """Public landing page for the LMS"""
+    if request.user.is_authenticated:
+        # Redirect logged-in users to courses
+        return redirect('course_list')
+    return render(request, 'blog/landing.html')
+
+
 # Course listing view
+@login_required
 def course_list(request):
     """Display all published courses"""
     courses = Course.objects.filter(status='published').order_by('-published_date')
@@ -357,7 +367,9 @@ def drop_course(request, course_id):
 @login_required
 def student_dashboard(request):
     """Display student's enrolled courses and progress"""
-    if not hasattr(request.user, 'userprofile'):
+    try:
+        profile = request.user.userprofile
+    except UserProfile.DoesNotExist:
         messages.warning(request, 'Please complete your profile setup.')
         return redirect('course_list')
     
@@ -408,7 +420,12 @@ def student_dashboard(request):
 @login_required
 def instructor_dashboard(request):
     """Display instructor's courses and student management"""
-    if not hasattr(request.user, 'userprofile') or request.user.userprofile.role != 'instructor':
+    try:
+        profile = request.user.userprofile
+        if profile.role != 'instructor':
+            messages.error(request, 'Access denied. Instructor privileges required.')
+            return redirect('course_list')
+    except UserProfile.DoesNotExist:
         messages.error(request, 'Access denied. Instructor privileges required.')
         return redirect('course_list')
     
@@ -2693,14 +2710,14 @@ def get_user_theme(request):
                 default_theme = SiteTheme.objects.get(is_default=True, is_active=True)
                 theme_key = default_theme.theme_key
             except SiteTheme.DoesNotExist:
-                theme_key = 'terminal-green'  # fallback
+                theme_key = 'terminal-amber'  # fallback
     else:
         # For anonymous users, get default theme
         try:
             default_theme = SiteTheme.objects.get(is_default=True, is_active=True)
             theme_key = default_theme.theme_key
         except SiteTheme.DoesNotExist:
-            theme_key = 'terminal-green'  # fallback
+            theme_key = 'terminal-amber'  # fallback
     
     return JsonResponse({'theme': theme_key})
 
@@ -2744,6 +2761,7 @@ from django.utils.text import slugify
 from django.http import JsonResponse
 
 
+@login_required
 def user_profile(request, username):
     """Display user's public profile with their blog posts"""
     profile_user = get_object_or_404(User, username=username)
@@ -2775,6 +2793,7 @@ def user_profile(request, username):
     return render(request, 'blog/user_profile.html', context)
 
 
+@login_required
 def user_blog_list(request, username):
     """Display all published blog posts by a specific user"""
     profile_user = get_object_or_404(User, username=username)
@@ -2799,6 +2818,7 @@ def user_blog_list(request, username):
     return render(request, 'blog/user_blog_list.html', context)
 
 
+@login_required
 def blog_post_detail(request, username, slug):
     """Display individual blog post with comments"""
     profile_user = get_object_or_404(User, username=username)
@@ -3049,6 +3069,7 @@ def delete_blog_comment(request, comment_id):
     return render(request, 'blog/blog_comment_confirm_delete.html', context)
 
 
+@login_required
 def all_blogs(request):
     """Display recent blog posts from all users"""
     # Get all published blog posts

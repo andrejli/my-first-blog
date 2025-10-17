@@ -38,7 +38,7 @@ def admin_user():
         profile.role = 'admin'
         profile.save()
     except UserProfile.DoesNotExist:
-        UserProfile.objects.create(user=user, role='admin')
+        UserProfile.objects.get_or_create(user=user, defaults={'role': 'admin'})
     
     return user
 
@@ -65,11 +65,13 @@ def instructor_user():
         profile.phone = '555-0123'
         profile.save()
     except UserProfile.DoesNotExist:
-        UserProfile.objects.create(
+        UserProfile.objects.get_or_create(
             user=user,
-            role='instructor',
-            bio='Experienced instructor with 10+ years in computer science.',
-            phone='555-0123'
+            defaults={
+                'role': 'instructor',
+                'bio': 'Experienced instructor with 10+ years in computer science.',
+                'phone': '555-0123'
+            }
         )
     
     return user
@@ -97,11 +99,13 @@ def student_user():
         profile.phone = '555-0456'
         profile.save()
     except UserProfile.DoesNotExist:
-        UserProfile.objects.create(
+        UserProfile.objects.get_or_create(
             user=user,
-            role='student',
-            bio='Computer science student interested in web development.',
-            phone='555-0456'
+            defaults={
+                'role': 'student',
+                'bio': 'Computer science student interested in web development.',
+                'phone': '555-0456'
+            }
         )
     
     return user
@@ -117,7 +121,7 @@ def course(instructor_user):
         course_code='CS101',
         description='Learn the basics of HTML, CSS, and JavaScript.',
         instructor=instructor_user,
-        is_published=True,
+        status='published',
         duration_weeks=12,
         max_students=30
     )
@@ -140,7 +144,8 @@ def enrolled_student(student_user, course):
 def quiz(course):
     """Create a test quiz"""
     from blog.models import Quiz
-    from datetime import datetime, timedelta
+    from django.utils import timezone
+    from datetime import timedelta
     
     return Quiz.objects.create(
         course=course,
@@ -148,7 +153,7 @@ def quiz(course):
         description='Test your understanding of HTML basics.',
         time_limit=30,
         max_attempts=3,
-        due_date=datetime.now() + timedelta(days=14),
+        available_until=timezone.now() + timedelta(days=14),
         is_published=True
     )
 
@@ -161,7 +166,7 @@ def theme():
     return SiteTheme.objects.create(
         name='test_theme',
         display_name='Test Theme',
-        theme_key='terminal-green',
+        theme_key='terminal-amber',
         description='A theme for testing purposes',
         is_default=False,
         is_active=True

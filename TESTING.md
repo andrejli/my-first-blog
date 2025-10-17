@@ -371,7 +371,7 @@ def test_login_redirects(client, role, expected_redirect):
 #### **Test 15: Theme Switching**
 1. Use theme selector in navigation
 2. Test all 5 themes:
-   - Terminal Green
+   - Terminal Amber
    - Dark Blue
    - Light
    - Cyberpunk

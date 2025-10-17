@@ -6,14 +6,14 @@
 class ThemeSwitcher {
     constructor() {
         this.themes = {
-            'terminal-green': 'Terminal Green',
+            'terminal-amber': 'Terminal Amber',
             'dark-blue': 'Dark Blue', 
             'light': 'Light Mode',
             'cyberpunk': 'Cyberpunk',
             'matrix': 'Matrix'
         };
         
-        this.currentTheme = 'terminal-green'; // default fallback
+        this.currentTheme = 'terminal-amber'; // default fallback
         this.init();
     }
     
@@ -29,11 +29,11 @@ class ThemeSwitcher {
             const response = await fetch('/api/theme/get/');
             if (response.ok) {
                 const data = await response.json();
-                this.currentTheme = data.theme || 'terminal-green';
+                this.currentTheme = data.theme || 'terminal-amber';
             }
         } catch (error) {
             console.log('Could not load user theme, using default');
-            this.currentTheme = 'terminal-green';
+            this.currentTheme = 'terminal-amber';
         }
     }
     
@@ -67,8 +67,8 @@ class ThemeSwitcher {
             html.removeAttribute('data-theme');
         });
         
-        // Apply new theme (terminal-green is default, no data-theme needed)
-        if (themeName !== 'terminal-green') {
+        // Apply new theme (terminal-amber is default, no data-theme needed)
+        if (themeName !== 'terminal-amber') {
             html.setAttribute('data-theme', themeName);
         }
         

@@ -1,0 +1,163 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Welcome to Terminal LMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2 text-center">
+            <div class="welcome-section">
+                <h1 class="terminal-welcome">
+                    <i class="fa fa-graduation-cap"></i>
+                    Welcome to Terminal LMS
+                </h1>
+                <p class="lead">
+                    A modern Learning Management System with a terminal-style interface
+                </p>
+                
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <i class="fa fa-book fa-3x"></i>
+                        <h3>Courses</h3>
+                        <p>Interactive courses with lessons, assignments, and quizzes</p>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa fa-users fa-3x"></i>
+                        <h3>Community</h3>
+                        <p>Connect with instructors and fellow students</p>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fa fa-code fa-3x"></i>
+                        <h3>Terminal Style</h3>
+                        <p>Learn in a developer-friendly environment</p>
+                    </div>
+                </div>
+                
+                <div class="auth-actions">
+                    <a href="{% url 'login' %}" class="btn btn-lg btn-primary">
+                        <i class="fa fa-sign-in"></i> Login
+                    </a>
+                    <a href="{% url 'register' %}" class="btn btn-lg btn-success">
+                        <i class="fa fa-user-plus"></i> Register
+                    </a>
+                </div>
+                
+                <div class="system-info">
+                    <p class="text-muted">
+                        <i class="fa fa-terminal"></i>
+                        Terminal LMS v1.0 | Secure Learning Environment
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.welcome-section {
+    padding: 60px 0;
+}
+
+.terminal-welcome {
+    color: var(--secondary-color);
+    font-family: var(--font-family-mono);
+    text-shadow: 0 0 10px var(--shadow-accent);
+    margin-bottom: 20px;
+}
+
+.feature-grid {
+    display: flex;
+    justify-content: space-around;
+    margin: 50px 0;
+    flex-wrap: wrap;
+}
+
+.feature-item {
+    flex: 1;
+    min-width: 200px;
+    margin: 20px;
+    padding: 30px 20px;
+    background: var(--tertiary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.feature-item:hover {
+    background: var(--quaternary-bg);
+    box-shadow: 0 5px 15px var(--shadow-primary);
+    transform: translateY(-5px);
+}
+
+.feature-item i {
+    color: var(--accent-color);
+    margin-bottom: 15px;
+}
+
+.feature-item h3 {
+    color: var(--secondary-color);
+    font-family: var(--font-family-mono);
+    margin-bottom: 15px;
+}
+
+.feature-item p {
+    color: var(--text-light);
+    font-size: 14px;
+}
+
+.auth-actions {
+    margin: 40px 0;
+}
+
+.auth-actions .btn {
+    margin: 0 15px;
+    padding: 15px 30px;
+    font-family: var(--font-family-mono);
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-primary {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: var(--primary-bg);
+}
+
+.btn-primary:hover {
+    background: var(--secondary-color);
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 15px var(--shadow-accent);
+}
+
+.btn-success {
+    background: var(--success-color);
+    border-color: var(--success-color);
+    color: var(--primary-bg);
+}
+
+.btn-success:hover {
+    background: var(--secondary-color);
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 15px var(--shadow-accent);
+}
+
+.system-info {
+    margin-top: 60px;
+    font-family: var(--font-family-mono);
+    font-size: 12px;
+}
+
+@media (max-width: 768px) {
+    .feature-grid {
+        flex-direction: column;
+    }
+    
+    .auth-actions .btn {
+        display: block;
+        margin: 10px auto;
+        width: 200px;
+    }
+}
+</style>
+{% endblock %}

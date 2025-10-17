@@ -14,6 +14,7 @@
     <div class="page-header">
         <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
         <div class="top-menu">
+            <span class="zulu-time">ZULU: <span id="watch">--:--:--:---</span></span>
             {% if user.is_authenticated %}
                 <span>user@lms:~$ whoami → {{ user.username }}</span>
                 <a href="{% url 'forum_list' %}" class="btn btn-default">forums</a>
@@ -167,5 +168,36 @@
             </div>
         </div>
     </div>
+    
+    <!-- ZULU/GMT Time Clock -->
+    <script>
+        function ActualTime() {
+            var now = new Date();
+            // Get UTC time components
+            var hours = now.getUTCHours();
+            var minutes = now.getUTCMinutes();
+            var seconds = now.getUTCSeconds();
+            var milliseconds = now.getUTCMilliseconds();
+            
+            minutes = actualizeTime(minutes);
+            seconds = actualizeTime(seconds);
+            // Format milliseconds to 3 digits
+            milliseconds = String(milliseconds).padStart(3, '0');
+            
+            document.getElementById('watch').innerHTML =
+                hours + ":" + minutes + ":" + seconds + ":" + milliseconds;
+            var timer = setTimeout(ActualTime, 1);
+        }
+        
+        function actualizeTime(i) {
+            if (i < 10) {i = "0" + i}
+            return i;
+        }
+        
+        // Start the clock when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            ActualTime();
+        });
+    </script>
 </body>
 </html>

@@ -245,7 +245,7 @@
                     <div class="card-header d-flex justify-content-between align-items-start">
                         <div>
                             <h6 class="mb-1">
-                                Question {{ forloop.counter }}: {{ question.text }}
+                                Question {{ forloop.counter }}: {{ question.question_text }}
                                 {% if question.points %}
                                     <small class="text-muted">({{ question.points }} point{{ question.points|pluralize }})</small>
                                 {% endif %}

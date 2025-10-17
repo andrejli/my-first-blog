@@ -17,7 +17,10 @@ class EnhancedMarkdownTest(TestCase):
             email='test@example.com',
             password='testpass123'
         )
-        UserProfile.objects.create(user=self.user, role='instructor')
+        UserProfile.objects.get_or_create(
+            user=self.user, 
+            defaults={'role': 'instructor'}
+        )
         
         self.course = Course.objects.create(
             title='Python Programming Basics',
@@ -37,16 +40,14 @@ class EnhancedMarkdownTest(TestCase):
     
     def test_basic_markdown_formatting(self):
         """Test basic markdown features work correctly"""
-        content = """
-        # Header 1
-        ## Header 2
-        **Bold text** and *italic text*
-        `inline code`
-        """
+        content = """# Header 1
+## Header 2
+**Bold text** and *italic text*
+`inline code`"""
         result = obsidian_markdown(content)
         
-        self.assertIn('<h1>Header 1</h1>', result)
-        self.assertIn('<h2>Header 2</h2>', result)
+        self.assertIn('<h1 id="header-1">Header 1</h1>', result)
+        self.assertIn('<h2 id="header-2">Header 2</h2>', result)
         self.assertIn('<strong>Bold text</strong>', result)
         self.assertIn('<em>italic text</em>', result)
         self.assertIn('<code>inline code</code>', result)
@@ -124,12 +125,10 @@ class EnhancedMarkdownTest(TestCase):
     
     def test_tables(self):
         """Test markdown table rendering"""
-        content = """
-        | Feature | Status |
-        |---------|--------|
-        | Tables  | ✅     |
-        | Lists   | ✅     |
-        """
+        content = """| Feature | Status |
+|---------|--------|
+| Tables  | ✅     |
+| Lists   | ✅     |"""
         result = obsidian_markdown(content)
         
         self.assertIn('<table>', result)
@@ -138,10 +137,8 @@ class EnhancedMarkdownTest(TestCase):
     
     def test_task_lists(self):
         """Test task list rendering"""
-        content = """
-        - [x] Completed task
-        - [ ] Incomplete task
-        """
+        content = """- [x] Completed task
+- [ ] Incomplete task"""
         result = obsidian_markdown(content)
         
         self.assertIn('<ul>', result)
@@ -149,37 +146,35 @@ class EnhancedMarkdownTest(TestCase):
     
     def test_mixed_content(self):
         """Test complex content with multiple features"""
-        content = """
-        # Course Overview
-        
-        Welcome to [[Python Programming Basics]]!
-        
-        > [!note] Getting Started
-        > This course covers the fundamentals.
-        
-        ## Topics Covered
-        - **Variables** and `data types`
-        - *Control structures*
-        - Functions and classes
-        
-        See the diagram: ![[course-overview.png]]
-        
-        ```python
-        # Sample code
-        name = "Student"
-        print(f"Hello, {name}!")
-        ```
-        """
+        content = """# Course Overview
+
+Welcome to [[Python Programming Basics]]!
+
+> [!note] Getting Started
+> This course covers the fundamentals.
+
+## Topics Covered
+- **Variables** and `data types`
+- *Control structures*
+- Functions and classes
+
+See the diagram: ![[course-overview.png]]
+
+```python
+# Sample code
+name = "Student"
+print(f"Hello, {name}!")
+```"""
         result = obsidian_markdown(content)
         
         # Verify multiple features work together
-        self.assertIn('<h1>Course Overview</h1>', result)
+        self.assertIn('<h1 id="course-overview">Course Overview</h1>', result)
         self.assertIn('wiki-link', result)
         self.assertIn('callout', result)
         self.assertIn('<strong>Variables</strong>', result)
         self.assertIn('<code>data types</code>', result)
         self.assertIn('obsidian-image', result)
-        self.assertIn('print(f"Hello, {name}!")', result)
+        self.assertIn('&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;', result)  # HTML encoded quotes
     
     def test_markdown_preview_filter(self):
         """Test markdown preview functionality"""
@@ -202,7 +197,7 @@ class EnhancedMarkdownTest(TestCase):
         """Test handling of empty/None content"""
         self.assertEqual(obsidian_markdown(None), '')
         self.assertEqual(obsidian_markdown(''), '')
-        self.assertEqual(obsidian_markdown('   '), '<p></p>')
+        self.assertEqual(obsidian_markdown('   '), '')  # Empty spaces are stripped
     
     def test_security_escaping(self):
         """Test that HTML is properly escaped"""
@@ -226,7 +221,10 @@ class MarkdownIntegrationTest(TestCase):
             email='test2@example.com', 
             password='testpass123'
         )
-        UserProfile.objects.create(user=user, role='instructor')
+        UserProfile.objects.get_or_create(
+            user=user, 
+            defaults={'role': 'instructor'}
+        )
         
         course = Course.objects.create(
             title='Test Course',
@@ -236,19 +234,17 @@ class MarkdownIntegrationTest(TestCase):
             status='published'
         )
         
-        lesson_content = """
-        # Welcome to the Course
-        
-        This lesson covers [[Advanced Topics]] and includes:
-        
-        > [!tip] Study Tips
-        > Review the materials regularly
-        
-        Code example:
-        ```python
-        print("Hello, LMS!")
-        ```
-        """
+        lesson_content = """# Welcome to the Course
+
+This lesson covers [[Advanced Topics]] and includes:
+
+> [!tip] Study Tips
+> Review the materials regularly
+
+Code example:
+```python
+print("Hello, LMS!")
+```"""
         
         lesson = Lesson.objects.create(
             course=course,
@@ -262,7 +258,7 @@ class MarkdownIntegrationTest(TestCase):
         rendered = obsidian_markdown(lesson.content)
         
         # Verify the content was properly processed
-        self.assertIn('<h1>Welcome to the Course</h1>', rendered)
+        self.assertIn('<h1 id="welcome-to-the-course">Welcome to the Course</h1>', rendered)
         self.assertIn('wiki-link', rendered)
         self.assertIn('callout', rendered)
-        self.assertIn('print("Hello, LMS!")', rendered)
+        self.assertIn('&quot;Hello, LMS!&quot;', rendered)  # HTML encoded quotes

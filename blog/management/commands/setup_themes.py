@@ -8,11 +8,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         themes_data = [
             {
-                'name': 'terminal_green',
-                'display_name': 'Terminal Green',
-                'theme_key': 'terminal-green',
+                'name': 'terminal_amber',
+                'display_name': 'Terminal Amber',
+                'theme_key': 'terminal-amber',
                 'is_default': True,
-                'description': 'Classic green terminal theme with retro computing aesthetics'
+                'description': 'Classic amber terminal theme with retro computing aesthetics'
             },
             {
                 'name': 'dark_blue',

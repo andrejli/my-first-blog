@@ -20,7 +20,7 @@ def authenticated_client():
     """Fixture providing a client with authenticated student user"""
     client = Client()
     user = User.objects.create_user(username='testuser', password='testpass123')
-    UserProfile.objects.create(user=user, role='student')
+    UserProfile.objects.get_or_create(user=user, defaults={'role': 'student'})
     client.login(username='testuser', password='testpass123')
     return client
 
@@ -30,7 +30,7 @@ def instructor_client():
     """Fixture providing a client with authenticated instructor user"""
     client = Client()
     user = User.objects.create_user(username='instructor', password='instrpass123')
-    UserProfile.objects.create(user=user, role='instructor')
+    UserProfile.objects.get_or_create(user=user, defaults={'role': 'instructor'})
     client.login(username='instructor', password='instrpass123')
     return client
 
@@ -44,7 +44,7 @@ def admin_client():
         email='admin@test.com',
         password='adminpass123'
     )
-    UserProfile.objects.create(user=user, role='admin')
+    UserProfile.objects.get_or_create(user=user, defaults={'role': 'admin'})
     client.login(username='admin', password='adminpass123')
     return client
 
@@ -114,9 +114,9 @@ def create_test_course_with_content(instructor):
         order=1
     )
     
-    Answer.objects.create(question=question1, text='Testing', is_correct=True)
-    Answer.objects.create(question=question1, text='Cooking', is_correct=False)
-    Answer.objects.create(question=question1, text='Sports', is_correct=False)
+    Answer.objects.create(question=question1, answer_text='Testing', is_correct=True)
+    Answer.objects.create(question=question1, answer_text='Cooking', is_correct=False)
+    Answer.objects.create(question=question1, answer_text='Sports', is_correct=False)
     
     question2 = Question.objects.create(
         quiz=quiz,
@@ -126,8 +126,8 @@ def create_test_course_with_content(instructor):
         order=2
     )
     
-    Answer.objects.create(question=question2, text='True', is_correct=True)
-    Answer.objects.create(question=question2, text='False', is_correct=False)
+    Answer.objects.create(question=question2, answer_text='True', is_correct=True)
+    Answer.objects.create(question=question2, answer_text='False', is_correct=False)
     
     return {
         'course': course,
@@ -252,7 +252,7 @@ def create_large_dataset(num_courses=10, num_students=50, num_instructors=5):
             email=f'instructor_{i}@test.com',
             password='testpass123'
         )
-        UserProfile.objects.create(user=user, role='instructor')
+        UserProfile.objects.get_or_create(user=user, defaults={'role': 'instructor'})
         instructors.append(user)
     
     # Create students
@@ -263,7 +263,7 @@ def create_large_dataset(num_courses=10, num_students=50, num_instructors=5):
             email=f'student_{i}@test.com',
             password='testpass123'
         )
-        UserProfile.objects.create(user=user, role='student')
+        UserProfile.objects.get_or_create(user=user, defaults={'role': 'student'})
         students.append(user)
     
     # Create courses

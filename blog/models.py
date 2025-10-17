@@ -41,7 +41,7 @@ class UserProfile(models.Model):
 # Site Configuration Models
 class SiteTheme(models.Model):
     THEME_CHOICES = [
-        ('terminal-green', 'Terminal Green'),
+        ('terminal-amber', 'Terminal Amber'),
         ('dark-blue', 'Dark Blue'),
         ('light', 'Light'),
         ('cyberpunk', 'Cyberpunk'),
@@ -378,7 +378,7 @@ class Question(models.Model):
         ordering = ['quiz', 'order', 'id']
     
     def __str__(self):
-        return f"{self.quiz.title} - Q{self.order}: {self.question_text[:50]}..."
+        return f"{self.quiz.course.course_code} - {self.quiz.title} - Q{self.order}: {self.question_text[:50]}..."
 
 
 class Answer(models.Model):
@@ -426,7 +426,7 @@ class QuizAttempt(models.Model):
         unique_together = ['student', 'quiz', 'attempt_number']
     
     def __str__(self):
-        return f"{self.student.username} - {self.quiz.title} (Attempt {self.attempt_number})"
+        return f"{self.student.username} - {self.quiz.title} (Attempt {self.attempt_number}) - {self.status}"
     
     def complete_attempt(self):
         """Mark attempt as completed and calculate score"""
