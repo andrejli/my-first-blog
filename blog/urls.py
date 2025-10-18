@@ -125,4 +125,13 @@ urlpatterns = [
     path('user/<str:username>/blog/<slug:slug>/', views.blog_post_detail, name='blog_post_detail'),
     path('comment/<int:comment_id>/delete/', views.delete_blog_comment, name='delete_blog_comment'),
     path('api/blog/upload-image/', views.upload_blog_image, name='upload_blog_image'),
+    
+    # Event Management (Admin Only)
+    path('event-management/', views.event_management, name='event_management'),
+    path('admin/events/add/', views.add_event, name='add_event'),
+    path('admin/events/<int:event_id>/edit/', views.edit_event, name='edit_event'),
+    path('admin/events/<int:event_id>/delete/', views.delete_event, name='delete_event'),
+    
+    # Calendar View
+    path('calendar/', views.event_calendar, name='event_calendar'),
 ]

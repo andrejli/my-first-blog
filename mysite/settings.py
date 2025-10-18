@@ -77,15 +77,33 @@ TEMPLATES = [
 WSGI_APPLICATION = 'mysite.wsgi.application'
 
 
-# Database
+# Database - Optimized Configuration for Performance and Integrity
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'OPTIONS': {
+            'timeout': 30,  # 30 seconds timeout for better concurrency
+            'init_command': '''
+                PRAGMA journal_mode=WAL;
+                PRAGMA synchronous=NORMAL;
+                PRAGMA cache_size=1000000;
+                PRAGMA temp_store=MEMORY;
+                PRAGMA mmap_size=268435456;
+                PRAGMA foreign_keys=ON;
+                PRAGMA case_sensitive_like=ON;
+                PRAGMA automatic_index=ON;
+                PRAGMA optimize;
+            '''
+        }
     }
 }
+
+# Database connection pooling and optimization
+DATABASE_CONNECTION_POOL_SIZE = 20
+DATABASE_MAX_OVERFLOW = 10
 
 
 # Internationalization

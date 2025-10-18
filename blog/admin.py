@@ -6,7 +6,8 @@ from .models import (
     CourseMaterial, Assignment, Submission,
     Quiz, Question, Answer, QuizAttempt, QuizResponse,
     Announcement, AnnouncementRead,
-    Forum, Topic, ForumPost, SiteTheme, UserThemePreference
+    Forum, Topic, ForumPost, SiteTheme, UserThemePreference,
+    Event
 )
 
 
@@ -410,4 +411,52 @@ class UserThemePreferenceAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('user', 'theme')
+
+
+# Event Administration
+@admin.register(Event)
+class EventAdmin(admin.ModelAdmin):
+    list_display = ['title', 'event_type', 'start_date', 'end_date', 'priority', 'visibility', 'is_published', 'is_featured', 'has_poster', 'has_materials', 'created_by', 'course']
+    list_filter = ['event_type', 'priority', 'visibility', 'is_published', 'is_featured', 'start_date', 'created_by']
+    search_fields = ['title', 'description']
+    readonly_fields = ['created_at', 'updated_at']
+    date_hierarchy = 'start_date'
+    
+    fieldsets = [
+        ('Event Information', {
+            'fields': ('title', 'description', 'event_type', 'priority', 'visibility')
+        }),
+        ('Date & Time', {
+            'fields': ('start_date', 'end_date', 'all_day')
+        }),
+        ('Files & Materials', {
+            'fields': ('poster', 'materials'),
+            'description': 'Upload event poster and materials (admin only)'
+        }),
+        ('Visibility', {
+            'fields': ('is_published', 'is_featured', 'course')
+        }),
+        ('Metadata', {
+            'fields': ('created_by', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    ]
+    
+    def has_poster(self, obj):
+        return obj.has_poster
+    has_poster.boolean = True
+    has_poster.short_description = 'Poster'
+    
+    def has_materials(self, obj):
+        return obj.has_materials
+    has_materials.boolean = True
+    has_materials.short_description = 'Materials'
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # Creating new event
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('created_by', 'course')
 

@@ -2,7 +2,66 @@
 
 ## 🧪 **Comprehensive Testing Strategy**
 
-This guide provides comprehensive testing instructions for all aspects of the Terminal LMS system.
+This guide provides comprehensive testing instructions for all aspects of the Terminal LMS system, including our new **Django Event Calendar Test Suite**.
+
+---
+
+## 🚀 **Quick Test Scripts**
+
+### Windows (PowerShell)
+```powershell
+# Run ALL Django tests (26 tests total)
+.\test.ps1
+
+# Run only event/calendar tests (11 tests)
+.\test.ps1 blog.tests
+
+# Run only markdown tests (15 tests)
+.\test.ps1 tests.test_enhanced_markdown
+
+# Run specific test class
+.\test.ps1 blog.tests.EventModelTest
+```
+
+### Linux/Mac (Bash)
+```bash
+# Run ALL Django tests (26 tests total)
+./test.sh
+
+# Run only event/calendar tests (11 tests)
+./test.sh blog.tests
+
+# Run only markdown tests (15 tests)
+./test.sh tests.test_enhanced_markdown
+
+# Run specific test class
+./test.sh blog.tests.EventModelTest
+```
+
+---
+
+## 📅 **Complete Django Test Suite**
+
+Your Django LMS now has **26 comprehensive tests** across multiple test suites:
+
+### Test Distribution
+- **Event/Calendar Tests** (11 tests) - `blog.tests`
+- **Markdown Processing Tests** (15 tests) - `tests.test_enhanced_markdown`
+
+### Event/Calendar Test Classes (blog.tests)
+- **EventModelTest** (4 tests) - Event model functionality
+- **CalendarViewTest** (4 tests) - Calendar views and navigation
+- **EventIntegrationTest** (2 tests) - Course-event integration
+- **EventAccessibilityTest** (1 test) - Accessibility compliance
+
+### Markdown Test Classes (tests.test_enhanced_markdown)
+- **EnhancedMarkdownTest** (14 tests) - Markdown processing features
+- **MarkdownIntegrationTest** (1 test) - Content rendering integration
+
+### Features Validated
+- ✅ **Event/Calendar System:** Responsive layout, font improvements, poster display, authentication, file attachments, navigation
+- ✅ **Markdown Processing:** Wiki links, callouts, code blocks, task lists, tables, image embeds, security escaping
+- ✅ **Integration:** Course-event relationships, content rendering, accessibility compliance
 
 ---
 

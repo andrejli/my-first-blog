@@ -22,7 +22,13 @@ from .models import (
 
 def is_instructor(user):
     """Check if user is an instructor"""
-    return user.is_authenticated and hasattr(user, 'userprofile') and user.userprofile.role == 'instructor'
+    if not user.is_authenticated:
+        return False
+    try:
+        return hasattr(user, 'userprofile') and user.userprofile.role == 'instructor'
+    except Exception:
+        # In case userprofile doesn't exist or any other issue
+        return False
 
 
 def is_admin(user):
@@ -277,10 +283,27 @@ class CourseExporter:
         return zip_buffer.getvalue()
 
 
-@user_passes_test(is_instructor)
+def instructor_required_export(view_func):
+    """Decorator to ensure user is an instructor for export functions"""
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('login')
+        if not hasattr(request.user, 'userprofile') or request.user.userprofile.role != 'instructor':
+            from django.http import Http404
+            raise Http404("Not found")
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+@instructor_required_export
 def export_course(request, course_id):
     """Export a course to ZIP format"""
-    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    try:
+        course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    except Course.DoesNotExist:
+        # Return 404 instead of letting get_object_or_404 handle it
+        from django.http import Http404
+        raise Http404("Course not found")
     
     if request.method == 'POST':
         include_user_data = request.POST.get('include_user_data') == 'on'

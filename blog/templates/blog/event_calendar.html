@@ -1,0 +1,647 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Event Calendar{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="padding-left: 2rem;">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="fas fa-calendar-alt"></i> Event Calendar
+                {% if user.is_staff %}
+                <a href="{% url 'event_management' %}" class="btn btn-primary btn-sm float-right">
+                    <i class="fas fa-cog"></i> Manage Events
+                </a>
+                {% endif %}
+            </h2>
+        </div>
+    </div>
+
+    <!-- Calendar Navigation -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-0">
+                                {{ current_month|date:"F Y" }}
+                            </h5>
+                        </div>
+                        <div>
+                            <a href="?month={{ prev_month.month }}&year={{ prev_month.year }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </a>
+                            <a href="?month={{ today.month }}&year={{ today.year }}" class="btn btn-outline-primary btn-sm">
+                                Today
+                            </a>
+                            <a href="?month={{ next_month.month }}&year={{ next_month.year }}" class="btn btn-outline-secondary btn-sm">
+                                Next <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Calendar Grid -->
+        <div class="col-xs-12 col-sm-12 col-md-8 col-lg-8">
+            <div class="card">
+                <div class="card-body p-0">
+                    <!-- Responsive Calendar Table -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered calendar-table mb-0">
+                            <!-- Calendar Header -->
+                            <thead class="calendar-header">
+                                <tr>
+                                    <th class="text-center calendar-weekday">
+                                        <span class="d-none d-sm-inline">Sunday</span>
+                                        <span class="d-sm-none">Sun</span>
+                                    </th>
+                                    <th class="text-center calendar-weekday">
+                                        <span class="d-none d-sm-inline">Monday</span>
+                                        <span class="d-sm-none">Mon</span>
+                                    </th>
+                                    <th class="text-center calendar-weekday">
+                                        <span class="d-none d-sm-inline">Tuesday</span>
+                                        <span class="d-sm-none">Tue</span>
+                                    </th>
+                                    <th class="text-center calendar-weekday">
+                                        <span class="d-none d-sm-inline">Wednesday</span>
+                                        <span class="d-sm-none">Wed</span>
+                                    </th>
+                                    <th class="text-center calendar-weekday">
+                                        <span class="d-none d-sm-inline">Thursday</span>
+                                        <span class="d-sm-none">Thu</span>
+                                    </th>
+                                    <th class="text-center calendar-weekday">
+                                        <span class="d-none d-sm-inline">Friday</span>
+                                        <span class="d-sm-none">Fri</span>
+                                    </th>
+                                    <th class="text-center calendar-weekday">
+                                        <span class="d-none d-sm-inline">Saturday</span>
+                                        <span class="d-sm-none">Sat</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            
+                            <!-- Calendar Body -->
+                            <tbody>
+                                {% for week in calendar_weeks %}
+                                <tr class="calendar-week">
+                                    {% for day in week %}
+                                    <td class="calendar-day
+                                        {% if day.is_today %}today-highlight{% endif %}
+                                        {% if not day.is_current_month %}other-month{% endif %}">
+                                        <div class="day-container">
+                                            <div class="day-number">
+                                                {% if day.day %}{{ day.day }}{% endif %}
+                                            </div>
+                                            <div class="day-events">
+                                                {% for event in day.events %}
+                                                <div class="calendar-event event-{{ event.event_type }}" 
+                                                     title="{{ event.title }} - {{ event.description|truncatechars:50 }}"
+                                                     data-toggle="tooltip" 
+                                                     data-placement="top"
+                                                     data-html="true"
+                                                     data-title="<strong>{{ event.title }}</strong><br>{{ event.get_event_type_display }}<br>{{ event.start_date|date:'M j, Y H:i' }}">
+                                                    <i class="fa fa-circle event-dot"></i>
+                                                    <span class="event-text">
+                                                        {% if event.all_day %}
+                                                            {{ event.title|truncatechars:32 }}
+                                                        {% else %}
+                                                            <span class="event-time">{{ event.start_date|date:"H:i" }}</span>
+                                                            {{ event.title|truncatechars:24 }}
+                                                        {% endif %}
+                                                    </span>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Events Sidebar -->
+        <div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
+            <!-- Today's Events -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-clock"></i> Today's Events</h6>
+                </div>
+                <div class="card-body">
+                    {% if todays_events %}
+                        {% for event in todays_events %}
+                        <div class="event-item mb-3">
+                            <div class="d-flex justify-content-between">
+                                <strong class="event-title">{{ event.title }}</strong>
+                                <span class="badge badge-{{ event.priority }}">{{ event.get_priority_display }}</span>
+                            </div>
+                            {% if not event.all_day %}
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> 
+                                {{ event.start_date|date:"H:i" }}
+                                {% if event.end_date %} - {{ event.end_date|date:"H:i" }}{% endif %}
+                            </small>
+                            {% endif %}
+                            <small class="text-muted">
+                                <i class="fas fa-tag"></i> {{ event.get_event_type_display }}
+                                {% if event.visibility == 'public' %}
+                                | <i class="fas fa-globe"></i> Public
+                                {% else %}
+                                | <i class="fas fa-lock"></i> Registered Only
+                                {% endif %}
+                            </small>
+                            {% if event.description %}
+                            <p class="event-description mt-1">{{ event.description|truncatechars:100 }}</p>
+                            {% endif %}
+                            
+                            <!-- Event Files -->
+                            {% if event.has_poster or event.has_materials %}
+                            <div class="event-files mt-2">
+                                {% if event.has_poster %}
+                                <div class="event-poster-preview mb-2">
+                                    <img src="{{ event.get_poster_url }}" alt="Event Poster" 
+                                         class="img-thumbnail poster-thumbnail" 
+                                         style="max-width: 100px; max-height: 80px; cursor: pointer;"
+                                         onclick="window.open('{{ event.get_poster_url }}', '_blank')">
+                                </div>
+                                <a href="{{ event.get_poster_url }}" class="btn btn-sm btn-outline-primary me-1" target="_blank">
+                                    <i class="fas fa-image"></i> View Poster
+                                </a>
+                                {% endif %}
+                                {% if event.has_materials %}
+                                <a href="{{ event.get_materials_url }}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                                    <i class="fas fa-file-pdf"></i> Materials
+                                </a>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No events today.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Upcoming Events -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-calendar-plus"></i> Upcoming Events</h6>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_events %}
+                        {% for event in upcoming_events %}
+                        <div class="event-item mb-3">
+                            <div class="d-flex justify-content-between">
+                                <strong class="event-title">{{ event.title }}</strong>
+                                <small class="text-muted">{{ event.start_date|date:"M j" }}</small>
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-tag"></i> {{ event.get_event_type_display }}
+                                {% if event.course %}
+                                | <i class="fas fa-book"></i> {{ event.course.title }}
+                                {% endif %}
+                                {% if event.visibility == 'public' %}
+                                | <i class="fas fa-globe"></i> Public
+                                {% else %}
+                                | <i class="fas fa-lock"></i> Registered Only
+                                {% endif %}
+                            </small>
+                            {% if event.description %}
+                            <p class="event-description mt-1">{{ event.description|truncatechars:80 }}</p>
+                            {% endif %}
+                            
+                            <!-- Event Files -->
+                            {% if event.has_poster or event.has_materials %}
+                            <div class="event-files mt-2">
+                                {% if event.has_poster %}
+                                <div class="event-poster-preview mb-2">
+                                    <img src="{{ event.get_poster_url }}" alt="Event Poster" 
+                                         class="img-thumbnail poster-thumbnail" 
+                                         style="max-width: 80px; max-height: 60px; cursor: pointer;"
+                                         onclick="window.open('{{ event.get_poster_url }}', '_blank')">
+                                </div>
+                                <a href="{{ event.get_poster_url }}" class="btn btn-sm btn-outline-primary me-1" target="_blank">
+                                    <i class="fas fa-image"></i> View Poster
+                                </a>
+                                {% endif %}
+                                {% if event.has_materials %}
+                                <a href="{{ event.get_materials_url }}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                                    <i class="fas fa-file-pdf"></i> Materials
+                                </a>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No upcoming events.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Event Types Legend -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-info-circle"></i> Event Types</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <small><i class="fas fa-circle text-primary"></i> General</small><br>
+                            <small><i class="fas fa-circle text-danger"></i> Deadline</small><br>
+                            <small><i class="fas fa-circle text-warning"></i> Exam</small><br>
+                            <small><i class="fas fa-circle text-success"></i> Holiday</small>
+                        </div>
+                        <div class="col-6">
+                            <small><i class="fas fa-circle text-secondary"></i> Maintenance</small><br>
+                            <small><i class="fas fa-circle text-info"></i> Meeting</small><br>
+                            <small><i class="fas fa-circle text-purple"></i> Workshop</small><br>
+                            <small><i class="fas fa-circle text-dark"></i> Announcement</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Calendar Container Spacing */
+.container-fluid {
+    padding-left: 2rem !important;
+    padding-right: 1rem !important;
+}
+
+/* Calendar Table Styling */
+.calendar-table {
+    border-collapse: separate !important;
+    border-spacing: 0;
+    background-color: var(--primary-bg, #000000);
+    color: var(--primary-color, #32cd32);
+    width: 100%;
+    max-width: 100%;
+    table-layout: fixed; /* Prevent table from expanding beyond container */
+}
+
+.calendar-header th {
+    background-color: var(--secondary-bg, #0f0f0f);
+    color: var(--secondary-color, #ffc107);
+    border: 1px solid var(--border-color, #32cd32);
+    padding: 10px 5px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    text-align: center;
+}
+
+.calendar-day {
+    height: 130px;
+    width: 14.28%; /* 100% / 7 days */
+    max-width: 14.28%;
+    min-width: 100px; /* Minimum width for readability */
+    vertical-align: top;
+    padding: 0;
+    border: 1px solid var(--border-color, #32cd32);
+    background-color: var(--primary-bg, #000000);
+    position: relative;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.calendar-day.today-highlight {
+    background-color: var(--secondary-bg, #0f0f0f);
+    box-shadow: inset 0 0 5px var(--secondary-color, #ffc107);
+}
+
+.calendar-day.other-month {
+    background-color: #111111;
+    opacity: 0.5;
+}
+
+.day-container {
+    height: 100%;
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+}
+
+.day-number {
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: var(--primary-color, #32cd32);
+    margin-bottom: 4px;
+    text-align: left;
+}
+
+.day-events {
+    flex: 1;
+    overflow: hidden;
+}
+
+.calendar-event {
+    display: block;
+    padding: 3px 5px;
+    margin-bottom: 2px;
+    border-radius: 3px;
+    font-size: 0.95rem;
+    line-height: 1.3;
+    cursor: pointer;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    min-height: 20px;
+}
+
+.event-dot {
+    font-size: 0.7rem;
+    margin-right: 3px;
+    vertical-align: middle;
+}
+
+.event-time {
+    font-weight: bold;
+    margin-right: 3px;
+    font-size: 0.9rem;
+}
+
+/* Event Type Colors - Terminal Theme */
+.event-general { 
+    background-color: rgba(50, 205, 50, 0.2); 
+    color: #32cd32;
+    border-left: 2px solid #32cd32;
+}
+.event-deadline { 
+    background-color: rgba(255, 69, 0, 0.3); 
+    color: #ff4500;
+    border-left: 2px solid #ff4500;
+}
+.event-exam { 
+    background-color: rgba(255, 193, 7, 0.3); 
+    color: #ffc107;
+    border-left: 2px solid #ffc107;
+}
+.event-holiday { 
+    background-color: rgba(0, 255, 127, 0.2); 
+    color: #00ff7f;
+    border-left: 2px solid #00ff7f;
+}
+.event-maintenance { 
+    background-color: rgba(128, 128, 128, 0.3); 
+    color: #808080;
+    border-left: 2px solid #808080;
+}
+.event-meeting { 
+    background-color: rgba(0, 191, 255, 0.3); 
+    color: #00bfff;
+    border-left: 2px solid #00bfff;
+}
+.event-workshop { 
+    background-color: rgba(186, 85, 211, 0.3); 
+    color: #ba55d3;
+    border-left: 2px solid #ba55d3;
+}
+.event-announcement { 
+    background-color: rgba(255, 255, 255, 0.1); 
+    color: #ffffff;
+    border-left: 2px solid #ffffff;
+}
+
+/* Event Sidebar Styling */
+.event-item {
+    border-left: 3px solid var(--secondary-color, #ffc107);
+    padding-left: 10px;
+}
+
+/* Event Poster Thumbnails */
+.event-poster-preview {
+    text-align: center;
+}
+
+.poster-thumbnail {
+    border: 2px solid var(--border-color, #32cd32);
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    background: var(--primary-bg, #000000);
+}
+
+.poster-thumbnail:hover {
+    transform: scale(1.05);
+    border-color: var(--secondary-color, #ffc107);
+    box-shadow: 0 4px 8px rgba(50, 205, 50, 0.3);
+}
+
+.event-title {
+    font-size: 1rem;
+}
+
+.event-description {
+    font-size: 0.9rem;
+    margin-bottom: 0;
+}
+
+.badge-urgent { background-color: #dc3545; }
+.badge-high { background-color: #fd7e14; }
+.badge-normal { background-color: #28a745; }
+.badge-low { background-color: #6c757d; }
+
+.text-purple {
+    color: #7b1fa2 !important;
+}
+
+/* Responsive Design */
+/* Large desktop breakpoint - prevent table overflow */
+@media (min-width: 1200px) {
+    .table-responsive {
+        overflow-x: visible;
+    }
+    
+    .container-fluid {
+        padding-left: 3rem !important;
+        padding-right: 1.5rem !important;
+    }
+}
+
+/* Medium to large devices - prevent collision zone */
+@media (min-width: 992px) and (max-width: 1199px) {
+    .calendar-day {
+        height: 115px; /* Slightly reduce height */
+    }
+    
+    .calendar-event {
+        font-size: 0.9rem; /* Slightly smaller text but still readable */
+        padding: 2px 4px;
+    }
+    
+    .day-number {
+        font-size: 1.1rem;
+    }
+    
+    /* Ensure table doesn't overflow its container */
+    .table-responsive {
+        overflow-x: auto;
+    }
+}
+
+/* Medium devices and below - stack sidebar below calendar */
+@media (max-width: 991px) {
+    .calendar-table {
+        margin-bottom: 15px;
+    }
+    
+    /* Ensure sidebar doesn't overlap */
+    .row > [class*="col-"] {
+        margin-bottom: 15px;
+    }
+    
+    /* Full width on medium and below */
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    .container-fluid {
+        padding-left: 1.5rem !important;
+        padding-right: 1rem !important;
+    }
+}
+
+/* Tablet and smaller devices */
+@media (max-width: 768px) {
+    .calendar-header th {
+        font-size: 1rem;
+        padding: 8px 3px;
+    }
+    
+    .calendar-weekday {
+        font-size: 1rem;
+    }
+    
+    .calendar-day {
+        height: 100px;
+    }
+    
+    .day-number {
+        font-size: 1.1rem;
+    }
+    
+    .calendar-event {
+        font-size: 0.85rem;
+        padding: 2px 3px;
+    }
+    
+    .event-dot {
+        font-size: 0.65rem;
+    }
+    
+    /* Reduce calendar table spacing on tablets */
+    .table-responsive {
+        margin-bottom: 10px;
+    }
+    
+    .container-fluid {
+        padding-left: 1rem !important;
+        padding-right: 0.5rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .calendar-day {
+        height: 80px;
+    }
+    
+    .day-number {
+        font-size: 1rem;
+    }
+    
+    .calendar-event {
+        font-size: 0.8rem;
+        padding: 2px 3px;
+    }
+    
+    .calendar-header th {
+        padding: 6px 2px;
+        font-size: 0.9rem;
+    }
+    
+    .event-dot {
+        font-size: 0.6rem;
+    }
+    
+    .container-fluid {
+        padding-left: 0.5rem !important;
+        padding-right: 0.25rem !important;
+    }
+}
+</style>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Initialize tooltips for calendar events
+    $('[data-toggle="tooltip"]').tooltip({
+        container: 'body',
+        html: true
+    });
+    
+    // Add click functionality to calendar events
+    $('.calendar-event').click(function() {
+        var eventTitle = $(this).data('title');
+        var eventType = $(this).attr('class').match(/event-(\w+)/)[1];
+        
+        // Show event details in a simple alert (can be enhanced with modal later)
+        var detailsHtml = $(this).attr('data-title');
+        
+        // Create a simple notification instead of alert
+        showEventNotification(detailsHtml);
+    });
+    
+    // Function to show event notification
+    function showEventNotification(content) {
+        // Remove any existing notification
+        $('.event-notification').remove();
+        
+        // Create notification element
+        var notification = $('<div class="event-notification alert alert-info alert-dismissible" style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 300px;">' +
+            '<button type="button" class="close" data-dismiss="alert">&times;</button>' +
+            content +
+            '</div>');
+        
+        // Add to body
+        $('body').append(notification);
+        
+        // Auto-hide after 5 seconds
+        setTimeout(function() {
+            notification.fadeOut();
+        }, 5000);
+    }
+    
+    // Keyboard navigation
+    $(document).keydown(function(e) {
+        if (e.ctrlKey || e.metaKey) {
+            switch(e.which) {
+                case 37: // Ctrl+Left Arrow - Previous month
+                    $('.btn:contains("Previous")').click();
+                    break;
+                case 39: // Ctrl+Right Arrow - Next month
+                    $('.btn:contains("Next")').click();
+                    break;
+                case 84: // Ctrl+T - Today
+                    $('.btn:contains("Today")').click();
+                    break;
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

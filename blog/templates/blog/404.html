@@ -1,0 +1,168 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block title %}Page Not Found - LMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card construction-card text-center">
+                <div class="card-body p-5">
+                    <!-- Construction Icon -->
+                    <div class="construction-icon mb-4">
+                        <i class="fas fa-hard-hat fa-5x text-warning"></i>
+                        <i class="fas fa-tools fa-3x text-secondary ml-3"></i>
+                    </div>
+                    
+                    <!-- Main Message -->
+                    <h1 class="display-4 text-primary mb-3">
+                        <i class="fas fa-exclamation-triangle"></i> 404
+                    </h1>
+                    <h2 class="text-warning mb-4">Page Under Construction</h2>
+                    
+                    <!-- Description -->
+                    <p class="lead text-muted mb-4">
+                        The page you're looking for is currently being built. Our development team is working hard to bring you this feature soon!
+                    </p>
+                    
+                    <!-- Helpful Links -->
+                    <div class="construction-links mb-4">
+                        <h5 class="text-info mb-3">
+                            <i class="fas fa-compass"></i> Try These Instead:
+                        </h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <a href="{% url 'blog:home' %}" class="btn btn-primary btn-lg btn-block">
+                                    <i class="fas fa-home"></i> Home Dashboard
+                                </a>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <a href="{% url 'blog:calendar' %}" class="btn btn-success btn-lg btn-block">
+                                    <i class="fas fa-calendar-alt"></i> Event Calendar
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {% if user.is_staff %}
+                                <a href="/admin/blog/event/" class="btn btn-warning btn-lg btn-block">
+                                    <i class="fas fa-cog"></i> Manage Events
+                                </a>
+                                {% else %}
+                                <a href="{% url 'blog:course_list' %}" class="btn btn-info btn-lg btn-block">
+                                    <i class="fas fa-book"></i> Browse Courses
+                                </a>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {% if user.is_authenticated %}
+                                <a href="{% url 'blog:dashboard' %}" class="btn btn-secondary btn-lg btn-block">
+                                    <i class="fas fa-user"></i> My Dashboard
+                                </a>
+                                {% else %}
+                                <a href="{% url 'blog:login' %}" class="btn btn-outline-primary btn-lg btn-block">
+                                    <i class="fas fa-sign-in-alt"></i> Login
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Timeline -->
+                    <div class="construction-timeline">
+                        <h6 class="text-muted mb-3">
+                            <i class="fas fa-clock"></i> Expected Features:
+                        </h6>
+                        <div class="timeline-items">
+                            <small class="d-block text-success mb-1">
+                                <i class="fas fa-check"></i> Event Calendar - <strong>Available Now</strong>
+                            </small>
+                            <small class="d-block text-warning mb-1">
+                                <i class="fas fa-wrench"></i> Advanced Event Management - <strong>Coming Soon</strong>
+                            </small>
+                            <small class="d-block text-info mb-1">
+                                <i class="fas fa-star"></i> Event Registration System - <strong>In Development</strong>
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- Auto Redirect Message -->
+                    <div class="auto-redirect mt-4 p-3 bg-info text-white rounded">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Quick Tip:</strong> If you were looking for event management, 
+                        <a href="/admin/blog/event/" class="text-white">
+                            <u>click here to access the Event Admin</u>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.construction-card {
+    background: linear-gradient(135deg, var(--primary-bg, #000000) 0%, var(--secondary-bg, #0f0f0f) 100%);
+    border: 2px solid var(--border-color, #32cd32);
+    box-shadow: 0 8px 32px rgba(50, 205, 50, 0.3);
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from { box-shadow: 0 8px 32px rgba(50, 205, 50, 0.3); }
+    to { box-shadow: 0 12px 40px rgba(255, 193, 7, 0.4); }
+}
+
+.construction-icon {
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-10px); }
+    60% { transform: translateY(-5px); }
+}
+
+.construction-links .btn {
+    transition: all 0.3s ease;
+    border-radius: 8px;
+}
+
+.construction-links .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.timeline-items small {
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-left: 3px solid;
+}
+
+.timeline-items .text-success {
+    border-left-color: #28a745;
+}
+
+.timeline-items .text-warning {
+    border-left-color: #ffc107;
+}
+
+.timeline-items .text-info {
+    border-left-color: #17a2b8;
+}
+
+.auto-redirect {
+    animation: pulse 3s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.8; }
+    50% { opacity: 1; }
+    100% { opacity: 0.8; }
+}
+</style>
+{% endblock %}

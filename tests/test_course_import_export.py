@@ -455,10 +455,13 @@ class TestExportCourseView:
             username='other_instructor',
             password='pass123'
         )
-        UserProfile.objects.get_or_create(
+        profile, created = UserProfile.objects.get_or_create(
             user=other_instructor, 
             defaults={'role': 'instructor'}
         )
+        # Force the role to be instructor (in case it was created already)
+        profile.role = 'instructor'
+        profile.save()
         
         client.force_login(other_instructor)
         url = reverse('export_course', kwargs={'course_id': sample_course.id})

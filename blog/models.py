@@ -93,16 +93,24 @@ class Course(models.Model):
         ('archived', 'Archived'),
     ]
     
-    title = models.CharField(max_length=200)
-    course_code = models.CharField(max_length=20, unique=True)
+    title = models.CharField(max_length=200, db_index=True)
+    course_code = models.CharField(max_length=20, unique=True, db_index=True)
     description = models.TextField()
-    instructor = models.ForeignKey(User, on_delete=models.CASCADE, help_text="Select an instructor for this course")
-    created_date = models.DateTimeField(default=timezone.now)
-    published_date = models.DateTimeField(blank=True, null=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    instructor = models.ForeignKey(User, on_delete=models.CASCADE, db_index=True, help_text="Select an instructor for this course")
+    created_date = models.DateTimeField(default=timezone.now, db_index=True)
+    published_date = models.DateTimeField(blank=True, null=True, db_index=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft', db_index=True)
     duration_weeks = models.PositiveIntegerField(default=4)
     max_students = models.PositiveIntegerField(default=30)
     prerequisites = models.TextField(blank=True, help_text="Course requirements")
+    
+    class Meta:
+        ordering = ['-created_date', 'title']
+        indexes = [
+            models.Index(fields=['status', 'published_date']),
+            models.Index(fields=['instructor', 'status']),
+            models.Index(fields=['created_date', 'status']),
+        ]
     
     def publish(self):
         self.published_date = timezone.now()
@@ -124,15 +132,21 @@ class Enrollment(models.Model):
         ('pending', 'Pending'),
     ]
     
-    student = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'userprofile__role': 'student'})
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    enrollment_date = models.DateTimeField(default=timezone.now)
-    completion_date = models.DateTimeField(null=True, blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='enrolled')
+    student = models.ForeignKey(User, on_delete=models.CASCADE, db_index=True, limit_choices_to={'userprofile__role': 'student'})
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, db_index=True)
+    enrollment_date = models.DateTimeField(default=timezone.now, db_index=True)
+    completion_date = models.DateTimeField(null=True, blank=True, db_index=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='enrolled', db_index=True)
     grade = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     
     class Meta:
         unique_together = ['student', 'course']
+        ordering = ['-enrollment_date']
+        indexes = [
+            models.Index(fields=['student', 'status']),
+            models.Index(fields=['course', 'status']),
+            models.Index(fields=['enrollment_date', 'status']),
+        ]
     
     def complete_course(self):
         self.completion_date = timezone.now()
@@ -199,20 +213,25 @@ class CourseMaterial(models.Model):
 
 class Assignment(models.Model):
     """Course assignments that students can submit"""
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    title = models.CharField(max_length=200)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, db_index=True)
+    title = models.CharField(max_length=200, db_index=True)
     description = models.TextField()
     instructions = models.TextField(blank=True, help_text="Detailed assignment instructions")
-    due_date = models.DateTimeField()
+    due_date = models.DateTimeField(db_index=True)
     max_points = models.PositiveIntegerField(default=100)
     file_attachment = models.FileField(upload_to=assignment_upload_path, blank=True, help_text="Optional assignment file")
     allow_file_submission = models.BooleanField(default=True)
     allow_text_submission = models.BooleanField(default=True)
-    created_date = models.DateTimeField(default=timezone.now)
-    is_published = models.BooleanField(default=False)
+    created_date = models.DateTimeField(default=timezone.now, db_index=True)
+    is_published = models.BooleanField(default=False, db_index=True)
     
     class Meta:
         ordering = ['course', 'due_date']
+        indexes = [
+            models.Index(fields=['course', 'is_published']),
+            models.Index(fields=['due_date', 'is_published']),
+            models.Index(fields=['created_date', 'course']),
+        ]
     
     def __str__(self):
         return f"{self.course.course_code} - {self.title}"
@@ -235,18 +254,30 @@ class Submission(models.Model):
         ('returned', 'Returned'),
     ]
     
-    student = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'userprofile__role': 'student'})
-    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE)
+    student = models.ForeignKey(User, on_delete=models.CASCADE, db_index=True, limit_choices_to={'userprofile__role': 'student'})
+    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, db_index=True)
     text_submission = models.TextField(blank=True)
     file_submission = models.FileField(upload_to=submission_upload_path, blank=True)
-    submitted_date = models.DateTimeField(null=True, blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    submitted_date = models.DateTimeField(null=True, blank=True, db_index=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft', db_index=True)
     grade = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     feedback = models.TextField(blank=True)
-    graded_date = models.DateTimeField(null=True, blank=True)
+    graded_date = models.DateTimeField(null=True, blank=True, db_index=True)
     
     class Meta:
         unique_together = ['student', 'assignment']
+        ordering = ['-submitted_date', '-graded_date']
+        indexes = [
+            models.Index(fields=['assignment', 'status']),
+            models.Index(fields=['student', 'status']),
+            models.Index(fields=['submitted_date', 'status']),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(grade__gte=0) | models.Q(grade__isnull=True),
+                name='non_negative_grade'
+            ),
+        ]
     
     def submit(self):
         """Mark submission as submitted"""
@@ -424,6 +455,26 @@ class QuizAttempt(models.Model):
     class Meta:
         ordering = ['-started_at']
         unique_together = ['student', 'quiz', 'attempt_number']
+        indexes = [
+            models.Index(fields=['student', 'quiz']),
+            models.Index(fields=['quiz', 'status']),
+            models.Index(fields=['started_at', 'status']),
+            models.Index(fields=['student', 'status']),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(attempt_number__gte=1),
+                name='positive_attempt_number'
+            ),
+            models.CheckConstraint(
+                condition=models.Q(score__gte=0) | models.Q(score__isnull=True),
+                name='non_negative_score'
+            ),
+            models.CheckConstraint(
+                condition=models.Q(percentage__gte=0, percentage__lte=100) | models.Q(percentage__isnull=True),
+                name='valid_percentage_range'
+            ),
+        ]
     
     def __str__(self):
         return f"{self.student.username} - {self.quiz.title} (Attempt {self.attempt_number}) - {self.status}"
@@ -840,4 +891,133 @@ class BlogComment(models.Model):
     def is_reply(self):
         """Check if this is a reply to another comment"""
         return self.parent is not None
+
+
+# Calendar Event Models
+class Event(models.Model):
+    """Calendar events for the LMS homepage"""
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('normal', 'Normal'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
+    
+    EVENT_TYPE_CHOICES = [
+        ('general', 'General'),
+        ('deadline', 'Assignment Deadline'),
+        ('exam', 'Exam'),
+        ('holiday', 'Holiday'),
+        ('maintenance', 'System Maintenance'),
+        ('meeting', 'Meeting'),
+        ('workshop', 'Workshop'),
+        ('announcement', 'Announcement'),
+    ]
+    
+    VISIBILITY_CHOICES = [
+        ('public', 'Public - Visible to everyone'),
+        ('registered', 'Registered Users Only - Login required'),
+    ]
+    
+    title = models.CharField(max_length=128, help_text="Event name (max 128 characters)")
+    description = models.TextField(blank=True)
+    event_type = models.CharField(max_length=20, choices=EVENT_TYPE_CHOICES, default='general')
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='normal')
+    visibility = models.CharField(max_length=15, choices=VISIBILITY_CHOICES, default='registered',
+                                 help_text="Who can view this event")
+    
+    # Date and time
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField(null=True, blank=True)
+    all_day = models.BooleanField(default=False)
+    
+    # Visibility and permissions
+    is_published = models.BooleanField(default=True)
+    is_featured = models.BooleanField(default=False, help_text="Show on homepage")
+    
+    # Relations
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_events')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True, 
+                              help_text="Link to specific course (optional)")
+    
+    # File uploads for posters and materials (admin only)
+    poster = models.ImageField(upload_to='event_posters/', null=True, blank=True,
+                              help_text="Event poster image (JPG, PNG)")
+    materials = models.FileField(upload_to='event_materials/', null=True, blank=True,
+                                help_text="Event materials (PDF, DOC, etc.)")
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['start_date', 'title']
+        indexes = [
+            models.Index(fields=['start_date', 'is_published']),
+            models.Index(fields=['event_type', 'priority']),
+            models.Index(fields=['is_featured', 'start_date']),
+            models.Index(fields=['course', 'start_date']),
+        ]
+    
+    def __str__(self):
+        return f"{self.title} - {self.start_date.strftime('%Y-%m-%d %H:%M')}"
+    
+    @property
+    def is_upcoming(self):
+        """Check if event is in the future"""
+        from django.utils import timezone
+        return self.start_date > timezone.now()
+    
+    @property
+    def is_today(self):
+        """Check if event is today"""
+        from django.utils import timezone
+        today = timezone.now().date()
+        return self.start_date.date() == today
+    
+    @property
+    def is_ongoing(self):
+        """Check if event is currently happening"""
+        from django.utils import timezone
+        now = timezone.now()
+        if self.end_date:
+            return self.start_date <= now <= self.end_date
+        return self.is_today
+    
+    def get_duration(self):
+        """Get event duration in a human-readable format"""
+        if not self.end_date:
+            return "No end time specified"
+        
+        delta = self.end_date - self.start_date
+        days = delta.days
+        hours, remainder = divmod(delta.seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+        
+        if days > 0:
+            return f"{days} day{'s' if days > 1 else ''}"
+        elif hours > 0:
+            return f"{hours}h {minutes}m" if minutes > 0 else f"{hours}h"
+        else:
+            return f"{minutes}m"
+    
+    @property
+    def has_poster(self):
+        """Check if event has a poster uploaded"""
+        return bool(self.poster and self.poster.name)
+    
+    @property
+    def has_materials(self):
+        """Check if event has materials uploaded"""
+        return bool(self.materials and self.materials.name)
+    
+    @property
+    def get_poster_url(self):
+        """Get poster URL if exists"""
+        return self.poster.url if self.has_poster else None
+    
+    @property
+    def get_materials_url(self):
+        """Get materials URL if exists"""
+        return self.materials.url if self.has_materials else None
 

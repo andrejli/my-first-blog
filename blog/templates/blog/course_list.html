@@ -117,6 +117,104 @@
                         </div>
                     </div>
                     
+                    <!-- Events Calendar Section -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4><i class="fa fa-calendar"></i> Upcoming Events</h4>
+                            <div class="pull-right">
+                                <a href="{% url 'event_calendar' %}" class="btn btn-xs btn-default">Full Calendar</a>
+                            </div>
+                            <div style="clear: both;"></div>
+                        </div>
+                        <div class="panel-body">
+                            {% if today_events %}
+                                <div class="alert alert-info" style="margin-bottom: 10px;">
+                                    <strong>Today's Events:</strong>
+                                    {% for event in today_events %}
+                                        <div style="margin-top: 5px;">
+                                            <span class="label label-warning">{{ event.event_type|capfirst }}</span>
+                                            <small>{{ event.title }}</small>
+                                            {% if not event.all_day %}
+                                                <br><small class="text-muted">{{ event.start_date|time:"H:i" }}</small>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            
+                            {% if featured_events %}
+                                <div style="margin-bottom: 15px;">
+                                    <strong>Featured Events:</strong>
+                                    {% for event in featured_events %}
+                                        <div class="event-item" style="margin: 8px 0; padding: 8px; border-left: 3px solid 
+                                            {% if event.priority == 'urgent' %}#d9534f
+                                            {% elif event.priority == 'high' %}#f0ad4e
+                                            {% elif event.priority == 'normal' %}#5bc0de
+                                            {% else %}#5cb85c{% endif %};">
+                                            <div class="event-title" style="font-weight: bold; font-size: 13px;">{{ event.title }}</div>
+                                            <div class="event-meta" style="font-size: 11px; color: #666;">
+                                                <span class="label label-default">{{ event.event_type|capfirst }}</span>
+                                                {{ event.start_date|date:"M j, Y" }}
+                                                {% if not event.all_day %}at {{ event.start_date|time:"H:i" }}{% endif %}
+                                                {% if event.course %}
+                                                    <br><small>Course: {{ event.course.title }}</small>
+                                                {% endif %}
+                                                
+                                                {% if event.has_poster or event.has_materials %}
+                                                <div style="margin-top: 5px;">
+                                                    {% if event.has_poster %}
+                                                    <a href="{{ event.get_poster_url }}" target="_blank" class="btn btn-xs btn-primary" style="font-size: 10px;">
+                                                        <i class="fa fa-image"></i> Poster
+                                                    </a>
+                                                    {% endif %}
+                                                    {% if event.has_materials %}
+                                                    <a href="{{ event.get_materials_url }}" target="_blank" class="btn btn-xs btn-default" style="font-size: 10px; margin-left: 3px;">
+                                                        <i class="fa fa-file-pdf-o"></i> Materials
+                                                    </a>
+                                                    {% endif %}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            
+                            {% if upcoming_events %}
+                                <div>
+                                    <strong>Next 5 Events:</strong>
+                                    {% for event in upcoming_events|slice:":5" %}
+                                        <div style="margin: 5px 0; font-size: 12px;">
+                                            <div>{{ event.title }}</div>
+                                            <small class="text-muted">
+                                                {{ event.start_date|date:"M j" }}
+                                                {% if not event.all_day %}at {{ event.start_date|time:"H:i" }}{% endif %}
+                                            </small>
+                                        </div>
+                                    {% endfor %}
+                                    {% if upcoming_events|length > 5 %}
+                                        <div style="margin-top: 10px;">
+                                            <a href="{% url 'event_calendar' %}" class="btn btn-xs btn-primary">View All {{ upcoming_events|length }} Events</a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted">No upcoming events scheduled.</p>
+                                {% if user.is_authenticated and user.userprofile.role == 'admin' %}
+                                    <a href="{% url 'add_event' %}" class="btn btn-sm btn-success">Add First Event</a>
+                                {% endif %}
+                            {% endif %}
+                            
+                            {% if user.is_authenticated and user.userprofile.role == 'admin' %}
+                                <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+                                    <strong>Admin Actions:</strong><br>
+                                    <a href="{% url 'add_event' %}" class="btn btn-xs btn-success">Add Event</a>
+                                    <a href="{% url 'event_management' %}" class="btn btn-xs btn-default">Manage Events</a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
                     <!-- Community Section -->
                     <div class="panel panel-default">
                         <div class="panel-heading">

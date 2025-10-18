@@ -153,5 +153,17 @@ db_backup.sqlite3
 *_backup.sqlite3
 test_db.sqlite3
 
-# Media files
-media/blog_images/*.jpg
+# Media files - User uploads should not be tracked
+media/blog_images/
+media/assignments/
+media/course_materials/
+media/submissions/
+media/event_posters/
+media/event_materials/
+# Keep structure but ignore user content
+!media/blog_images/.gitkeep
+!media/assignments/.gitkeep  
+!media/course_materials/.gitkeep
+!media/submissions/.gitkeep
+!media/event_posters/.gitkeep
+!media/event_materials/.gitkeep

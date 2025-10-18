@@ -92,12 +92,12 @@ class TestStudentEnrollmentWorkflow:
         
         Answer.objects.create(
             question=question1,
-            text='A programming language',
+            answer_text='A programming language',
             is_correct=True
         )
         Answer.objects.create(
             question=question1,
-            text='A snake',
+            answer_text='A snake',
             is_correct=False
         )
         
@@ -111,12 +111,12 @@ class TestStudentEnrollmentWorkflow:
         
         Answer.objects.create(
             question=question2,
-            text='True',
+            answer_text='True',
             is_correct=True
         )
         Answer.objects.create(
             question=question2,
-            text='False',
+            answer_text='False',
             is_correct=False
         )
         

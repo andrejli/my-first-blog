@@ -1,11 +1,12 @@
 # Terminal LMS 📚⚡
 
-An ultralight Learning Management System (LMS) built with Django, featuring a terminal-inspired dark theme and focused on simplicity and educational use.
+An ultralight Learning Management System (LMS) built with Django, featuring a terminal-inspired dark theme, calendar integration, and focused on simplicity and educational use.
 
 ![Terminal Theme](https://img.shields.io/badge/Theme-Terminal-orange?style=flat-square&logo=linux)
 ![Django](https://img.shields.io/badge/Django-5.2+-success?style=flat-square&logo=django)
 ![Python](https://img.shields.io/badge/Python-3.8+-blue?style=flat-square&logo=python)
 ![License](https://img.shields.io/badge/License-GPL%20v3-blue?style=flat-square)
+![Calendar](https://img.shields.io/badge/Events-Calendar-green?style=flat-square&logo=calendar)
 
 ## 🎯 Features
 
@@ -16,6 +17,8 @@ An ultralight Learning Management System (LMS) built with Django, featuring a te
 - **Content Delivery**: Structured lessons with progress tracking
 - **Progress Tracking**: Mark lessons complete and track learning progress
 - **Authentication**: Frontend login/registration separate from admin panel
+- **📅 Calendar System**: Integrated event calendar with admin-managed events
+- **📁 File Management**: Event posters and materials upload (admin-only)
 
 ### 🎨 Design Philosophy
 - **Ultralight**: Minimal dependencies, maximum functionality
@@ -35,6 +38,7 @@ An ultralight Learning Management System (LMS) built with Django, featuring a te
 - [Test Accounts](#-test-accounts)
 - [Project Structure](#-project-structure)
 - [Features Overview](#-features-overview)
+- [Testing](#-testing)
 - [Development](#-development)
 - [Contributing](#-contributing)
 - [License](#-license)
@@ -116,6 +120,13 @@ The system comes pre-populated with test data for immediate exploration:
 - **Instructor**: Prof. John Smith
 - **Enrollment**: Alice Wonder is already enrolled for testing
 
+### 📅 Calendar & Events Access ⭐ **NEW!**
+- **Calendar View**: http://127.0.0.1:8000/calendar/ (login required)
+- **Homepage Events**: Sidebar shows today's events and featured events
+- **Admin Event Management**: http://127.0.0.1:8000/admin/blog/event/ (admin only)
+- **Sample Events**: Pre-loaded with upcoming events, deadlines, and workshops
+- **File Attachments**: Sample event includes poster and materials downloads
+
 ## 📁 Project Structure
 
 ```
@@ -150,6 +161,16 @@ my-first-blog/
 - Enrollment tracking and capacity limits
 - Progress monitoring and completion status
 
+### 📅 Calendar & Events System ⭐ **NEW!**
+- **Event Management**: Admin-only event creation, editing, and management
+- **Calendar Views**: Monthly calendar grid with event display and navigation
+- **Event Types**: General, Deadlines, Exams, Holidays, Maintenance, Meetings, Workshops, Announcements
+- **Priority Levels**: Urgent, High, Normal, Low with color-coded display
+- **File Attachments**: Upload event posters (images) and materials (documents)
+- **Homepage Integration**: Today's events and featured events displayed on homepage sidebar
+- **Event Details**: Full event information with course linking and metadata
+- **Responsive Design**: Mobile-friendly calendar and event displays
+
 ### Authentication System
 - Frontend registration for students
 - Role-based login redirects
@@ -163,6 +184,57 @@ my-first-blog/
 - Mobile-responsive design
 - Bootstrap 3.2 integration
 
+## 🧪 Testing
+
+### Comprehensive Test Suite
+The project includes **26 comprehensive Django tests** covering all major functionality:
+
+**Quick Test Commands:**
+```bash
+# Run all tests (Windows)
+.\test.ps1
+
+# Run all tests (Linux/Mac)  
+./test.sh
+
+# Run specific test suite
+.\test.ps1 blog.tests              # Event/calendar tests (11 tests)
+.\test.ps1 tests.test_enhanced_markdown  # Markdown tests (15 tests)
+```
+
+### Test Coverage Breakdown
+- ✅ **Event/Calendar System** (11 tests)
+  - Event model creation and validation (4 tests)
+  - Calendar views and navigation (4 tests)  
+  - Course-event integration (2 tests)
+  - Accessibility compliance (1 test)
+
+- ✅ **Markdown Processing** (15 tests)
+  - Enhanced markdown features (14 tests)
+  - Content rendering integration (1 test)
+
+### Latest Test Results
+```
+Found 26 test(s)
+Ran 26 tests in 31.634s
+OK
+```
+
+**Features Validated:**
+- Responsive layout fixes (mobile, tablet, desktop)
+- Font size improvements (20-30% increase)
+- Poster display with thumbnails and hover effects
+- Authentication and authorization flows
+- Event creation, properties, and file attachments
+- Calendar navigation and month switching
+- Course-event integration
+- Markdown processing (wiki links, callouts, code blocks)
+- Security escaping and content validation
+- Accessibility guidelines compliance
+
+### Manual Testing
+For comprehensive testing instructions and test data, see [`TESTING.md`](TESTING.md).
+
 ## 🔧 Development
 
 ### Database Models
@@ -171,6 +243,7 @@ my-first-blog/
 - **Enrollment**: Student-course relationships
 - **Lesson**: Course content organization
 - **Progress**: Learning progress tracking
+- **Event**: Calendar events with file attachments ⭐ **NEW!**
 
 ### Adding New Features
 1. Create models in `blog/models.py`
@@ -280,18 +353,22 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 ## 🙏 Acknowledgments
 
 - **Django Framework** - The web framework for perfectionists with deadlines
-- **Bootstrap** - Frontend component library
+- **Bootstrap** - Frontend component library for responsive design
 - **Ubuntu Fonts** - Beautiful monospace typography
+- **Pillow** - Python imaging library for poster uploads
+- **Font Awesome** - Icons for calendar and file management
 - **Educational Community** - For inspiring simple, effective learning tools
 
 ## 📊 Project Stats
 
-- **Language**: Python (Django)
+- **Language**: Python (Django 5.2+)
 - **Database**: SQLite (development), PostgreSQL ready
 - **Frontend**: HTML5, CSS3, Bootstrap 3.2
-- **Theme**: Terminal-inspired dark theme
-- **Test Coverage**: Core functionality tested
-- **Documentation**: Comprehensive guides included
+- **Theme**: Terminal-inspired dark theme with 5 color schemes
+- **Features**: Complete LMS + Calendar + File Management
+- **Test Coverage**: 26 comprehensive Django tests (event/calendar + markdown processing)
+- **Documentation**: Comprehensive guides and roadmap included
+- **File Uploads**: Event posters, materials, and course content support
 
 ## 🔗 Links
 

@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse
 from django.db import transaction
-from .models import Post, Course, Enrollment, Lesson, Progress, UserProfile, CourseMaterial, Assignment, Submission, Quiz, Question, Answer, QuizAttempt, QuizResponse, Announcement, AnnouncementRead, Forum, Topic, ForumPost
+from .models import Post, Course, Enrollment, Lesson, Progress, UserProfile, CourseMaterial, Assignment, Submission, Quiz, Question, Answer, QuizAttempt, QuizResponse, Announcement, AnnouncementRead, Forum, Topic, ForumPost, Event
 from .course_import_export import export_course, import_course, confirm_import_course
 
 
@@ -89,9 +89,61 @@ def landing_page(request):
 # Course listing view
 @login_required
 def course_list(request):
-    """Display all published courses"""
+    """Display all published courses with upcoming events"""
     courses = Course.objects.filter(status='published').order_by('-published_date')
-    return render(request, 'blog/course_list.html', {'courses': courses})
+    
+    # Get upcoming events for the homepage calendar with visibility filtering
+    if request.user.is_authenticated:
+        upcoming_events = Event.objects.filter(
+            is_published=True,
+            start_date__gte=timezone.now(),
+            visibility__in=['public', 'registered']
+        ).order_by('start_date')[:10]  # Show next 10 events
+        
+        # Get featured events (for highlighting)
+        featured_events = Event.objects.filter(
+            is_published=True,
+            is_featured=True,
+            start_date__gte=timezone.now(),
+            visibility__in=['public', 'registered']
+        ).order_by('start_date')[:5]
+        
+        # Get today's events
+        today = timezone.now().date()
+        today_events = Event.objects.filter(
+            is_published=True,
+            start_date__date=today,
+            visibility__in=['public', 'registered']
+        ).order_by('start_date')
+    else:
+        upcoming_events = Event.objects.filter(
+            is_published=True,
+            start_date__gte=timezone.now(),
+            visibility='public'
+        ).order_by('start_date')[:10]
+        
+        featured_events = Event.objects.filter(
+            is_published=True,
+            is_featured=True,
+            start_date__gte=timezone.now(),
+            visibility='public'
+        ).order_by('start_date')[:5]
+        
+        today = timezone.now().date()
+        today_events = Event.objects.filter(
+            is_published=True,
+            start_date__date=today,
+            visibility='public'
+        ).order_by('start_date')
+    
+    context = {
+        'courses': courses,
+        'upcoming_events': upcoming_events,
+        'featured_events': featured_events,
+        'today_events': today_events,
+    }
+    
+    return render(request, 'blog/course_list.html', context)
 
 
 # Course detail view
@@ -1283,8 +1335,8 @@ def submit_assignment(request, assignment_id):
     )
     
     if request.method == 'POST':
-        action = request.POST.get('action', 'submit')
-        text_submission = request.POST.get('text_submission', '').strip() if assignment.allow_text_submission else ''
+        action = request.POST.get('action', request.POST.get('submit_type', 'submit'))
+        text_submission = request.POST.get('text_submission', request.POST.get('content', '')).strip() if assignment.allow_text_submission else ''
         file_submission = request.FILES.get('file_submission') if assignment.allow_file_submission else None
         
         errors = []
@@ -1991,19 +2043,28 @@ def take_quiz(request, attempt_id):
             
             elif question.question_type == 'true_false':
                 answer_value = request.POST.get(f'question_{question.id}')
-                if answer_value in ['True', 'False']:
-                    # For true/false questions, store the text value
-                    response.text_answer = answer_value
-                    response.selected_answer = None
-                    # Try to find matching answer for auto-grading
+                if answer_value:
+                    # Check if it's an answer ID (from answer selection) or text value
                     try:
-                        matching_answer = Answer.objects.get(
-                            question=question, 
-                            answer_text__iexact=answer_value
-                        )
-                        response.selected_answer = matching_answer
-                    except Answer.DoesNotExist:
-                        pass
+                        # Try as answer ID first
+                        answer_id = int(answer_value)
+                        selected_answer = Answer.objects.get(id=answer_id, question=question)
+                        response.selected_answer = selected_answer
+                        response.text_answer = selected_answer.answer_text
+                    except (ValueError, Answer.DoesNotExist):
+                        # Fall back to text value handling
+                        if answer_value in ['True', 'False']:
+                            response.text_answer = answer_value
+                            response.selected_answer = None
+                            # Try to find matching answer for auto-grading
+                            try:
+                                matching_answer = Answer.objects.get(
+                                    question=question, 
+                                    answer_text__iexact=answer_value
+                                )
+                                response.selected_answer = matching_answer
+                            except Answer.DoesNotExist:
+                                pass
             
             elif question.question_type == 'short_answer':
                 text_answer = request.POST.get(f'question_{question.id}', '').strip()
@@ -3162,3 +3223,378 @@ def upload_blog_image(request):
         'success': False, 
         'error': 'No image file provided.'
     })
+
+
+# Event Management Views (Admin Only)
+def admin_required(view_func):
+    """Decorator to ensure user is an admin"""
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('login')
+        if not (request.user.is_superuser or (hasattr(request.user, 'userprofile') and request.user.userprofile.role == 'admin')):
+            messages.error(request, 'Access denied. Administrator privileges required.')
+            return redirect('course_list')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+@admin_required
+def event_management(request):
+    """Admin page for managing calendar events"""
+    events = Event.objects.all().order_by('-created_at')
+    
+    # Filter by status if requested
+    status_filter = request.GET.get('status')
+    if status_filter == 'published':
+        events = events.filter(is_published=True)
+    elif status_filter == 'draft':
+        events = events.filter(is_published=False)
+    elif status_filter == 'featured':
+        events = events.filter(is_featured=True)
+    
+    # Filter by event type
+    type_filter = request.GET.get('type')
+    if type_filter:
+        events = events.filter(event_type=type_filter)
+    
+    context = {
+        'events': events,
+        'event_types': Event.EVENT_TYPE_CHOICES,
+        'current_status': status_filter,
+        'current_type': type_filter,
+    }
+    
+    return render(request, 'blog/admin/event_management.html', context)
+
+
+@admin_required
+def add_event(request):
+    """Add a new calendar event - redirect to Django admin for now"""
+    return redirect('/admin/blog/event/add/')
+
+
+def add_event_form(request):
+    """Add a new calendar event form (under construction)"""
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        description = request.POST.get('description', '').strip()
+        event_type = request.POST.get('event_type', 'general')
+        priority = request.POST.get('priority', 'normal')
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        all_day = request.POST.get('all_day') == 'on'
+        is_published = request.POST.get('is_published') == 'on'
+        is_featured = request.POST.get('is_featured') == 'on'
+        course_id = request.POST.get('course')
+        
+        errors = []
+        
+        if not title:
+            errors.append('Event title is required.')
+        
+        if not start_date:
+            errors.append('Start date is required.')
+        
+        try:
+            start_datetime = timezone.datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+        except ValueError:
+            errors.append('Invalid start date format.')
+            start_datetime = None
+        
+        end_datetime = None
+        if end_date:
+            try:
+                end_datetime = timezone.datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+                if start_datetime and end_datetime <= start_datetime:
+                    errors.append('End date must be after start date.')
+            except ValueError:
+                errors.append('Invalid end date format.')
+        
+        course = None
+        if course_id:
+            try:
+                course = Course.objects.get(id=course_id)
+            except Course.DoesNotExist:
+                errors.append('Selected course does not exist.')
+        
+        if not errors:
+            event = Event.objects.create(
+                title=title,
+                description=description,
+                event_type=event_type,
+                priority=priority,
+                start_date=start_datetime,
+                end_date=end_datetime,
+                all_day=all_day,
+                is_published=is_published,
+                is_featured=is_featured,
+                course=course,
+                created_by=request.user
+            )
+            
+            messages.success(request, f'Event "{event.title}" created successfully!')
+            return redirect('event_management')
+        else:
+            for error in errors:
+                messages.error(request, error)
+    
+    # Get courses for the dropdown
+    courses = Course.objects.filter(status='published').order_by('title')
+    
+    context = {
+        'courses': courses,
+        'event_types': Event.EVENT_TYPE_CHOICES,
+        'priority_choices': Event.PRIORITY_CHOICES,
+    }
+    
+    return render(request, 'blog/admin/add_event.html', context)
+
+
+@admin_required
+def edit_event(request, event_id):
+    """Edit an existing calendar event - redirect to Django admin"""
+    return redirect(f'/admin/blog/event/{event_id}/change/')
+
+
+def edit_event_form(request, event_id):
+    """Edit an existing calendar event form (under construction)"""
+    event = get_object_or_404(Event, id=event_id)
+    
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        description = request.POST.get('description', '').strip()
+        event_type = request.POST.get('event_type', 'general')
+        priority = request.POST.get('priority', 'normal')
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        all_day = request.POST.get('all_day') == 'on'
+        is_published = request.POST.get('is_published') == 'on'
+        is_featured = request.POST.get('is_featured') == 'on'
+        course_id = request.POST.get('course')
+        
+        errors = []
+        
+        if not title:
+            errors.append('Event title is required.')
+        
+        if not start_date:
+            errors.append('Start date is required.')
+        
+        try:
+            start_datetime = timezone.datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+        except ValueError:
+            errors.append('Invalid start date format.')
+            start_datetime = None
+        
+        end_datetime = None
+        if end_date:
+            try:
+                end_datetime = timezone.datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+                if start_datetime and end_datetime <= start_datetime:
+                    errors.append('End date must be after start date.')
+            except ValueError:
+                errors.append('Invalid end date format.')
+        
+        course = None
+        if course_id:
+            try:
+                course = Course.objects.get(id=course_id)
+            except Course.DoesNotExist:
+                errors.append('Selected course does not exist.')
+        
+        if not errors:
+            event.title = title
+            event.description = description
+            event.event_type = event_type
+            event.priority = priority
+            event.start_date = start_datetime
+            event.end_date = end_datetime
+            event.all_day = all_day
+            event.is_published = is_published
+            event.is_featured = is_featured
+            event.course = course
+            event.save()
+            
+            messages.success(request, f'Event "{event.title}" updated successfully!')
+            return redirect('event_management')
+        else:
+            for error in errors:
+                messages.error(request, error)
+    
+    # Get courses for the dropdown
+    courses = Course.objects.filter(status='published').order_by('title')
+    
+    context = {
+        'event': event,
+        'courses': courses,
+        'event_types': Event.EVENT_TYPE_CHOICES,
+        'priority_choices': Event.PRIORITY_CHOICES,
+    }
+    
+    return render(request, 'blog/admin/edit_event.html', context)
+
+
+@admin_required
+def delete_event(request, event_id):
+    """Delete a calendar event - redirect to Django admin"""
+    return redirect(f'/admin/blog/event/{event_id}/delete/')
+
+
+def delete_event_form(request, event_id):
+    """Delete a calendar event form (under construction)"""
+    event = get_object_or_404(Event, id=event_id)
+    
+    if request.method == 'POST':
+        event_title = event.title
+        event.delete()
+        messages.success(request, f'Event "{event_title}" deleted successfully!')
+        return redirect('event_management')
+    
+    context = {'event': event}
+    return render(request, 'blog/admin/delete_event.html', context)
+
+
+@login_required
+def event_calendar(request):
+    """Display calendar view of events"""
+    # Get current month and year from query params
+    import calendar
+    from datetime import datetime, timedelta
+    
+    # Get year and month with proper validation
+    try:
+        year_param = request.GET.get('year', '')
+        year = int(year_param) if year_param else timezone.now().year
+    except (ValueError, TypeError):
+        year = timezone.now().year
+    
+    try:
+        month_param = request.GET.get('month', '')
+        month = int(month_param) if month_param else timezone.now().month
+    except (ValueError, TypeError):
+        month = timezone.now().month
+    
+    # Validate month range (1-12)
+    if month < 1 or month > 12:
+        month = timezone.now().month
+        year = timezone.now().year
+    
+    # Create a calendar
+    cal = calendar.monthcalendar(year, month)
+    
+    # Get events for this month
+    start_date = timezone.datetime(year, month, 1)
+    if month == 12:
+        end_date = timezone.datetime(year + 1, 1, 1) - timedelta(days=1)
+    else:
+        end_date = timezone.datetime(year, month + 1, 1) - timedelta(days=1)
+    
+    # Filter events based on visibility and user authentication
+    events_query = Event.objects.filter(
+        is_published=True,
+        start_date__date__range=[start_date.date(), end_date.date()]
+    )
+    
+    # Apply visibility filtering
+    if request.user.is_authenticated:
+        # Authenticated users can see both public and registered events
+        events = events_query.filter(visibility__in=['public', 'registered'])
+    else:
+        # Anonymous users can only see public events
+        events = events_query.filter(visibility='public')
+    
+    events = events.order_by('start_date')
+    
+    # Group events by date
+    events_by_date = {}
+    for event in events:
+        date_key = event.start_date.date()
+        if date_key not in events_by_date:
+            events_by_date[date_key] = []
+        events_by_date[date_key].append(event)
+    
+    # Create calendar weeks with proper structure
+    calendar_weeks = []
+    today = timezone.now().date()
+    current_month_date = timezone.datetime(year, month, 1).date()
+    
+    for week in cal:
+        week_days = []
+        for day in week:
+            if day == 0:
+                # Empty day (previous/next month)
+                week_days.append({
+                    'day': '',
+                    'is_today': False,
+                    'is_current_month': False,
+                    'events': []
+                })
+            else:
+                day_date = timezone.datetime(year, month, day).date()
+                week_days.append({
+                    'day': day,
+                    'is_today': day_date == today,
+                    'is_current_month': True,
+                    'date': day_date,
+                    'events': events_by_date.get(day_date, [])
+                })
+        calendar_weeks.append(week_days)
+    
+    # Navigation dates
+    if month == 1:
+        prev_month_obj = timezone.datetime(year - 1, 12, 1)
+    else:
+        prev_month_obj = timezone.datetime(year, month - 1, 1)
+    
+    if month == 12:
+        next_month_obj = timezone.datetime(year + 1, 1, 1)
+    else:
+        next_month_obj = timezone.datetime(year, month + 1, 1)
+    
+    # Get today's events and upcoming events for sidebar with visibility filtering
+    if request.user.is_authenticated:
+        todays_events = Event.objects.filter(
+            is_published=True,
+            start_date__date=today,
+            visibility__in=['public', 'registered']
+        ).order_by('start_date')
+        
+        upcoming_events = Event.objects.filter(
+            is_published=True,
+            start_date__date__gt=today,
+            visibility__in=['public', 'registered']
+        ).order_by('start_date')[:10]
+    else:
+        todays_events = Event.objects.filter(
+            is_published=True,
+            start_date__date=today,
+            visibility='public'
+        ).order_by('start_date')
+        
+        upcoming_events = Event.objects.filter(
+            is_published=True,
+            start_date__date__gt=today,
+            visibility='public'
+        ).order_by('start_date')[:10]
+    
+    context = {
+        'calendar_weeks': calendar_weeks,
+        'current_month': current_month_date,
+        'today': today,
+        'year': year,
+        'month': month,
+        'month_name': calendar.month_name[month],
+        'events_by_date': events_by_date,
+        'prev_month': prev_month_obj,
+        'next_month': next_month_obj,
+        'todays_events': todays_events,
+        'upcoming_events': upcoming_events,
+    }
+    
+    return render(request, 'blog/event_calendar.html', context)
+
+
+# 404 Error Handler
+def custom_404(request, exception):
+    """Custom 404 handler with helpful construction page"""
+    return render(request, 'blog/404.html', status=404)
