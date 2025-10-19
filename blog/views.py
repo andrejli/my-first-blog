@@ -79,17 +79,13 @@ def post_list(request):
 
 # Public landing page
 def landing_page(request):
-    """Public landing page for the LMS"""
-    if request.user.is_authenticated:
-        # Redirect logged-in users to courses
-        return redirect('course_list')
+    """Public landing page for the LMS (accessible to all users)"""
     return render(request, 'blog/landing.html')
 
 
 # Course listing view
-@login_required
 def course_list(request):
-    """Display all published courses with upcoming events"""
+    """Display all published courses with upcoming events (public access allowed)"""
     courses = Course.objects.filter(status='published').order_by('-published_date')
     
     # Get upcoming events for the homepage calendar with visibility filtering
@@ -3454,7 +3450,6 @@ def delete_event_form(request, event_id):
     return render(request, 'blog/admin/delete_event.html', context)
 
 
-@login_required
 def event_calendar(request):
     """Display calendar view of events"""
     # Get current month and year from query params

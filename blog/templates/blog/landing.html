@@ -16,10 +16,12 @@
                 </p>
                 
                 <div class="feature-grid">
-                    <div class="feature-item">
-                        <i class="fa fa-book fa-3x"></i>
-                        <h3>Courses</h3>
-                        <p>Interactive courses with lessons, assignments, and quizzes</p>
+                    <div class="feature-item clickable">
+                        <a href="{% url 'course_list' %}" class="feature-link">
+                            <i class="fa fa-book fa-3x"></i>
+                            <h3>Courses</h3>
+                            <p>Interactive courses with lessons, assignments, and quizzes</p>
+                        </a>
                     </div>
                     <div class="feature-item">
                         <i class="fa fa-users fa-3x"></i>
@@ -30,6 +32,13 @@
                         <i class="fa fa-code fa-3x"></i>
                         <h3>Terminal Style</h3>
                         <p>Learn in a developer-friendly environment</p>
+                    </div>
+                    <div class="feature-item clickable">
+                        <a href="{% url 'event_calendar' %}" class="feature-link">
+                            <i class="fa fa-calendar fa-3x"></i>
+                            <h3>Events</h3>
+                            <p>View upcoming public events and activities</p>
+                        </a>
                     </div>
                 </div>
                 
@@ -103,6 +112,39 @@
 .feature-item p {
     color: var(--text-light);
     font-size: 14px;
+}
+
+.feature-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    height: 100%;
+}
+
+.feature-link:hover {
+    text-decoration: none;
+    color: inherit;
+}
+
+.feature-item.clickable {
+    cursor: pointer;
+    position: relative;
+}
+
+.feature-item.clickable:hover {
+    background: var(--accent-color);
+}
+
+.feature-item.clickable:hover i {
+    color: var(--primary-bg);
+}
+
+.feature-item.clickable:hover h3 {
+    color: var(--primary-bg);
+}
+
+.feature-item.clickable:hover p {
+    color: var(--primary-bg);
 }
 
 .auth-actions {
