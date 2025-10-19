@@ -45,28 +45,7 @@
     {% block content %}
     {% endblock %}
 
-    <!-- Floating Blog Access Button -->
-    {% if user.is_authenticated %}
-    <div class="floating-blog-access">
-        <div class="fab-main">
-            <i class="fa fa-plus"></i>
-        </div>
-        <div class="fab-menu">
-            <a href="{% url 'create_blog_post' %}" class="fab-item" title="Write New Blog Post">
-                <i class="fa fa-edit"></i>
-            </a>
-            <a href="{% url 'my_blog_dashboard' %}" class="fab-item" title="My Blog Dashboard">
-                <i class="fa fa-dashboard"></i>
-            </a>
-            <a href="{% url 'user_profile' user.username %}" class="fab-item" title="My Profile">
-                <i class="fa fa-user"></i>
-            </a>
-            <a href="{% url 'all_blogs' %}" class="fab-item" title="Browse All Blogs">
-                <i class="fa fa-globe"></i>
-            </a>
-        </div>
-    </div>
-    {% endif %}
+
 
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
@@ -119,6 +98,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             ActualTime();
         });
+
     </script>
     
     {% block extra_js %}{% endblock %}

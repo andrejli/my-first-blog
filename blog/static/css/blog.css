@@ -323,6 +323,15 @@ h1, h2, h3, h4, h5, h6 {
     min-height: 280px;
     transition: all 0.3s ease;
     box-shadow: 0 2px 5px var(--shadow-primary);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.course-card .panel-body {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .course-card:hover {
@@ -334,6 +343,10 @@ h1, h2, h3, h4, h5, h6 {
 .course-card h3 {
     margin-top: 0;
     color: var(--secondary-color);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    line-height: 1.3;
 }
 
 .course-card h3 a {
@@ -341,6 +354,9 @@ h1, h2, h3, h4, h5, h6 {
     text-decoration: none;
     font-family: var(--font-family-primary);
     transition: color 0.3s ease;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    display: block;
 }
 
 .course-card h3 a:hover {
@@ -365,6 +381,9 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 15px;
     min-height: 60px;
     font-family: var(--font-family-primary);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.4;
 }
 
 /* Panels and cards */
@@ -574,6 +593,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .course-actions {
     text-align: right;
+    margin-top: auto;
+    padding-top: 10px;
 }
 
 /* Sidebar styling */
@@ -862,6 +883,31 @@ h1::after, h2::after {
     .text-truncate-mobile {
         max-width: 200px;
     }
+    
+    /* Course card responsive fixes */
+    .course-card {
+        margin-bottom: 15px;
+        min-height: auto;
+    }
+    
+    .course-card h3 {
+        font-size: 18px;
+        line-height: 1.2;
+        margin-bottom: 10px;
+    }
+    
+    .course-card .panel-body {
+        padding: 10px;
+    }
+    
+    .course-meta .row {
+        margin-bottom: 8px;
+    }
+    
+    .course-meta .col-sm-6 {
+        padding-left: 5px;
+        padding-right: 5px;
+    }
 }
 
 /* Improve forum post content display */
@@ -885,6 +931,24 @@ h1::after, h2::after {
 
 /* Better spacing for mobile forum layouts */
 @media (max-width: 767.98px) {
+    /* Course card improvements for mobile/tablet */
+    .course-card {
+        min-height: 250px;
+    }
+    
+    .course-card h3 {
+        font-size: 16px;
+    }
+    
+    .course-description {
+        min-height: 45px;
+        font-size: 13px;
+    }
+    
+    .course-meta small {
+        font-size: 11px;
+    }
+    
     .container-fluid {
         padding-left: 1rem;
         padding-right: 1rem;
@@ -1383,132 +1447,3 @@ h1::after, h2::after {
     }
 }
 
-/* =================================
-   FLOATING ACTION BUTTON STYLES
-   ================================= */
-
-.floating-blog-access {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    z-index: 1000;
-}
-
-.fab-main {
-    width: 56px;
-    height: 56px;
-    background: var(--accent-color);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 4px 12px var(--shadow-primary);
-    transition: all 0.3s ease;
-    color: #000;
-    font-size: 18px;
-    font-weight: bold;
-}
-
-.fab-main:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px var(--shadow-secondary);
-}
-
-.fab-menu {
-    position: absolute;
-    bottom: 70px;
-    right: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(20px);
-    transition: all 0.3s ease;
-}
-
-.floating-blog-access:hover .fab-menu {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
-.fab-item {
-    width: 44px;
-    height: 44px;
-    background: var(--secondary-bg);
-    border: 2px solid var(--accent-color);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    color: var(--accent-color);
-    font-size: 16px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px var(--shadow-primary);
-}
-
-.fab-item:hover {
-    background: var(--accent-color);
-    color: #000;
-    text-decoration: none;
-    transform: scale(1.1);
-    box-shadow: 0 4px 12px var(--shadow-secondary);
-}
-
-/* Add tooltip on hover */
-.fab-item:hover::before {
-    content: attr(title);
-    position: absolute;
-    right: 55px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: var(--tertiary-bg);
-    color: var(--text-light);
-    padding: 8px 12px;
-    border-radius: 4px;
-    white-space: nowrap;
-    font-size: 12px;
-    font-family: var(--font-family-mono);
-    border: 1px solid var(--accent-color);
-    box-shadow: 0 2px 8px var(--shadow-primary);
-    z-index: 1001;
-}
-
-/* Mobile responsive */
-@media (max-width: 768px) {
-    .floating-blog-access {
-        bottom: 20px;
-        right: 20px;
-    }
-    
-    .fab-main {
-        width: 50px;
-        height: 50px;
-        font-size: 16px;
-    }
-    
-    .fab-item {
-        width: 40px;
-        height: 40px;
-        font-size: 14px;
-    }
-    
-    .fab-menu {
-        bottom: 60px;
-    }
-    
-    /* Hide tooltips on mobile */
-    .fab-item:hover::before {
-        display: none;
-    }
-}
-
-/* Hide FAB on very small screens to avoid obstruction */
-@media (max-width: 480px) {
-    .floating-blog-access {
-        display: none;
-    }
-}
