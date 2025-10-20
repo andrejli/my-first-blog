@@ -4,7 +4,7 @@
 {% block title %}Event Management - Admin Panel{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid mt-4" style="padding-left: 2rem; padding-right: 1rem;">
     <!-- Header Section -->
     <div class="row mb-4">
         <div class="col-12">
@@ -19,9 +19,48 @@
                     <a href="{% url 'add_event' %}" class="btn btn-success btn-lg">
                         <i class="fas fa-plus"></i> Add New Event
                     </a>
+                    <a href="{% url 'manage_event_types' %}" class="btn btn-info btn-lg ml-2">
+                        <i class="fas fa-tags"></i> Manage Types
+                    </a>
                     <a href="/admin/blog/event/" class="btn btn-warning btn-lg ml-2">
                         <i class="fas fa-cog"></i> Django Admin
                     </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Section -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3>{{ stats.total }}</h3>
+                    <small>Total Events</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>{{ stats.published }}</h3>
+                    <small>Published</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h3>{{ stats.featured }}</h3>
+                    <small>Featured</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>{{ stats.custom_types }}</h3>
+                    <small>Custom Types</small>
                 </div>
             </div>
         </div>
@@ -112,6 +151,19 @@
                                             {% if event.course %}
                                             <br><small class="text-muted">
                                                 <i class="fas fa-book"></i> {{ event.course.title }}
+                                            </small>
+                                            {% endif %}
+                                            {% if event.has_lesson_link %}
+                                            <br><small class="text-info">
+                                                {% if event.get_lesson_url %}
+                                                <i class="fas fa-external-link-alt"></i> 
+                                                <a href="{{ event.get_lesson_url }}" class="text-info" target="_blank">
+                                                    {{ event.get_lesson_display|truncatechars:40 }}
+                                                </a>
+                                                {% else %}
+                                                <i class="fas fa-link"></i> {{ event.get_lesson_display|truncatechars:40 }}
+                                                <small class="text-warning">(not found)</small>
+                                                {% endif %}
                                             </small>
                                             {% endif %}
                                         </div>

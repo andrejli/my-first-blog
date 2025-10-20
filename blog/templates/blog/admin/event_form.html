@@ -1,0 +1,388 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - FORTIS AURIS LMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="padding-left: 2rem; padding-right: 1rem;">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="text-primary">
+                        <i class="fas fa-calendar-plus"></i> {{ title }}
+                    </h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'event_management' %}">Event Management</a></li>
+                            <li class="breadcrumb-item active">{{ title }}</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{% url 'event_management' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Events
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Section -->
+    <div class="row">
+        <div class="col-lg-8 col-xl-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-edit"></i> Event Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" id="event-form">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Information -->
+                        <div class="form-section mb-4">
+                            <h6 class="text-info mb-3"><i class="fas fa-info-circle"></i> Basic Information</h6>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.title.id_for_label }}" class="form-label">Event Title *</label>
+                                {{ form.title }}
+                                {% if form.title.errors %}
+                                    <div class="text-danger small">{{ form.title.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                    <div class="text-danger small">{{ form.description.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Event Type and Colors -->
+                        <div class="form-section mb-4">
+                            <h6 class="text-info mb-3"><i class="fas fa-palette"></i> Type & Appearance</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.event_type_new.id_for_label }}" class="form-label">Custom Event Type</label>
+                                    {{ form.event_type_new }}
+                                    {% if form.event_type_new.errors %}
+                                        <div class="text-danger small">{{ form.event_type_new.errors.0 }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">Select a custom event type with predefined colors</small>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.event_type.id_for_label }}" class="form-label">Legacy Type (Fallback)</label>
+                                    {{ form.event_type }}
+                                    {% if form.event_type.errors %}
+                                        <div class="text-danger small">{{ form.event_type.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.custom_color.id_for_label }}" class="form-label">Custom Color (Optional)</label>
+                                    <div class="input-group">
+                                        {{ form.custom_color }}
+                                        <button type="button" class="btn btn-outline-secondary" onclick="clearColor('custom_color')">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    {% if form.custom_color.errors %}
+                                        <div class="text-danger small">{{ form.custom_color.errors.0 }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">Override event type color</small>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.custom_background.id_for_label }}" class="form-label">Custom Background (Optional)</label>
+                                    <div class="input-group">
+                                        {{ form.custom_background }}
+                                        <button type="button" class="btn btn-outline-secondary" onclick="clearColor('custom_background')">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    {% if form.custom_background.errors %}
+                                        <div class="text-danger small">{{ form.custom_background.errors.0 }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">Override background color</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date and Time -->
+                        <div class="form-section mb-4">
+                            <h6 class="text-info mb-3"><i class="fas fa-clock"></i> Date & Time</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.start_date.id_for_label }}" class="form-label">Start Date & Time *</label>
+                                    {{ form.start_date }}
+                                    {% if form.start_date.errors %}
+                                        <div class="text-danger small">{{ form.start_date.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.end_date.id_for_label }}" class="form-label">End Date & Time</label>
+                                    {{ form.end_date }}
+                                    {% if form.end_date.errors %}
+                                        <div class="text-danger small">{{ form.end_date.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                {{ form.all_day }}
+                                <label class="form-check-label" for="{{ form.all_day.id_for_label }}">
+                                    All-day event
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Settings -->
+                        <div class="form-section mb-4">
+                            <h6 class="text-info mb-3"><i class="fas fa-cogs"></i> Settings</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.priority.id_for_label }}" class="form-label">Priority</label>
+                                    {{ form.priority }}
+                                    {% if form.priority.errors %}
+                                        <div class="text-danger small">{{ form.priority.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.visibility.id_for_label }}" class="form-label">Visibility</label>
+                                    {{ form.visibility }}
+                                    {% if form.visibility.errors %}
+                                        <div class="text-danger small">{{ form.visibility.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.course.id_for_label }}" class="form-label">Associated Course</label>
+                                {{ form.course }}
+                                {% if form.course.errors %}
+                                    <div class="text-danger small">{{ form.course.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Lesson Linking -->
+                        <div class="form-section mb-4">
+                            <h6 class="text-info mb-3"><i class="fas fa-link"></i> Lesson Linking</h6>
+                            <p class="text-muted small mb-3">
+                                <i class="fas fa-info-circle"></i> Link this event to a specific lesson. Users can click to go directly to the lesson content.
+                            </p>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.linked_lesson.id_for_label }}" class="form-label">Direct Lesson Link</label>
+                                    {{ form.linked_lesson }}
+                                    {% if form.linked_lesson.errors %}
+                                        <div class="text-danger small">{{ form.linked_lesson.errors.0 }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">Select a specific lesson from dropdown</small>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.obsidian_link.id_for_label }}" class="form-label">
+                                        Obsidian-Style Link
+                                        <i class="fas fa-question-circle" data-toggle="tooltip" title="Use [[Course Name - Lesson Title]] format for flexible linking"></i>
+                                    </label>
+                                    {{ form.obsidian_link }}
+                                    {% if form.obsidian_link.errors %}
+                                        <div class="text-danger small">{{ form.obsidian_link.errors.0 }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">
+                                        Examples: <code>[[Python Basics - Variables]]</code> or just <code>Variables</code>
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info small">
+                                <strong><i class="fas fa-lightbulb"></i> Tip:</strong> 
+                                Direct lesson link takes priority over Obsidian link. Use Obsidian links for flexible, 
+                                search-based matching when you don't know the exact lesson ID.
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        {{ form.is_published }}
+                                        <label class="form-check-label" for="{{ form.is_published.id_for_label }}">
+                                            Published (visible to users)
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        {{ form.is_featured }}
+                                        <label class="form-check-label" for="{{ form.is_featured.id_for_label }}">
+                                            Featured (show on homepage)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- File Uploads -->
+                        <div class="form-section mb-4">
+                            <h6 class="text-info mb-3"><i class="fas fa-file-upload"></i> Files</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.poster.id_for_label }}" class="form-label">Event Poster</label>
+                                    {{ form.poster }}
+                                    {% if form.poster.errors %}
+                                        <div class="text-danger small">{{ form.poster.errors.0 }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">JPG, PNG images (recommended: 400x720px)</small>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.materials.id_for_label }}" class="form-label">Materials</label>
+                                    {{ form.materials }}
+                                    {% if form.materials.errors %}
+                                        <div class="text-danger small">{{ form.materials.errors.0 }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">PDF, DOC, DOCX files</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-secondary" onclick="history.back()">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> {{ submit_text }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Preview Panel -->
+        <div class="col-lg-4 col-xl-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-eye"></i> Preview
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="event-preview" class="event-preview">
+                        <div class="event-item p-3 border rounded" id="preview-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong id="preview-title">Event Title</strong>
+                                <span class="badge" id="preview-priority">normal</span>
+                            </div>
+                            <div class="text-muted small mt-1" id="preview-type">
+                                <i class="fas fa-calendar" id="preview-icon"></i> <span id="preview-type-name">General</span>
+                            </div>
+                            <div class="mt-2" id="preview-description">Event description will appear here...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h6>Quick Actions:</h6>
+                        <a href="{% url 'manage_event_types' %}" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-tags"></i> Manage Event Types
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function clearColor(fieldName) {
+    document.getElementById('id_' + fieldName).value = '';
+}
+
+// Real-time preview updates
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('event-form');
+    const previewItem = document.getElementById('preview-item');
+    
+    function updatePreview() {
+        // Update title
+        const title = document.getElementById('id_title').value || 'Event Title';
+        document.getElementById('preview-title').textContent = title;
+        
+        // Update description
+        const description = document.getElementById('id_description').value || 'Event description will appear here...';
+        document.getElementById('preview-description').textContent = description;
+        
+        // Update priority
+        const priority = document.getElementById('id_priority').value || 'normal';
+        const priorityBadge = document.getElementById('preview-priority');
+        priorityBadge.textContent = priority;
+        priorityBadge.className = 'badge badge-' + priority;
+        
+        // Update colors
+        const customColor = document.getElementById('id_custom_color').value;
+        const customBg = document.getElementById('id_custom_background').value;
+        
+        if (customColor || customBg) {
+            const style = previewItem.style;
+            if (customColor) style.color = customColor;
+            if (customBg) style.backgroundColor = customBg;
+            if (customColor) style.borderColor = customColor;
+        }
+    }
+    
+    // Add event listeners
+    ['title', 'description', 'priority', 'custom_color', 'custom_background'].forEach(field => {
+        const element = document.getElementById('id_' + field);
+        if (element) {
+            element.addEventListener('input', updatePreview);
+            element.addEventListener('change', updatePreview);
+        }
+    });
+    
+    // Initial preview update
+    updatePreview();
+});
+</script>
+
+<style>
+.form-section {
+    border-left: 3px solid var(--secondary-color, #ffc107);
+    padding-left: 15px;
+}
+
+.color-picker {
+    width: 60px !important;
+    height: 38px;
+    padding: 0;
+    border: 1px solid #ced4da;
+}
+
+.event-preview .event-item {
+    background: var(--primary-bg, #000000);
+    color: var(--primary-color, #32cd32);
+    border: 1px solid var(--border-color, #32cd32) !important;
+}
+
+.badge-low { background-color: #28a745; }
+.badge-normal { background-color: #17a2b8; }
+.badge-high { background-color: #fd7e14; }
+.badge-urgent { background-color: #dc3545; }
+</style>
+{% endblock %}

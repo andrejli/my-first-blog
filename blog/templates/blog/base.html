@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Terminal LMS{% endblock %}</title>
+    <title>{% block title %}FORTIS AURIS LMS{% endblock %}</title>
     <meta name="csrf-token" content="{{ csrf_token }}">
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
@@ -16,15 +16,16 @@
 <body>
     {% csrf_token %}
     <div class="page-header">
-        <h1><a href="{% url 'landing' %}">⚡ Terminal LMS</a></h1>
+        <h1><a href="{% url 'landing' %}">⚡ FORTIS AURIS LMS</a></h1>
         <div class="top-menu">
             <span class="zulu-time">ZULU: <span id="watch">--:--:--:---</span></span>
+            <!-- Public Calendar Link - Available to Everyone -->
+            <a href="{% url 'event_calendar' %}" class="btn btn-warning"><i class="glyphicon glyphicon-calendar"></i> calendar</a>
             {% if user.is_authenticated %}
                 <span>user@lms:~$ whoami → {{ user.username }}</span>
                 <a href="{% url 'forum_list' %}" class="btn btn-default">forums</a>
                 <a href="{% url 'all_blogs' %}" class="btn btn-default">blogs</a>
                 <a href="{% url 'my_blog_dashboard' %}" class="btn btn-default">my blog</a>
-                <a href="{% url 'event_calendar' %}" class="btn btn-warning"><i class="glyphicon glyphicon-calendar"></i> calendar</a>
                 {% if user.is_staff and user.is_superuser %}
                     <a href="/admin/" class="btn btn-default">admin</a>
                 {% else %}

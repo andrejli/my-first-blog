@@ -1,0 +1,401 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - FORTIS AURIS LMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" style="padding-left: 2rem; padding-right: 1rem;">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="text-primary">
+                        <i class="fas fa-tag"></i> {{ title }}
+                    </h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'event_management' %}">Event Management</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'manage_event_types' %}">Event Types</a></li>
+                            <li class="breadcrumb-item active">{{ title }}</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{% url 'manage_event_types' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Event Types
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Section -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-edit"></i> Event Type Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="event-type-form">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Information -->
+                        <div class="form-section mb-4">
+                            <h6 class="text-info mb-3"><i class="fas fa-info-circle"></i> Basic Information</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label">Type Name *</label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                        <div class="text-danger small">{{ form.name.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.slug.id_for_label }}" class="form-label">Slug *</label>
+                                    {{ form.slug }}
+                                    {% if form.slug.errors %}
+                                        <div class="text-danger small">{{ form.slug.errors.0 }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">URL-friendly identifier (auto-generated from name)</small>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                    <div class="text-danger small">{{ form.description.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Appearance -->
+                        <div class="form-section mb-4">
+                            <h6 class="text-info mb-3"><i class="fas fa-palette"></i> Appearance</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.color.id_for_label }}" class="form-label">Text Color *</label>
+                                    <div class="input-group">
+                                        {{ form.color }}
+                                        <span class="input-group-text" id="color-preview" style="background-color: #32cd32; width: 50px;"></span>
+                                    </div>
+                                    {% if form.color.errors %}
+                                        <div class="text-danger small">{{ form.color.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.background_color.id_for_label }}" class="form-label">Background Color *</label>
+                                    <div class="input-group">
+                                        {{ form.background_color }}
+                                        <span class="input-group-text" id="bg-color-preview" style="background-color: #0f1419; width: 50px; border: 1px solid #ccc;"></span>
+                                    </div>
+                                    {% if form.background_color.errors %}
+                                        <div class="text-danger small">{{ form.background_color.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.icon.id_for_label }}" class="form-label">Icon Class</label>
+                                <div class="input-group">
+                                    {{ form.icon }}
+                                    <span class="input-group-text">
+                                        <i class="fas fa-calendar" id="icon-preview"></i>
+                                    </span>
+                                </div>
+                                {% if form.icon.errors %}
+                                    <div class="text-danger small">{{ form.icon.errors.0 }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">
+                                    FontAwesome class (e.g., fas fa-laptop-code). 
+                                    <a href="https://fontawesome.com/icons" target="_blank">Browse icons</a>
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Settings -->
+                        <div class="form-section mb-4">
+                            <h6 class="text-info mb-3"><i class="fas fa-cogs"></i> Settings</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.sort_order.id_for_label }}" class="form-label">Sort Order</label>
+                                    {{ form.sort_order }}
+                                    {% if form.sort_order.errors %}
+                                        <div class="text-danger small">{{ form.sort_order.errors.0 }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">Lower numbers appear first</small>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check mt-4">
+                                        {{ form.is_active }}
+                                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                            Active (available for use)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-secondary" onclick="history.back()">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> {{ submit_text }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Preview Panel -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-eye"></i> Live Preview
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="event-type-preview">
+                        <div class="event-item p-3 border rounded" id="preview-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-calendar" id="preview-icon"></i>
+                                    <strong id="preview-name">Event Type Name</strong>
+                                </div>
+                                <span class="badge badge-success" id="preview-status">Active</span>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">Slug:</small> 
+                                <code id="preview-slug">event-type-slug</code>
+                            </div>
+                            <div class="mt-2" id="preview-description">
+                                Event type description will appear here...
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <h6>Color Information:</h6>
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted">Text:</small><br>
+                                    <div class="color-sample" id="preview-color-sample"></div>
+                                    <small id="preview-color-code">#32cd32</small>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Background:</small><br>
+                                    <div class="color-sample" id="preview-bg-sample" style="border: 1px solid #ccc;"></div>
+                                    <small id="preview-bg-code">#0f1419</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Color Presets -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-swatchbook"></i> Color Presets
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="color-presets">
+                        <div class="preset-item" onclick="applyPreset('#6f42c1', '#0f1419')">
+                            <div class="preset-color" style="background: #6f42c1;"></div>
+                            <small>Purple</small>
+                        </div>
+                        <div class="preset-item" onclick="applyPreset('#17a2b8', '#0f1419')">
+                            <div class="preset-color" style="background: #17a2b8;"></div>
+                            <small>Cyan</small>
+                        </div>
+                        <div class="preset-item" onclick="applyPreset('#007bff', '#0f1419')">
+                            <div class="preset-color" style="background: #007bff;"></div>
+                            <small>Blue</small>
+                        </div>
+                        <div class="preset-item" onclick="applyPreset('#fd7e14', '#0f1419')">
+                            <div class="preset-color" style="background: #fd7e14;"></div>
+                            <small>Orange</small>
+                        </div>
+                        <div class="preset-item" onclick="applyPreset('#dc3545', '#0f1419')">
+                            <div class="preset-color" style="background: #dc3545;"></div>
+                            <small>Red</small>
+                        </div>
+                        <div class="preset-item" onclick="applyPreset('#28a745', '#0f1419')">
+                            <div class="preset-color" style="background: #28a745;"></div>
+                            <small>Green</small>
+                        </div>
+                        <div class="preset-item" onclick="applyPreset('#ffc107', '#0f1419')">
+                            <div class="preset-color" style="background: #ffc107;"></div>
+                            <small>Yellow</small>
+                        </div>
+                        <div class="preset-item" onclick="applyPreset('#e83e8c', '#0f1419')">
+                            <div class="preset-color" style="background: #e83e8c;"></div>
+                            <small>Pink</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function applyPreset(color, bgColor) {
+    document.getElementById('id_color').value = color;
+    document.getElementById('id_background_color').value = bgColor;
+    updatePreview();
+}
+
+function generateSlug(name) {
+    return name.toLowerCase()
+              .replace(/[^a-z0-9\s-]/g, '')
+              .replace(/\s+/g, '-')
+              .replace(/-+/g, '-')
+              .replace(/^-|-$/g, '');
+}
+
+// Real-time preview updates
+document.addEventListener('DOMContentLoaded', function() {
+    function updatePreview() {
+        // Update name
+        const name = document.getElementById('id_name').value || 'Event Type Name';
+        document.getElementById('preview-name').textContent = name;
+        
+        // Update slug
+        const slug = document.getElementById('id_slug').value || generateSlug(name);
+        document.getElementById('preview-slug').textContent = slug;
+        
+        // Update description
+        const description = document.getElementById('id_description').value || 'Event type description will appear here...';
+        document.getElementById('preview-description').textContent = description;
+        
+        // Update colors
+        const color = document.getElementById('id_color').value || '#32cd32';
+        const bgColor = document.getElementById('id_background_color').value || '#0f1419';
+        
+        // Update preview item style
+        const previewItem = document.getElementById('preview-item');
+        previewItem.style.color = color;
+        previewItem.style.backgroundColor = bgColor;
+        previewItem.style.borderColor = color;
+        
+        // Update color samples
+        document.getElementById('preview-color-sample').style.backgroundColor = color;
+        document.getElementById('preview-bg-sample').style.backgroundColor = bgColor;
+        document.getElementById('preview-color-code').textContent = color;
+        document.getElementById('preview-bg-code').textContent = bgColor;
+        
+        // Update color previews in form
+        document.getElementById('color-preview').style.backgroundColor = color;
+        document.getElementById('bg-color-preview').style.backgroundColor = bgColor;
+        
+        // Update icon
+        const icon = document.getElementById('id_icon').value || 'fas fa-calendar';
+        const iconElement = document.getElementById('preview-icon');
+        iconElement.className = icon;
+        document.getElementById('icon-preview').className = icon;
+        
+        // Update status
+        const isActive = document.getElementById('id_is_active').checked;
+        const statusBadge = document.getElementById('preview-status');
+        statusBadge.textContent = isActive ? 'Active' : 'Inactive';
+        statusBadge.className = isActive ? 'badge badge-success' : 'badge badge-secondary';
+    }
+    
+    // Auto-generate slug from name
+    document.getElementById('id_name').addEventListener('input', function() {
+        if (!document.getElementById('id_slug').value) {
+            document.getElementById('id_slug').value = generateSlug(this.value);
+        }
+        updatePreview();
+    });
+    
+    // Add event listeners
+    ['slug', 'description', 'color', 'background_color', 'icon', 'is_active'].forEach(field => {
+        const element = document.getElementById('id_' + field);
+        if (element) {
+            element.addEventListener('input', updatePreview);
+            element.addEventListener('change', updatePreview);
+        }
+    });
+    
+    // Initial preview update
+    updatePreview();
+});
+</script>
+
+<style>
+.form-section {
+    border-left: 3px solid var(--secondary-color, #ffc107);
+    padding-left: 15px;
+}
+
+.color-sample {
+    width: 30px;
+    height: 20px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 4px;
+}
+
+.color-presets {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.preset-item {
+    text-align: center;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.preset-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.preset-color {
+    width: 30px;
+    height: 20px;
+    border-radius: 4px;
+    margin: 0 auto 4px;
+}
+
+.event-type-preview .event-item {
+    transition: all 0.3s ease;
+}
+
+.badge-success {
+    background-color: #28a745;
+}
+
+.badge-secondary {
+    background-color: #6c757d;
+}
+
+code {
+    background-color: var(--secondary-bg, #0f0f0f);
+    color: var(--secondary-color, #ffc107);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.85em;
+}
+</style>
+{% endblock %}

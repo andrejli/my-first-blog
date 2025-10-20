@@ -1,26 +1,10 @@
-<!DOCTYPE html>
+{% extends 'blog/base.html' %}
 {% load static %}
 {% load course_extras %}
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Courses - Terminal LMS</title>
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
-    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <div class="page-header">
-        <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
-        <div class="top-menu">
-            <span class="zulu-time">ZULU: <span id="watch">--:--:--:---</span></span>
-            <span>{{ user.username }}@lms:~$ my-courses</span>
-            <a href="{% url 'course_list' %}" class="btn btn-default">browse</a>
-            <a href="{% url 'student_dashboard' %}" class="btn btn-info">dashboard</a>
-        </div>
-    </div>
+
+{% block title %}My Courses - FORTIS AURIS LMS{% endblock %}
+
+{% block content %}
 
     <div class="content container">
         <div class="row">
@@ -398,9 +382,4 @@
             ActualTime();
         });
     </script>
-    
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
-    <script src="{% static 'js/theme-switcher.js' %}"></script>
-</body>
-</html>
+{% endblock %}

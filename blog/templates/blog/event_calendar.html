@@ -1,6 +1,6 @@
 {% extends 'blog/base.html' %}
 
-{% block title %}Event Calendar{% endblock %}
+{% block title %}FORTIS AURIS LMS - Event Calendar{% endblock %}
 
 {% block content %}
 <div class="container-fluid mt-4" style="padding-left: 2rem;">
@@ -17,27 +17,76 @@
         </div>
     </div>
 
-    <!-- Calendar Navigation -->
+    <!-- Calendar Navigation and View Selector -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
+                    <div class="d-flex justify-content-between align-items-center flex-wrap">
+                        <!-- View Selector -->
+                        <div class="mb-2 mb-md-0">
+                            <div class="btn-group" role="group" aria-label="Calendar View">
+                                <a href="?view=month&year={{ year }}&month={{ month }}" 
+                                   class="btn btn-sm {% if view_mode == 'month' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                    Month
+                                </a>
+                                <a href="?view=week&year={{ current_date.year }}&month={{ current_date.month }}&day={{ current_date.day }}" 
+                                   class="btn btn-sm {% if view_mode == 'week' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                    Week
+                                </a>
+                                <a href="?view=day&year={{ current_date.year }}&month={{ current_date.month }}&day={{ current_date.day }}" 
+                                   class="btn btn-sm {% if view_mode == 'day' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                    Day
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Current Period Title -->
+                        <div class="text-center mb-2 mb-md-0">
                             <h5 class="card-title mb-0">
-                                {{ current_month|date:"F Y" }}
+                                {% if view_mode == 'month' %}
+                                    {{ current_month|date:"F Y" }}
+                                {% elif view_mode == 'week' %}
+                                    Week of {{ week_days.0.date|date:"M j" }} - {{ week_days.6.date|date:"M j, Y" }}
+                                {% else %}
+                                    {{ current_date|date:"l, F j, Y" }}
+                                {% endif %}
                             </h5>
                         </div>
+
+                        <!-- Navigation Controls -->
                         <div>
-                            <a href="?month={{ prev_month.month }}&year={{ prev_month.year }}" class="btn btn-outline-secondary btn-sm">
-                                <i class="fas fa-chevron-left"></i> Previous
-                            </a>
-                            <a href="?month={{ today.month }}&year={{ today.year }}" class="btn btn-outline-primary btn-sm">
-                                Today
-                            </a>
-                            <a href="?month={{ next_month.month }}&year={{ next_month.year }}" class="btn btn-outline-secondary btn-sm">
-                                Next <i class="fas fa-chevron-right"></i>
-                            </a>
+                            {% if view_mode == 'month' %}
+                                <a href="?view=month&month={{ prev_obj.month }}&year={{ prev_obj.year }}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </a>
+                                <a href="?view=month&month={{ today.month }}&year={{ today.year }}" class="btn btn-outline-primary btn-sm">
+                                    Today
+                                </a>
+                                <a href="?view=month&month={{ next_obj.month }}&year={{ next_obj.year }}" class="btn btn-outline-secondary btn-sm">
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </a>
+                            {% elif view_mode == 'week' %}
+                                <a href="?view=week&year={{ prev_obj.year }}&month={{ prev_obj.month }}&day={{ prev_obj.day }}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-chevron-left"></i> Previous Week
+                                </a>
+                                <a href="?view=week&year={{ today.year }}&month={{ today.month }}&day={{ today.day }}" class="btn btn-outline-primary btn-sm">
+                                    This Week
+                                </a>
+                                <a href="?view=week&year={{ next_obj.year }}&month={{ next_obj.month }}&day={{ next_obj.day }}" class="btn btn-outline-secondary btn-sm">
+                                    Next Week <i class="fas fa-chevron-right"></i>
+                                </a>
+                            {% else %}
+                                <a href="?view=day&year={{ prev_obj.year }}&month={{ prev_obj.month }}&day={{ prev_obj.day }}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-chevron-left"></i> Previous Day
+                                </a>
+                                <a href="?view=day&year={{ today.year }}&month={{ today.month }}&day={{ today.day }}" class="btn btn-outline-primary btn-sm">
+                                    Today
+                                </a>
+                                <a href="?view=day&year={{ next_obj.year }}&month={{ next_obj.month }}&day={{ next_obj.day }}" class="btn btn-outline-secondary btn-sm">
+                                    Next Day <i class="fas fa-chevron-right"></i>
+                                </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -50,7 +99,9 @@
         <div class="col-xs-12 col-sm-12 col-md-8 col-lg-8">
             <div class="card">
                 <div class="card-body p-0">
-                    <!-- Responsive Calendar Table -->
+                    
+                    {% if view_mode == 'month' %}
+                    <!-- Month View -->
                     <div class="table-responsive">
                         <table class="table table-bordered calendar-table mb-0">
                             <!-- Calendar Header -->
@@ -81,18 +132,22 @@
                                             <div class="day-events">
                                                 {% for event in day.events %}
                                                 <div class="calendar-event event-{{ event.event_type }}" 
-                                                     title="{{ event.title }} - {{ event.description|truncatechars:50 }}"
+                                                     title="{{ event.title }} - {{ event.description|truncatechars:50 }}{% if event.has_poster %} - Has Poster{% endif %}"
                                                      data-toggle="tooltip" 
                                                      data-placement="top"
                                                      data-html="true"
-                                                     data-title="<strong>{{ event.title }}</strong><br>{{ event.get_event_type_display }}<br>{{ event.start_date|date:'M j, Y H:i' }}">
+                                                     data-title="<strong>{{ event.title }}</strong><br>{{ event.get_event_type_display }}<br>{{ event.start_date|date:'M j, Y H:i' }}{% if event.has_poster %}<br><i class='fas fa-image'></i> Poster Available{% endif %}"
+                                                     {% if event.has_poster %}data-poster-url="{{ event.get_poster_url }}"{% endif %}>
                                                     <i class="fa fa-circle event-dot"></i>
+                                                    {% if event.has_poster %}
+                                                    <i class="fas fa-image poster-indicator" title="Has Poster"></i>
+                                                    {% endif %}
                                                     <span class="event-text">
                                                         {% if event.all_day %}
-                                                            {{ event.title|truncatechars:32 }}
+                                                            {{ event.title|truncatechars:28 }}
                                                         {% else %}
                                                             <span class="event-time">{{ event.start_date|date:"H:i" }}</span>
-                                                            {{ event.title|truncatechars:24 }}
+                                                            {{ event.title|truncatechars:20 }}
                                                         {% endif %}
                                                     </span>
                                                 </div>
@@ -106,6 +161,123 @@
                             </tbody>
                         </table>
                     </div>
+                    
+                    {% elif view_mode == 'week' %}
+                    <!-- Week View -->
+                    <div class="week-view">
+                        <div class="table-responsive">
+                            <table class="table table-bordered week-table mb-0">
+                                <thead class="calendar-header">
+                                    <tr>
+                                        {% for day in week_days %}
+                                        <th class="text-center week-day-header {% if day.is_today %}today-highlight{% endif %}">
+                                            <div class="week-day-title">{{ day.weekday_short }}</div>
+                                            <div class="week-day-number">{{ day.day }}</div>
+                                        </th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="week-events-row">
+                                        {% for day in week_days %}
+                                        <td class="week-day-cell {% if day.is_today %}today-highlight{% endif %}">
+                                            <div class="week-day-events">
+                                                {% for event in day.events %}
+                                                <div class="week-event event-{{ event.event_type }}"
+                                                     title="{{ event.title }} - {{ event.description|truncatechars:50 }}{% if event.has_poster %} - Has Poster{% endif %}"
+                                                     data-toggle="tooltip" 
+                                                     data-placement="top"
+                                                     data-html="true"
+                                                     data-title="<strong>{{ event.title }}</strong><br>{{ event.get_event_type_display }}<br>{{ event.start_date|date:'M j, Y H:i' }}{% if event.has_poster %}<br><i class='fas fa-image'></i> Poster Available{% endif %}"
+                                                     {% if event.has_poster %}data-poster-url="{{ event.get_poster_url }}"{% endif %}>
+                                                    {% if event.all_day %}
+                                                        <div class="event-all-day">
+                                                            <i class="fa fa-circle event-dot"></i>
+                                                            {% if event.has_poster %}<i class="fas fa-image poster-indicator" title="Has Poster"></i>{% endif %}
+                                                            {{ event.title }}
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="event-timed">
+                                                            <span class="event-time">{{ event.start_date|date:"H:i" }}</span>
+                                                            {% if event.has_poster %}<i class="fas fa-image poster-indicator" title="Has Poster"></i>{% endif %}
+                                                            {{ event.title }}
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </td>
+                                        {% endfor %}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    {% else %}
+                    <!-- Day View -->
+                    <div class="day-view">
+                        <!-- All Day Events -->
+                        {% if all_day_events %}
+                        <div class="all-day-section">
+                            <div class="all-day-header">
+                                <h6>All Day Events</h6>
+                            </div>
+                            <div class="all-day-events">
+                                {% for event in all_day_events %}
+                                <div class="day-event event-{{ event.event_type }}"
+                                     title="{{ event.title }} - {{ event.description|truncatechars:100 }}{% if event.has_poster %} - Has Poster{% endif %}"
+                                     data-toggle="tooltip" 
+                                     data-placement="right"
+                                     data-html="true"
+                                     {% if event.has_poster %}data-poster-url="{{ event.get_poster_url }}"{% endif %}>
+                                    <i class="fa fa-circle event-dot"></i>
+                                    {% if event.has_poster %}<i class="fas fa-image poster-indicator" title="Has Poster"></i>{% endif %}
+                                    <strong>{{ event.title }}</strong>
+                                    <small class="text-muted">{{ event.get_event_type_display }}</small>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Hourly Schedule -->
+                        <div class="hourly-schedule">
+                            <div class="table-responsive">
+                                <table class="table table-bordered day-table mb-0">
+                                    <tbody>
+                                        {% for hour_block in day_hours %}
+                                        <tr class="hour-row">
+                                            <td class="hour-label">
+                                                <span class="hour-time">{{ hour_block.hour_12 }}</span>
+                                            </td>
+                                            <td class="hour-events">
+                                                {% for event in hour_block.events %}
+                                                <div class="day-event event-{{ event.event_type }}"
+                                                     title="{{ event.title }} - {{ event.description|truncatechars:100 }}{% if event.has_poster %} - Has Poster{% endif %}"
+                                                     data-toggle="tooltip" 
+                                                     data-placement="right"
+                                                     data-html="true"
+                                                     {% if event.has_poster %}data-poster-url="{{ event.get_poster_url }}"{% endif %}>
+                                                    <span class="event-time">
+                                                        {{ event.start_date|date:"H:i" }}
+                                                        {% if event.end_date %} - {{ event.end_date|date:"H:i" }}{% endif %}
+                                                    </span>
+                                                    {% if event.has_poster %}<i class="fas fa-image poster-indicator" title="Has Poster"></i>{% endif %}
+                                                    <strong>{{ event.title }}</strong>
+                                                    <small class="text-muted">{{ event.get_event_type_display }}</small>
+                                                </div>
+                                                {% endfor %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                 </div>
             </div>
         </div>
@@ -144,25 +316,28 @@
                             <p class="event-description mt-1">{{ event.description|truncatechars:100 }}</p>
                             {% endif %}
                             
-                            <!-- Event Files -->
-                            {% if event.has_poster or event.has_materials %}
-                            <div class="event-files mt-2">
-                                {% if event.has_poster %}
-                                <div class="event-poster-preview mb-2">
-                                    <img src="{{ event.get_poster_url }}" alt="Event Poster" 
-                                         class="img-thumbnail poster-thumbnail" 
-                                         style="max-width: 100px; max-height: 80px; cursor: pointer;"
-                                         onclick="window.open('{{ event.get_poster_url }}', '_blank')">
-                                </div>
-                                <a href="{{ event.get_poster_url }}" class="btn btn-sm btn-outline-primary me-1" target="_blank">
-                                    <i class="fas fa-image"></i> View Poster
+                            <!-- Lesson Link -->
+                            {% if event.has_lesson_link %}
+                            <div class="event-lesson-link mt-2">
+                                {% if event.get_lesson_url %}
+                                <a href="{{ event.get_lesson_url }}" class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-external-link-alt"></i> Go to Lesson: {{ event.get_lesson_display }}
                                 </a>
+                                {% else %}
+                                <span class="text-muted small">
+                                    <i class="fas fa-link"></i> Linked: {{ event.get_lesson_display }}
+                                    <small class="text-warning">(lesson not found)</small>
+                                </span>
                                 {% endif %}
-                                {% if event.has_materials %}
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Event Files (without poster thumbnails) -->
+                            {% if event.has_materials %}
+                            <div class="event-files mt-2">
                                 <a href="{{ event.get_materials_url }}" class="btn btn-sm btn-outline-secondary" target="_blank">
                                     <i class="fas fa-file-pdf"></i> Materials
                                 </a>
-                                {% endif %}
                             </div>
                             {% endif %}
                         </div>
@@ -201,25 +376,28 @@
                             <p class="event-description mt-1">{{ event.description|truncatechars:80 }}</p>
                             {% endif %}
                             
-                            <!-- Event Files -->
-                            {% if event.has_poster or event.has_materials %}
-                            <div class="event-files mt-2">
-                                {% if event.has_poster %}
-                                <div class="event-poster-preview mb-2">
-                                    <img src="{{ event.get_poster_url }}" alt="Event Poster" 
-                                         class="img-thumbnail poster-thumbnail" 
-                                         style="max-width: 80px; max-height: 60px; cursor: pointer;"
-                                         onclick="window.open('{{ event.get_poster_url }}', '_blank')">
-                                </div>
-                                <a href="{{ event.get_poster_url }}" class="btn btn-sm btn-outline-primary me-1" target="_blank">
-                                    <i class="fas fa-image"></i> View Poster
+                            <!-- Lesson Link -->
+                            {% if event.has_lesson_link %}
+                            <div class="event-lesson-link mt-2">
+                                {% if event.get_lesson_url %}
+                                <a href="{{ event.get_lesson_url }}" class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-external-link-alt"></i> {{ event.get_lesson_display|truncatechars:25 }}
                                 </a>
+                                {% else %}
+                                <span class="text-muted small">
+                                    <i class="fas fa-link"></i> {{ event.get_lesson_display|truncatechars:30 }}
+                                    <small class="text-warning">(not found)</small>
+                                </span>
                                 {% endif %}
-                                {% if event.has_materials %}
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Event Files (without poster thumbnails) -->
+                            {% if event.has_materials %}
+                            <div class="event-files mt-2">
                                 <a href="{{ event.get_materials_url }}" class="btn btn-sm btn-outline-secondary" target="_blank">
                                     <i class="fas fa-file-pdf"></i> Materials
                                 </a>
-                                {% endif %}
                             </div>
                             {% endif %}
                         </div>
@@ -396,28 +574,224 @@
     border-left: 2px solid #ffffff;
 }
 
+/* Week View Styles */
+.week-view {
+    background-color: var(--primary-bg, #000000);
+}
+
+.week-table {
+    border-collapse: separate !important;
+    border-spacing: 0;
+    background-color: var(--primary-bg, #000000);
+    color: var(--primary-color, #32cd32);
+    width: 100%;
+}
+
+.week-day-header {
+    background-color: var(--secondary-bg, #0f0f0f);
+    color: var(--secondary-color, #ffc107);
+    border: 1px solid var(--border-color, #32cd32);
+    padding: 15px 10px;
+    text-align: center;
+    vertical-align: middle;
+    width: 14.28%;
+}
+
+.week-day-title {
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-bottom: 5px;
+}
+
+.week-day-number {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: var(--primary-color, #32cd32);
+}
+
+.week-day-cell {
+    height: 400px;
+    vertical-align: top;
+    padding: 10px;
+    border: 1px solid var(--border-color, #32cd32);
+    background-color: var(--primary-bg, #000000);
+    position: relative;
+}
+
+.week-day-cell.today-highlight {
+    background-color: var(--secondary-bg, #0f0f0f);
+    box-shadow: inset 0 0 5px var(--secondary-color, #ffc107);
+}
+
+.week-day-events {
+    height: 100%;
+    overflow-y: auto;
+}
+
+.week-event {
+    display: block;
+    padding: 8px 10px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    line-height: 1.3;
+    cursor: pointer;
+    border-left: 3px solid;
+    word-wrap: break-word;
+}
+
+.event-all-day {
+    font-weight: bold;
+    padding: 3px 0;
+}
+
+.event-timed {
+    padding: 3px 0;
+}
+
+/* Day View Styles */
+.day-view {
+    background-color: var(--primary-bg, #000000);
+}
+
+.all-day-section {
+    border-bottom: 2px solid var(--border-color, #32cd32);
+    padding: 15px;
+    background-color: var(--secondary-bg, #0f0f0f);
+}
+
+.all-day-header h6 {
+    color: var(--secondary-color, #ffc107);
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.all-day-events {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.day-table {
+    border-collapse: separate !important;
+    border-spacing: 0;
+    background-color: var(--primary-bg, #000000);
+    color: var(--primary-color, #32cd32);
+}
+
+.hour-row {
+    height: 60px;
+    border-bottom: 1px solid var(--border-color, #32cd32);
+}
+
+.hour-label {
+    width: 100px;
+    background-color: var(--secondary-bg, #0f0f0f);
+    border-right: 2px solid var(--border-color, #32cd32);
+    text-align: center;
+    vertical-align: middle;
+    font-weight: bold;
+    color: var(--secondary-color, #ffc107);
+    padding: 10px;
+}
+
+.hour-time {
+    font-size: 0.9rem;
+    font-family: var(--font-family-mono, 'Ubuntu Mono');
+}
+
+.hour-events {
+    padding: 5px 10px;
+    vertical-align: top;
+    border-left: 1px solid var(--border-color, #32cd32);
+    position: relative;
+    background-color: var(--primary-bg, #000000);
+}
+
+.day-event {
+    display: block;
+    padding: 5px 8px;
+    margin-bottom: 3px;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    line-height: 1.3;
+    cursor: pointer;
+    border-left: 3px solid;
+    word-wrap: break-word;
+    background-color: rgba(50, 205, 50, 0.1);
+}
+
+.day-event .event-time {
+    font-weight: bold;
+    margin-right: 8px;
+    color: var(--accent-color, #ffc107);
+}
+
+.day-event strong {
+    display: block;
+    margin-bottom: 2px;
+}
+
+.day-event small {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+
+/* Poster Indicator Icons */
+.poster-indicator {
+    color: var(--secondary-color, #ffc107);
+    font-size: 0.8em;
+    margin-right: 4px;
+    opacity: 0.9;
+}
+
+.calendar-event .poster-indicator {
+    margin-left: 2px;
+    margin-right: 2px;
+}
+
+.week-event .poster-indicator,
+.day-event .poster-indicator {
+    margin-right: 6px;
+}
+
+/* Poster Preview Popup */
+.poster-preview-popup {
+    display: none;
+    background: var(--primary-bg, #000000);
+    border: 2px solid var(--border-color, #32cd32);
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+    max-width: 200px;
+    pointer-events: none; /* Prevent interfering with hover */
+}
+
+.poster-preview-image {
+    width: 100%;
+    height: auto;
+    max-width: 200px;
+    max-height: 360px; /* Maintain aspect ratio for portrait */
+    border-radius: 4px;
+    object-fit: cover;
+    background: var(--primary-bg, #000000);
+}
+
 /* Event Sidebar Styling */
 .event-item {
     border-left: 3px solid var(--secondary-color, #ffc107);
     padding-left: 10px;
 }
 
-/* Event Poster Thumbnails */
-.event-poster-preview {
-    text-align: center;
-}
-
-.poster-thumbnail {
-    border: 2px solid var(--border-color, #32cd32);
-    border-radius: 6px;
-    transition: all 0.3s ease;
-    background: var(--primary-bg, #000000);
-}
-
-.poster-thumbnail:hover {
-    transform: scale(1.05);
-    border-color: var(--secondary-color, #ffc107);
+/* Enhanced hover effects for events with posters */
+.calendar-event[data-poster-url]:hover,
+.week-event[data-poster-url]:hover,
+.day-event[data-poster-url]:hover {
+    transform: scale(1.02);
     box-shadow: 0 4px 8px rgba(50, 205, 50, 0.3);
+    border-color: var(--secondary-color, #ffc107);
+    cursor: pointer;
 }
 
 .event-title {
@@ -560,6 +934,74 @@
         padding-left: 0.5rem !important;
         padding-right: 0.25rem !important;
     }
+    
+    /* Week View Mobile */
+    .week-day-cell {
+        height: 250px;
+    }
+    
+    .week-day-title {
+        font-size: 0.9rem;
+    }
+    
+    .week-day-number {
+        font-size: 1.1rem;
+    }
+    
+    .week-event {
+        font-size: 0.8rem;
+        padding: 5px 7px;
+    }
+    
+    /* Day View Mobile */
+    .hour-label {
+        width: 80px;
+        padding: 5px;
+    }
+    
+    .hour-time {
+        font-size: 0.8rem;
+    }
+    
+    .day-event {
+        font-size: 0.8rem;
+        padding: 3px 5px;
+    }
+    
+    .all-day-section {
+        padding: 10px;
+    }
+}
+
+/* Week and Day View Responsive */
+@media (max-width: 768px) {
+    .week-day-header {
+        padding: 10px 5px;
+    }
+    
+    .week-day-cell {
+        height: 300px;
+        padding: 8px;
+    }
+    
+    .week-event {
+        font-size: 0.85rem;
+        padding: 6px 8px;
+    }
+    
+    .hour-row {
+        height: 50px;
+    }
+    
+    .hour-label {
+        width: 90px;
+        padding: 8px;
+    }
+    
+    .day-event {
+        font-size: 0.8rem;
+        padding: 4px 6px;
+    }
 }
 </style>
 
@@ -603,6 +1045,73 @@ $(document).ready(function() {
         setTimeout(function() {
             notification.fadeOut();
         }, 5000);
+    }
+    
+    // Hover functionality for poster previews
+    var posterPreviewTimeout;
+    
+    $('.calendar-event, .week-event, .day-event').hover(
+        function() {
+            // Mouse enter
+            var $this = $(this);
+            var posterUrl = $this.data('poster-url');
+            
+            if (posterUrl && posterUrl !== 'None') {
+                clearTimeout(posterPreviewTimeout);
+                
+                posterPreviewTimeout = setTimeout(function() {
+                    showPosterPreview(posterUrl, $this);
+                }, 500); // 500ms delay before showing preview
+            }
+        },
+        function() {
+            // Mouse leave
+            clearTimeout(posterPreviewTimeout);
+            hidePosterPreview();
+        }
+    );
+    
+    function showPosterPreview(posterUrl, $element) {
+        // Remove any existing preview
+        $('.poster-preview-popup').remove();
+        
+        // Get element position
+        var offset = $element.offset();
+        var elementWidth = $element.outerWidth();
+        var elementHeight = $element.outerHeight();
+        
+        // Create preview popup
+        var preview = $('<div class="poster-preview-popup">' +
+            '<img src="' + posterUrl + '" alt="Event Poster Preview" class="poster-preview-image">' +
+            '</div>');
+        
+        // Position popup
+        var left = offset.left + elementWidth + 10; // 10px to the right
+        var top = offset.top;
+        
+        // Adjust if popup would go off screen
+        if (left + 200 > $(window).width()) {
+            left = offset.left - 210; // Show to the left instead
+        }
+        
+        preview.css({
+            position: 'absolute',
+            left: left + 'px',
+            top: top + 'px',
+            zIndex: 10000
+        });
+        
+        // Add to body
+        $('body').append(preview);
+        
+        // Fade in
+        preview.fadeIn(200);
+    }
+    
+    function hidePosterPreview() {
+        $('.poster-preview-popup').fadeOut(100, function() {
+            $(this).remove();
+        });
     }
     
     // Keyboard navigation

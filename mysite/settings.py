@@ -134,6 +134,13 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
 
+# Assignment file upload security settings
+MAX_ASSIGNMENT_FILE_SIZE = 50 * 1024 * 1024  # 50 MB for source code projects
+
+# File upload security headers
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_BROWSER_XSS_FILTER = True
+
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

@@ -128,9 +128,15 @@ urlpatterns = [
     
     # Event Management (Admin Only)
     path('event-management/', views.event_management, name='event_management'),
-    path('admin/events/add/', views.add_event, name='add_event'),
-    path('admin/events/<int:event_id>/edit/', views.edit_event, name='edit_event'),
-    path('admin/events/<int:event_id>/delete/', views.delete_event, name='delete_event'),
+    path('event-management/add/', views.add_event, name='add_event'),
+    path('event-management/<int:event_id>/edit/', views.edit_event, name='edit_event'),
+    path('event-management/<int:event_id>/delete/', views.delete_event, name='delete_event'),
+    
+    # Event Type Management
+    path('event-types/', views.manage_event_types, name='manage_event_types'),
+    path('event-types/add/', views.add_event_type, name='add_event_type'),
+    path('event-types/<int:type_id>/edit/', views.edit_event_type, name='edit_event_type'),
+    path('event-types/<int:type_id>/delete/', views.delete_event_type, name='delete_event_type'),
     
     # Calendar View
     path('calendar/', views.event_calendar, name='event_calendar'),

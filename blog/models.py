@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
+from .validators import validate_assignment_file
 import os
 
 
@@ -190,7 +191,11 @@ class CourseMaterial(models.Model):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, null=True, blank=True, help_text="Optional: attach to specific lesson")
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    file = models.FileField(upload_to=course_material_upload_path)
+    file = models.FileField(
+        upload_to=course_material_upload_path,
+        validators=[validate_assignment_file],
+        help_text="Educational materials: documents, source code, images, videos. Max 50MB."
+    )
     material_type = models.CharField(max_length=20, choices=MATERIAL_TYPES, default='other')
     uploaded_date = models.DateTimeField(default=timezone.now)
     is_required = models.BooleanField(default=False, help_text="Required for course completion")
@@ -219,7 +224,12 @@ class Assignment(models.Model):
     instructions = models.TextField(blank=True, help_text="Detailed assignment instructions")
     due_date = models.DateTimeField(db_index=True)
     max_points = models.PositiveIntegerField(default=100)
-    file_attachment = models.FileField(upload_to=assignment_upload_path, blank=True, help_text="Optional assignment file")
+    file_attachment = models.FileField(
+        upload_to=assignment_upload_path, 
+        blank=True, 
+        validators=[validate_assignment_file],
+        help_text="Optional assignment file (instructions, templates, etc.)"
+    )
     allow_file_submission = models.BooleanField(default=True)
     allow_text_submission = models.BooleanField(default=True)
     created_date = models.DateTimeField(default=timezone.now, db_index=True)
@@ -257,7 +267,12 @@ class Submission(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, db_index=True, limit_choices_to={'userprofile__role': 'student'})
     assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, db_index=True)
     text_submission = models.TextField(blank=True)
-    file_submission = models.FileField(upload_to=submission_upload_path, blank=True)
+    file_submission = models.FileField(
+        upload_to=submission_upload_path, 
+        blank=True,
+        validators=[validate_assignment_file],
+        help_text="Allowed: Source code (.py, .go, .rs, .js, .java, .cpp), documents (.pdf, .txt, .md), images, archives (.zip). Max 50MB."
+    )
     submitted_date = models.DateTimeField(null=True, blank=True, db_index=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft', db_index=True)
     grade = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
@@ -894,6 +909,35 @@ class BlogComment(models.Model):
 
 
 # Calendar Event Models
+class EventType(models.Model):
+    """Customizable event types with colors"""
+    name = models.CharField(max_length=50, unique=True, help_text="Event type name")
+    slug = models.SlugField(max_length=50, unique=True, help_text="URL-friendly identifier")
+    color = models.CharField(max_length=7, default='#32cd32', help_text="Hex color code (e.g., #32cd32)")
+    background_color = models.CharField(max_length=7, default='#0f1419', help_text="Background hex color")
+    icon = models.CharField(max_length=50, default='fas fa-calendar', help_text="FontAwesome icon class")
+    description = models.TextField(blank=True, help_text="Description of this event type")
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveIntegerField(default=0, help_text="Display order")
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['sort_order', 'name']
+        
+    def __str__(self):
+        return self.name
+    
+    def get_css_variables(self):
+        """Generate CSS custom properties for this event type"""
+        return {
+            f'--event-{self.slug}-color': self.color,
+            f'--event-{self.slug}-bg': self.background_color,
+        }
+
+
 class Event(models.Model):
     """Calendar events for the LMS homepage"""
     PRIORITY_CHOICES = [
@@ -903,6 +947,7 @@ class Event(models.Model):
         ('urgent', 'Urgent'),
     ]
     
+    # Legacy event type choices - kept for migration compatibility
     EVENT_TYPE_CHOICES = [
         ('general', 'General'),
         ('deadline', 'Assignment Deadline'),
@@ -918,13 +963,24 @@ class Event(models.Model):
         ('public', 'Public - Visible to everyone'),
         ('registered', 'Registered Users Only - Login required'),
     ]
-    
+
     title = models.CharField(max_length=128, help_text="Event name (max 128 characters)")
     description = models.TextField(blank=True)
-    event_type = models.CharField(max_length=20, choices=EVENT_TYPE_CHOICES, default='general')
+    
+    # New customizable event type system
+    event_type_new = models.ForeignKey(EventType, on_delete=models.SET_NULL, null=True, blank=True,
+                                      related_name='events', help_text="Customizable event type")
+    # Legacy event type field - kept for backward compatibility
+    event_type = models.CharField(max_length=20, choices=EVENT_TYPE_CHOICES, default='general',
+                                 help_text="Legacy event type (use event_type_new for custom types)")
+    
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='normal')
     visibility = models.CharField(max_length=15, choices=VISIBILITY_CHOICES, default='registered',
                                  help_text="Who can view this event")
+    
+    # Custom colors (overrides event type colors if set)
+    custom_color = models.CharField(max_length=7, blank=True, help_text="Custom hex color (overrides event type)")
+    custom_background = models.CharField(max_length=7, blank=True, help_text="Custom background color")
     
     # Date and time
     start_date = models.DateTimeField()
@@ -939,6 +995,12 @@ class Event(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_events')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True, 
                               help_text="Link to specific course (optional)")
+    
+    # Lesson linking with Obsidian-style syntax
+    linked_lesson = models.ForeignKey('Lesson', on_delete=models.SET_NULL, null=True, blank=True,
+                                     related_name='linked_events', help_text="Direct lesson link")
+    obsidian_link = models.CharField(max_length=255, blank=True,
+                                    help_text="Obsidian-style link: [[Course Name - Lesson Title]] or lesson URL")
     
     # File uploads for posters and materials (admin only)
     poster = models.ImageField(upload_to='event_posters/', null=True, blank=True,
@@ -1020,4 +1082,142 @@ class Event(models.Model):
     def get_materials_url(self):
         """Get materials URL if exists"""
         return self.materials.url if self.has_materials else None
+    
+    def get_display_color(self):
+        """Get the display color for this event (custom or event type)"""
+        if self.custom_color:
+            return self.custom_color
+        elif self.event_type_new:
+            return self.event_type_new.color
+        else:
+            # Fallback to legacy color mapping
+            color_map = {
+                'general': '#007bff',      # Blue
+                'deadline': '#dc3545',     # Red
+                'exam': '#fd7e14',         # Orange
+                'holiday': '#28a745',      # Green
+                'maintenance': '#6c757d',  # Gray
+                'meeting': '#17a2b8',      # Cyan
+                'workshop': '#6f42c1',     # Purple
+                'announcement': '#20c997',  # Teal
+            }
+            return color_map.get(self.event_type, '#32cd32')  # Default terminal green
+    
+    def get_display_background(self):
+        """Get the background color for this event"""
+        if self.custom_background:
+            return self.custom_background
+        elif self.event_type_new:
+            return self.event_type_new.background_color
+        else:
+            return '#0f1419'  # Default dark background
+    
+    def get_display_name(self):
+        """Get the display name for the event type"""
+        if self.event_type_new:
+            return self.event_type_new.name
+        else:
+            return dict(self.EVENT_TYPE_CHOICES).get(self.event_type, 'General')
+    
+    def get_display_icon(self):
+        """Get the icon for this event type"""
+        if self.event_type_new:
+            return self.event_type_new.icon
+        else:
+            # Fallback icon mapping
+            icon_map = {
+                'general': 'fas fa-calendar',
+                'deadline': 'fas fa-exclamation-triangle',
+                'exam': 'fas fa-graduation-cap',
+                'holiday': 'fas fa-gift',
+                'maintenance': 'fas fa-tools',
+                'meeting': 'fas fa-users',
+                'workshop': 'fas fa-laptop-code',
+                'announcement': 'fas fa-bullhorn',
+            }
+            return icon_map.get(self.event_type, 'fas fa-calendar')
+    
+    def get_css_style(self):
+        """Generate CSS style string for this event"""
+        color = self.get_display_color()
+        background = self.get_display_background()
+        return f"color: {color}; background-color: {background}; border-color: {color};"
+    
+    def parse_obsidian_link(self):
+        """Parse Obsidian-style link to find matching lesson"""
+        if not self.obsidian_link:
+            return None
+            
+        link = self.obsidian_link.strip()
+        
+        # Handle Obsidian-style [[Course Name - Lesson Title]] format
+        if link.startswith('[[') and link.endswith(']]'):
+            content = link[2:-2].strip()  # Remove [[ ]]
+            
+            # Try to split by ' - ' to separate course and lesson
+            if ' - ' in content:
+                course_name, lesson_title = content.split(' - ', 1)
+                course_name = course_name.strip()
+                lesson_title = lesson_title.strip()
+                
+                try:
+                    # Find course by title (case-insensitive)
+                    course = Course.objects.filter(title__icontains=course_name).first()
+                    if course:
+                        # Find lesson in that course (case-insensitive)
+                        lesson = Lesson.objects.filter(
+                            course=course, 
+                            title__icontains=lesson_title
+                        ).first()
+                        return lesson
+                except Exception:
+                    pass
+            else:
+                # Just lesson title, search across all courses
+                try:
+                    lesson = Lesson.objects.filter(title__icontains=content).first()
+                    return lesson
+                except Exception:
+                    pass
+        
+        # Handle direct lesson title (without brackets)
+        elif link:
+            try:
+                lesson = Lesson.objects.filter(title__icontains=link).first()
+                return lesson
+            except Exception:
+                pass
+        
+        return None
+    
+    def get_linked_lesson(self):
+        """Get the linked lesson (direct or via Obsidian link)"""
+        if self.linked_lesson:
+            return self.linked_lesson
+        return self.parse_obsidian_link()
+    
+    def get_lesson_url(self):
+        """Get URL to the linked lesson"""
+        lesson = self.get_linked_lesson()
+        if lesson:
+            from django.urls import reverse
+            return reverse('lesson_detail', kwargs={
+                'course_id': lesson.course.id,
+                'lesson_id': lesson.id
+            })
+        return None
+    
+    def get_lesson_display(self):
+        """Get display text for the linked lesson"""
+        lesson = self.get_linked_lesson()
+        if lesson:
+            return f"{lesson.course.title} - {lesson.title}"
+        elif self.obsidian_link:
+            return self.obsidian_link.replace('[[', '').replace(']]', '')
+        return None
+    
+    @property
+    def has_lesson_link(self):
+        """Check if event has a lesson link"""
+        return bool(self.linked_lesson or self.obsidian_link)
 

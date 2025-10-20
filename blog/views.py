@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse
 from django.db import transaction
-from .models import Post, Course, Enrollment, Lesson, Progress, UserProfile, CourseMaterial, Assignment, Submission, Quiz, Question, Answer, QuizAttempt, QuizResponse, Announcement, AnnouncementRead, Forum, Topic, ForumPost, Event
+from .models import Post, Course, Enrollment, Lesson, Progress, UserProfile, CourseMaterial, Assignment, Submission, Quiz, Question, Answer, QuizAttempt, QuizResponse, Announcement, AnnouncementRead, Forum, Topic, ForumPost, Event, EventType
 from .course_import_export import export_course, import_course, confirm_import_course
 
 
@@ -3236,28 +3236,60 @@ def admin_required(view_func):
 
 @admin_required
 def event_management(request):
-    """Admin page for managing calendar events"""
+    """Enhanced admin page for managing calendar events"""
+    from .forms import EventFilterForm
+    
     events = Event.objects.all().order_by('-created_at')
     
-    # Filter by status if requested
-    status_filter = request.GET.get('status')
-    if status_filter == 'published':
-        events = events.filter(is_published=True)
-    elif status_filter == 'draft':
-        events = events.filter(is_published=False)
-    elif status_filter == 'featured':
-        events = events.filter(is_featured=True)
+    # Enhanced filtering
+    filter_form = EventFilterForm(request.GET)
+    if filter_form.is_valid():
+        # Status filtering
+        status = filter_form.cleaned_data.get('status')
+        if status == 'published':
+            events = events.filter(is_published=True)
+        elif status == 'draft':
+            events = events.filter(is_published=False)
+        elif status == 'featured':
+            events = events.filter(is_featured=True)
+        
+        # Custom event type filtering
+        event_type_new = filter_form.cleaned_data.get('event_type_new')
+        if event_type_new:
+            events = events.filter(event_type_new=event_type_new)
+        
+        # Legacy event type filtering
+        event_type = filter_form.cleaned_data.get('event_type')
+        if event_type:
+            events = events.filter(event_type=event_type)
+        
+        # Priority filtering
+        priority = filter_form.cleaned_data.get('priority')
+        if priority:
+            events = events.filter(priority=priority)
+        
+        # Course filtering
+        course = filter_form.cleaned_data.get('course')
+        if course:
+            events = events.filter(course=course)
     
-    # Filter by event type
-    type_filter = request.GET.get('type')
-    if type_filter:
-        events = events.filter(event_type=type_filter)
+    # Get statistics
+    total_events = Event.objects.count()
+    published_events = Event.objects.filter(is_published=True).count()
+    featured_events = Event.objects.filter(is_featured=True).count()
+    custom_type_events = Event.objects.filter(event_type_new__isnull=False).count()
     
     context = {
         'events': events,
+        'filter_form': filter_form,
         'event_types': Event.EVENT_TYPE_CHOICES,
-        'current_status': status_filter,
-        'current_type': type_filter,
+        'custom_event_types': EventType.objects.filter(is_active=True).order_by('sort_order', 'name'),
+        'stats': {
+            'total': total_events,
+            'published': published_events,
+            'featured': featured_events,
+            'custom_types': custom_type_events,
+        }
     }
     
     return render(request, 'blog/admin/event_management.html', context)
@@ -3265,8 +3297,137 @@ def event_management(request):
 
 @admin_required
 def add_event(request):
-    """Add a new calendar event - redirect to Django admin for now"""
-    return redirect('/admin/blog/event/add/')
+    """Enhanced event creation with custom types and colors"""
+    from .forms import EventForm
+    
+    if request.method == 'POST':
+        form = EventForm(request.POST, request.FILES)
+        if form.is_valid():
+            event = form.save(commit=False)
+            event.created_by = request.user
+            event.save()
+            messages.success(request, f'Event "{event.title}" created successfully!')
+            return redirect('event_management')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = EventForm()
+    
+    context = {
+        'form': form,
+        'title': 'Add New Event',
+        'submit_text': 'Create Event'
+    }
+    return render(request, 'blog/admin/event_form.html', context)
+
+
+@admin_required
+def edit_event(request, event_id):
+    """Edit an existing event"""
+    from .forms import EventForm
+    
+    event = get_object_or_404(Event, id=event_id)
+    
+    if request.method == 'POST':
+        form = EventForm(request.POST, request.FILES, instance=event)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Event "{event.title}" updated successfully!')
+            return redirect('event_management')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = EventForm(instance=event)
+    
+    context = {
+        'form': form,
+        'event': event,
+        'title': f'Edit Event: {event.title}',
+        'submit_text': 'Update Event'
+    }
+    return render(request, 'blog/admin/event_form.html', context)
+
+
+@admin_required  
+def manage_event_types(request):
+    """Manage custom event types"""
+    from .forms import EventFilterForm
+    
+    event_types = EventType.objects.all().order_by('sort_order', 'name')
+    
+    context = {
+        'event_types': event_types,
+    }
+    return render(request, 'blog/admin/event_types.html', context)
+
+
+@admin_required
+def add_event_type(request):
+    """Add a new custom event type"""
+    from .forms import EventTypeForm
+    
+    if request.method == 'POST':
+        form = EventTypeForm(request.POST)
+        if form.is_valid():
+            event_type = form.save()
+            messages.success(request, f'Event type "{event_type.name}" created successfully!')
+            return redirect('manage_event_types')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = EventTypeForm()
+    
+    context = {
+        'form': form,
+        'title': 'Add New Event Type',
+        'submit_text': 'Create Event Type'
+    }
+    return render(request, 'blog/admin/event_type_form.html', context)
+
+
+@admin_required
+def edit_event_type(request, type_id):
+    """Edit an existing event type"""
+    from .forms import EventTypeForm
+    
+    event_type = get_object_or_404(EventType, id=type_id)
+    
+    if request.method == 'POST':
+        form = EventTypeForm(request.POST, instance=event_type)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Event type "{event_type.name}" updated successfully!')
+            return redirect('manage_event_types')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = EventTypeForm(instance=event_type)
+    
+    context = {
+        'form': form,
+        'event_type': event_type,
+        'title': f'Edit Event Type: {event_type.name}',
+        'submit_text': 'Update Event Type'
+    }
+    return render(request, 'blog/admin/event_type_form.html', context)
+
+
+@admin_required
+def delete_event_type(request, type_id):
+    """Delete an event type"""
+    event_type = get_object_or_404(EventType, id=type_id)
+    
+    # Check if any events are using this type
+    events_using_type = Event.objects.filter(event_type_new=event_type).count()
+    
+    if events_using_type > 0:
+        messages.error(request, f'Cannot delete "{event_type.name}" - it is used by {events_using_type} event(s).')
+        return redirect('manage_event_types')
+    
+    event_type_name = event_type.name
+    event_type.delete()
+    messages.success(request, f'Event type "{event_type_name}" deleted successfully!')
+    return redirect('manage_event_types')
 
 
 def add_event_form(request):
@@ -3451,12 +3612,17 @@ def delete_event_form(request, event_id):
 
 
 def event_calendar(request):
-    """Display calendar view of events"""
-    # Get current month and year from query params
+    """Display calendar view of events with Month, Week, and Day views"""
+    # Get current date and view mode
     import calendar
     from datetime import datetime, timedelta
     
-    # Get year and month with proper validation
+    # Get view mode (month, week, day)
+    view_mode = request.GET.get('view', 'month')
+    if view_mode not in ['month', 'week', 'day']:
+        view_mode = 'month'
+    
+    # Get year, month, and day with proper validation
     try:
         year_param = request.GET.get('year', '')
         year = int(year_param) if year_param else timezone.now().year
@@ -3469,25 +3635,47 @@ def event_calendar(request):
     except (ValueError, TypeError):
         month = timezone.now().month
     
-    # Validate month range (1-12)
+    try:
+        day_param = request.GET.get('day', '')
+        day = int(day_param) if day_param else timezone.now().day
+    except (ValueError, TypeError):
+        day = timezone.now().day
+    
+    # Validate date ranges
     if month < 1 or month > 12:
         month = timezone.now().month
         year = timezone.now().year
     
-    # Create a calendar
-    cal = calendar.monthcalendar(year, month)
+    try:
+        current_date = timezone.datetime(year, month, day).date()
+    except ValueError:
+        current_date = timezone.now().date()
+        year = current_date.year
+        month = current_date.month
+        day = current_date.day
     
-    # Get events for this month
-    start_date = timezone.datetime(year, month, 1)
-    if month == 12:
-        end_date = timezone.datetime(year + 1, 1, 1) - timedelta(days=1)
-    else:
-        end_date = timezone.datetime(year, month + 1, 1) - timedelta(days=1)
+    # Determine date range based on view mode
+    if view_mode == 'month':
+        # Month view - show entire month
+        start_date = timezone.datetime(year, month, 1)
+        if month == 12:
+            end_date = timezone.datetime(year + 1, 1, 1) - timedelta(days=1)
+        else:
+            end_date = timezone.datetime(year, month + 1, 1) - timedelta(days=1)
+    elif view_mode == 'week':
+        # Week view - show Monday to Sunday
+        weekday = current_date.weekday()  # Monday = 0, Sunday = 6
+        start_date = current_date - timedelta(days=weekday)
+        end_date = start_date + timedelta(days=6)
+    else:  # day view
+        # Day view - show single day
+        start_date = current_date
+        end_date = current_date
     
     # Filter events based on visibility and user authentication
     events_query = Event.objects.filter(
         is_published=True,
-        start_date__date__range=[start_date.date(), end_date.date()]
+        start_date__date__range=[start_date, end_date]
     )
     
     # Apply visibility filtering
@@ -3508,43 +3696,96 @@ def event_calendar(request):
             events_by_date[date_key] = []
         events_by_date[date_key].append(event)
     
-    # Create calendar weeks with proper structure
+    # Generate calendar structure based on view mode
     calendar_weeks = []
+    week_days = []
+    day_hours = []
+    all_day_events = []
     today = timezone.now().date()
     current_month_date = timezone.datetime(year, month, 1).date()
     
-    for week in cal:
+    if view_mode == 'month':
+        # Month view - use Python calendar module
+        cal = calendar.monthcalendar(year, month)
+        
+        for week in cal:
+            week_days = []
+            for day in week:
+                if day == 0:
+                    # Empty day (previous/next month)
+                    week_days.append({
+                        'day': '',
+                        'is_today': False,
+                        'is_current_month': False,
+                        'events': []
+                    })
+                else:
+                    day_date = timezone.datetime(year, month, day).date()
+                    week_days.append({
+                        'day': day,
+                        'is_today': day_date == today,
+                        'is_current_month': True,
+                        'date': day_date,
+                        'events': events_by_date.get(day_date, [])
+                    })
+            calendar_weeks.append(week_days)
+    
+    elif view_mode == 'week':
+        # Week view - show 7 days starting from Monday
         week_days = []
-        for day in week:
-            if day == 0:
-                # Empty day (previous/next month)
-                week_days.append({
-                    'day': '',
-                    'is_today': False,
-                    'is_current_month': False,
-                    'events': []
-                })
-            else:
-                day_date = timezone.datetime(year, month, day).date()
-                week_days.append({
-                    'day': day,
-                    'is_today': day_date == today,
-                    'is_current_month': True,
-                    'date': day_date,
-                    'events': events_by_date.get(day_date, [])
-                })
-        calendar_weeks.append(week_days)
+        for i in range(7):
+            day_date = start_date + timedelta(days=i)
+            week_days.append({
+                'day': day_date.day,
+                'date': day_date,
+                'weekday': calendar.day_name[day_date.weekday()],
+                'weekday_short': calendar.day_abbr[day_date.weekday()],
+                'is_today': day_date == today,
+                'is_current_month': day_date.month == month,
+                'events': events_by_date.get(day_date, [])
+            })
+        calendar_weeks = [week_days]  # Single week
     
-    # Navigation dates
-    if month == 1:
-        prev_month_obj = timezone.datetime(year - 1, 12, 1)
-    else:
-        prev_month_obj = timezone.datetime(year, month - 1, 1)
+    else:  # day view
+        # Day view - show single day with hourly breakdown
+        day_hours = []
+        for hour in range(24):
+            hour_events = []
+            for event in events_by_date.get(current_date, []):
+                if not event.all_day and event.start_date.hour == hour:
+                    hour_events.append(event)
+            
+            day_hours.append({
+                'hour': hour,
+                'hour_12': timezone.datetime.combine(current_date, timezone.datetime.min.time().replace(hour=hour)).strftime('%I %p'),
+                'events': hour_events
+            })
+        
+        # Add all-day events
+        all_day_events = [event for event in events_by_date.get(current_date, []) if event.all_day]
     
-    if month == 12:
-        next_month_obj = timezone.datetime(year + 1, 1, 1)
-    else:
-        next_month_obj = timezone.datetime(year, month + 1, 1)
+    # Navigation logic based on view mode
+    if view_mode == 'month':
+        # Month navigation
+        if month == 1:
+            prev_obj = timezone.datetime(year - 1, 12, 1)
+        else:
+            prev_obj = timezone.datetime(year, month - 1, 1)
+        
+        if month == 12:
+            next_obj = timezone.datetime(year + 1, 1, 1)
+        else:
+            next_obj = timezone.datetime(year, month + 1, 1)
+    
+    elif view_mode == 'week':
+        # Week navigation
+        prev_obj = start_date - timedelta(days=7)
+        next_obj = start_date + timedelta(days=7)
+    
+    else:  # day view
+        # Day navigation
+        prev_obj = current_date - timedelta(days=1)
+        next_obj = current_date + timedelta(days=1)
     
     # Get today's events and upcoming events for sidebar with visibility filtering
     if request.user.is_authenticated:
@@ -3574,14 +3815,20 @@ def event_calendar(request):
     
     context = {
         'calendar_weeks': calendar_weeks,
+        'week_days': week_days if view_mode == 'week' else None,
+        'day_hours': day_hours if view_mode == 'day' else None,
+        'all_day_events': all_day_events if view_mode == 'day' else None,
         'current_month': current_month_date,
+        'current_date': current_date,
         'today': today,
         'year': year,
         'month': month,
+        'day': day,
         'month_name': calendar.month_name[month],
+        'view_mode': view_mode,
         'events_by_date': events_by_date,
-        'prev_month': prev_month_obj,
-        'next_month': next_month_obj,
+        'prev_obj': prev_obj,
+        'next_obj': next_obj,
         'todays_events': todays_events,
         'upcoming_events': upcoming_events,
     }

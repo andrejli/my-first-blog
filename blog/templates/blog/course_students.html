@@ -1,25 +1,10 @@
-<!DOCTYPE html>
+{% extends 'blog/base.html' %}
 {% load static %}
 {% load course_extras %}
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ course.title }} - Students - Terminal LMS</title>
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
-    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <div class="page-header">
-        <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
-        <div class="top-menu">
-            <span>instructor@lms:~$ students/{{ course.course_code }}</span>
-            <a href="{% url 'course_detail' course.id %}" class="btn btn-default">course</a>
-            <a href="{% url 'instructor_dashboard' %}" class="btn btn-info">dashboard</a>
-        </div>
-    </div>
+
+{% block title %}{{ course.title }} - Students - FORTIS AURIS LMS{% endblock %}
+
+{% block content %}
 
     <div class="content container">
         <div class="row">
@@ -342,10 +327,4 @@
             text-transform: uppercase;
         }
     </style>
-    
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
-    <script src="{% static 'js/theme-switcher.js' %}"></script>
-</body>
-</html>
-</html>
+{% endblock %}

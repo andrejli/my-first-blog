@@ -1,42 +1,9 @@
-<!DOCTYPE html>
+{% extends 'blog/base.html' %}
 {% load static %}
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LMS - Course Catalog</title>
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
-    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <div class="page-header">
-        <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
-        <div class="top-menu">
-            <span class="zulu-time">ZULU: <span id="watch">--:--:--:---</span></span>
-            {% if user.is_authenticated %}
-                <span>user@lms:~$ whoami → {{ user.username }}</span>
-                <a href="{% url 'forum_list' %}" class="btn btn-default">forums</a>
-                <a href="{% url 'all_blogs' %}" class="btn btn-default">blogs</a>
-                <a href="{% url 'my_blog_dashboard' %}" class="btn btn-default">my blog</a>
-                {% if user.userprofile.role == 'admin' %}
-                    <a href="/admin/" class="btn btn-default">admin</a>
-                {% elif user.userprofile.role == 'instructor' %}
-                    <a href="{% url 'instructor_dashboard' %}" class="btn btn-default">dashboard</a>
-                {% else %}
-                    <a href="{% url 'student_dashboard' %}" class="btn btn-default">dashboard</a>
-                {% endif %}
-                <a href="{% url 'logout' %}" class="btn btn-default">logout</a>
-            {% else %}
-                <a href="{% url 'all_blogs' %}" class="btn btn-default">blogs</a>
-                <a href="{% url 'login' %}" class="btn btn-default">login</a>
-                <a href="{% url 'register' %}" class="btn btn-default">register</a>
-            {% endif %}
-        </div>
-    </div>
 
-    <div class="content container">
+{% block title %}FORTIS AURIS LMS - Course Catalog{% endblock %}
+
+{% block content %}
         <div class="row">
             <div class="col-md-8">
                 <h2>Available Courses</h2>
@@ -301,5 +268,4 @@
             ActualTime();
         });
     </script>
-</body>
-</html>
+{% endblock %}

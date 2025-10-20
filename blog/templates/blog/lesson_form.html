@@ -1,14 +1,9 @@
-<!DOCTYPE html>
+{% extends 'blog/base.html' %}
 {% load static %}
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ action }} Lesson - {{ course.title }} - Terminal LMS</title>
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
-    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
+
+{% block title %}{{ action }} Lesson - {{ course.title }} - FORTIS AURIS LMS{% endblock %}
+
+{% block extra_css %}
     <style>
         .lesson-form {
             background-color: #0a0a0a;
@@ -70,18 +65,9 @@
             color: #888888;
         }
     </style>
-</head>
-<body>
-    <div class="page-header">
-        <h1><a href="{% url 'course_list' %}">⚡ Terminal LMS</a></h1>
-        <div class="top-menu">
-            <span>instructor@lms:~$ {{ action|lower }}-lesson</span>
-            <a href="{% url 'instructor_course_detail' course.id %}" class="btn btn-default">back</a>
-            {% if lesson %}
-                <a href="{% url 'lesson_detail' course.id lesson.id %}" class="btn btn-info">preview</a>
-            {% endif %}
-        </div>
-    </div>
+{% endblock %}
+
+{% block content %}
 
     <div class="content container">
         <div class="row">
@@ -339,7 +325,4 @@
             }
         });
     </script>
-    
-    <script src="{% static 'js/theme-switcher.js' %}"></script>
-</body>
-</html>
+{% endblock %}
