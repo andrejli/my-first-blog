@@ -1,7 +1,7 @@
 # 🛡️ Secure Terminal LMS 📚⚡
 
 >[!CAUTION]
->This project is made with AI! This README may be inaccurate.
+>This project is made with AI! This README may be inaccurate and is still under development.
 
 A **production-ready** Learning Management System (LMS) built with Django, featuring comprehensive security, terminal-inspired dark theme, calendar integration, and **safe source code upload** capabilities for programming courses.
 

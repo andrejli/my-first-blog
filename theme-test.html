@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Theme Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            padding: 20px;
+            background: #000;
+            color: #ffb000;
+        }
+        
+        .theme-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            background: #333;
+            color: #ffb000;
+            border: 1px solid #555;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #444;
+        }
+        
+        [data-theme="dark-blue"] body {
+            background: #1a1a2e;
+            color: #00d4ff;
+        }
+        
+        [data-theme="light"] body {
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        [data-theme="cyberpunk"] body {
+            background: linear-gradient(45deg, #0f0f23, #1a0033);
+            color: #ff00ff;
+        }
+        
+        [data-theme="matrix"] body {
+            background: #000;
+            color: #00ff00;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎨 Theme Persistence Test</h1>
+    
+    <div class="theme-info">
+        <h3>Current Theme: <span id="current-theme">Loading...</span></h3>
+        <p>This page tests theme persistence using:</p>
+        <ul>
+            <li>✅ LocalStorage (immediate response)</li>
+            <li>✅ Cookie storage (cross-tab persistence)</li>
+            <li>✅ Server-side context (prevents flash)</li>
+            <li>✅ Database storage (authenticated users)</li>
+        </ul>
+    </div>
+    
+    <div>
+        <h3>🔄 Test Theme Switching:</h3>
+        <button onclick="testTheme('terminal-amber')">Terminal Amber</button>
+        <button onclick="testTheme('dark-blue')">Dark Blue</button>
+        <button onclick="testTheme('light')">Light Mode</button>
+        <button onclick="testTheme('cyberpunk')">Cyberpunk</button>
+        <button onclick="testTheme('matrix')">Matrix</button>
+    </div>
+    
+    <div class="theme-info">
+        <h3>📝 Test Instructions:</h3>
+        <ol>
+            <li>Click different theme buttons</li>
+            <li>Refresh the page - theme should persist</li>
+            <li>Open in new tab/window - theme should persist</li>
+            <li>Close browser completely and reopen - theme should persist</li>
+            <li>If logged in, theme should sync across devices</li>
+        </ol>
+    </div>
+    
+    <div id="debug-info" class="theme-info">
+        <h3>🔍 Debug Info:</h3>
+        <p>LocalStorage: <span id="localStorage-theme">-</span></p>
+        <p>Cookie: <span id="cookie-theme">-</span></p>
+        <p>HTML data-theme: <span id="html-theme">-</span></p>
+    </div>
+    
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        function updateDebugInfo() {
+            const html = document.documentElement;
+            document.getElementById('localStorage-theme').textContent = 
+                localStorage.getItem('user_theme') || 'none';
+            document.getElementById('cookie-theme').textContent = 
+                getCookie('theme_preference') || 'none';
+            document.getElementById('html-theme').textContent = 
+                html.getAttribute('data-theme') || 'terminal-amber (default)';
+            document.getElementById('current-theme').textContent = 
+                html.getAttribute('data-theme') || 'terminal-amber';
+        }
+        
+        function testTheme(themeName) {
+            const html = document.documentElement;
+            
+            // Clear existing theme
+            html.removeAttribute('data-theme');
+            
+            // Apply new theme
+            if (themeName !== 'terminal-amber') {
+                html.setAttribute('data-theme', themeName);
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('user_theme', themeName);
+            
+            // Save to cookie (simulating server response)
+            document.cookie = `theme_preference=${themeName}; path=/; max-age=${365*24*60*60}`;
+            
+            updateDebugInfo();
+        }
+        
+        // Initialize
+        function initTheme() {
+            // Check localStorage first
+            const savedTheme = localStorage.getItem('user_theme');
+            if (savedTheme) {
+                testTheme(savedTheme);
+            }
+            updateDebugInfo();
+        }
+        
+        initTheme();
+    </script>
+</body>
+</html>

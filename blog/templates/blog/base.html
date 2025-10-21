@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 {% load static %}
-<html lang="en">
+<html lang="en"{% if user_theme != 'terminal-amber' %} data-theme="{{ user_theme }}"{% endif %}>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +12,9 @@
     <link rel="stylesheet" href="{% static 'css/blog.css' %}">
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
     {% block extra_css %}{% endblock %}
+    
+    <!-- Immediate Theme Loader - prevents flash -->
+    <script src="{% static 'js/theme-preload.js' %}"></script>
 </head>
 <body>
     {% csrf_token %}

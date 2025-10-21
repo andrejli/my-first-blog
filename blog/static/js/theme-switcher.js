@@ -1,6 +1,6 @@
 /**
  * Theme Switcher for LMS
- * Supports multiple color schemes with database storage
+ * Supports multiple color schemes with database + localStorage + cookie storage
  */
 
 class ThemeSwitcher {
@@ -13,31 +13,83 @@ class ThemeSwitcher {
             'matrix': 'Matrix'
         };
         
-        this.currentTheme = 'terminal-amber'; // default fallback
+        this.currentTheme = this.getInitialTheme();
         this.init();
     }
     
+    getInitialTheme() {
+        // 1. First check if theme is already set server-side (from template)
+        const html = document.documentElement;
+        const serverTheme = html.getAttribute('data-theme');
+        if (serverTheme && this.themes[serverTheme]) {
+            return serverTheme;
+        }
+        
+        // 2. Check localStorage for immediate response
+        const localTheme = localStorage.getItem('user_theme');
+        if (localTheme && this.themes[localTheme]) {
+            return localTheme;
+        }
+        
+        // 3. Check cookie
+        const cookieTheme = this.getCookie('theme_preference');
+        if (cookieTheme && this.themes[cookieTheme]) {
+            return cookieTheme;
+        }
+        
+        // 4. Default fallback
+        return 'terminal-amber';
+    }
+    
+    getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
     async init() {
-        await this.loadUserTheme();
+        // Apply theme immediately from server-side or localStorage
         this.applyTheme(this.currentTheme);
+        
+        // Then sync with server (async)
+        await this.syncWithServer();
+        
         this.createThemeSwitcher();
         this.bindEvents();
     }
     
-    async loadUserTheme() {
+    async syncWithServer() {
         try {
             const response = await fetch('/api/theme/get/');
             if (response.ok) {
                 const data = await response.json();
-                this.currentTheme = data.theme || 'terminal-amber';
+                const serverTheme = data.theme || 'terminal-amber';
+                
+                // If server theme differs from current, use server theme
+                if (serverTheme !== this.currentTheme) {
+                    this.applyTheme(serverTheme);
+                    // Update localStorage
+                    localStorage.setItem('user_theme', serverTheme);
+                }
             }
         } catch (error) {
-            console.log('Could not load user theme, using default');
-            this.currentTheme = 'terminal-amber';
+            console.log('Could not sync theme with server, using local theme');
         }
     }
     
     async saveUserTheme(theme) {
+        // Save to localStorage immediately for instant response
+        localStorage.setItem('user_theme', theme);
+        
         try {
             const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
             const formData = new FormData();
@@ -54,18 +106,16 @@ class ThemeSwitcher {
                 return data.success;
             }
         } catch (error) {
-            console.log('Could not save theme preference');
+            console.log('Could not save theme preference to server, using localStorage');
         }
-        return false;
+        return true; // Return true if localStorage worked
     }
     
     applyTheme(themeName) {
         const html = document.documentElement;
         
-        // Remove all theme classes
-        Object.keys(this.themes).forEach(theme => {
-            html.removeAttribute('data-theme');
-        });
+        // Remove existing theme attribute
+        html.removeAttribute('data-theme');
         
         // Apply new theme (terminal-amber is default, no data-theme needed)
         if (themeName !== 'terminal-amber') {
@@ -73,6 +123,9 @@ class ThemeSwitcher {
         }
         
         this.currentTheme = themeName;
+        
+        // Save to localStorage for persistence
+        localStorage.setItem('user_theme', themeName);
         
         // Update theme selector if it exists
         this.updateThemeSelector();

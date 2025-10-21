@@ -140,4 +140,7 @@ urlpatterns = [
     
     # Calendar View
     path('calendar/', views.event_calendar, name='event_calendar'),
+    
+    # Debug/Test Views
+    path('debug/theme-test/', views.theme_debug_view, name='theme_debug'),
 ]
