@@ -20,7 +20,7 @@ This guide provides comprehensive testing instructions for all aspects of the Te
 .\test.ps1 tests.test_enhanced_markdown
 
 # Run specific test class
-.\test.ps1 blog.tests.EventModelTest
+.\test.ps1 tests.test_blog.EventModelTest
 ```
 
 ### Linux/Mac (Bash)
@@ -29,13 +29,13 @@ This guide provides comprehensive testing instructions for all aspects of the Te
 ./test.sh
 
 # Run only event/calendar tests (11 tests)
-./test.sh blog.tests
+./test.sh tests.test_blog
 
 # Run only markdown tests (15 tests)
 ./test.sh tests.test_enhanced_markdown
 
 # Run specific test class
-./test.sh blog.tests.EventModelTest
+./test.sh tests.test_blog.EventModelTest
 ```
 
 ---
@@ -45,7 +45,8 @@ This guide provides comprehensive testing instructions for all aspects of the Te
 Your Django LMS now has **26 comprehensive tests** across multiple test suites:
 
 ### Test Distribution
-- **Event/Calendar Tests** (11 tests) - `blog.tests`
+- **Event/Calendar Tests** (11 tests) - `tests.test_blog`
+- **Recurring Events Tests** (15 tests) - `tests.test_recurring_events`
 - **Markdown Processing Tests** (15 tests) - `tests.test_enhanced_markdown`
 
 ### Event/Calendar Test Classes (blog.tests)
@@ -176,10 +177,10 @@ python manage.py test blog
 python manage.py test --verbosity=2
 
 # Run specific test class
-python manage.py test blog.tests.TestUserModel
+python manage.py test tests.test_blog.TestUserModel
 
 # Run specific test method
-python manage.py test blog.tests.TestUserModel.test_user_creation
+python manage.py test tests.test_blog.TestUserModel.test_user_creation
 ```
 
 ### **3. Test Coverage Analysis**
@@ -627,10 +628,10 @@ python manage.py loaddata test_data.json
 
 ### **Create Test Suite**
 ```python
-# In blog/tests.py
+# In tests/test_blog.py
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
-from .models import Course, UserProfile
+from blog.models import Course, UserProfile
 
 class LMSIntegrationTests(TestCase):
     def setUp(self):

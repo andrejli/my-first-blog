@@ -147,6 +147,114 @@
                             </div>
                         </div>
 
+                        <!-- Recurring Events -->
+                        <div class="form-section mb-4">
+                            <h6 class="text-info mb-3"><i class="fas fa-redo"></i> Recurring Events</h6>
+                            
+                            <div class="form-check mb-3">
+                                {{ form.is_recurring }}
+                                <label class="form-check-label" for="{{ form.is_recurring.id_for_label }}">
+                                    <strong>Make this a recurring event</strong>
+                                </label>
+                                {% if form.is_recurring.errors %}
+                                    <div class="text-danger small">{{ form.is_recurring.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div id="recurring-options" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.recurrence_pattern.id_for_label }}" class="form-label">Recurrence Pattern *</label>
+                                        {{ form.recurrence_pattern }}
+                                        {% if form.recurrence_pattern.errors %}
+                                            <div class="text-danger small">{{ form.recurrence_pattern.errors.0 }}</div>
+                                        {% endif %}
+                                        {% if form.recurrence_pattern.help_text %}
+                                            <small class="form-text text-muted">{{ form.recurrence_pattern.help_text }}</small>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.recurrence_interval.id_for_label }}" class="form-label">Interval</label>
+                                        {{ form.recurrence_interval }}
+                                        {% if form.recurrence_interval.errors %}
+                                            <div class="text-danger small">{{ form.recurrence_interval.errors.0 }}</div>
+                                        {% endif %}
+                                        <small class="form-text text-muted">Every X weeks/months (default: 1)</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3" id="recurrence-days-field" style="display: none;">
+                                    <label class="form-label">Days of Week *</label>
+                                    <div class="row">
+                                        {% for choice in form.recurrence_days %}
+                                            <div class="col-md-6 col-lg-4">
+                                                <div class="form-check">
+                                                    {{ choice.tag }}
+                                                    <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                                        {{ choice.choice_label }}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% if form.recurrence_days.errors %}
+                                        <div class="text-danger small">{{ form.recurrence_days.errors.0 }}</div>
+                                    {% endif %}
+                                    {% if form.recurrence_days.help_text %}
+                                        <small class="form-text text-muted">{{ form.recurrence_days.help_text }}</small>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.recurrence_end_date.id_for_label }}" class="form-label">End Date</label>
+                                        {{ form.recurrence_end_date }}
+                                        {% if form.recurrence_end_date.errors %}
+                                            <div class="text-danger small">{{ form.recurrence_end_date.errors.0 }}</div>
+                                        {% endif %}
+                                        <small class="form-text text-muted">When to stop creating recurring events</small>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.max_occurrences.id_for_label }}" class="form-label">Max Occurrences</label>
+                                        {{ form.max_occurrences }}
+                                        {% if form.max_occurrences.errors %}
+                                            <div class="text-danger small">{{ form.max_occurrences.errors.0 }}</div>
+                                        {% endif %}
+                                        {% if form.max_occurrences.help_text %}
+                                            <small class="form-text text-muted">{{ form.max_occurrences.help_text }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            {{ form.exclude_weekends }}
+                                            <label class="form-check-label" for="{{ form.exclude_weekends.id_for_label }}">
+                                                Skip weekends
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            {{ form.exclude_holidays }}
+                                            <label class="form-check-label" for="{{ form.exclude_holidays.id_for_label }}">
+                                                Skip holidays
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-info small">
+                                    <strong><i class="fas fa-info-circle"></i> Note:</strong> 
+                                    Recurring events will be generated as separate event instances. You can specify either an end date OR maximum occurrences (not both).
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Settings -->
                         <div class="form-section mb-4">
                             <h6 class="text-info mb-3"><i class="fas fa-cogs"></i> Settings</h6>
@@ -315,10 +423,14 @@ function clearColor(fieldName) {
     document.getElementById('id_' + fieldName).value = '';
 }
 
-// Real-time preview updates
+// Real-time preview updates and recurring event handling
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('event-form');
     const previewItem = document.getElementById('preview-item');
+    const isRecurring = document.getElementById('id_is_recurring');
+    const recurringOptions = document.getElementById('recurring-options');
+    const recurrencePattern = document.getElementById('id_recurrence_pattern');
+    const recurrenceDaysField = document.getElementById('recurrence-days-field');
     
     function updatePreview() {
         // Update title
@@ -347,7 +459,44 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Add event listeners
+    function toggleRecurringOptions() {
+        if (isRecurring && isRecurring.checked) {
+            recurringOptions.style.display = 'block';
+        } else {
+            recurringOptions.style.display = 'none';
+        }
+    }
+    
+    function toggleRecurrenceDaysField() {
+        if (recurrencePattern && recurrenceDaysField) {
+            const pattern = recurrencePattern.value;
+            if (pattern === 'weekly' || pattern === 'biweekly') {
+                recurrenceDaysField.style.display = 'block';
+            } else {
+                recurrenceDaysField.style.display = 'none';
+                // Clear the days checkboxes when not applicable
+                if (pattern !== 'weekly' && pattern !== 'biweekly') {
+                    const daysCheckboxes = document.querySelectorAll('input[name="recurrence_days"]');
+                    daysCheckboxes.forEach(checkbox => {
+                        checkbox.checked = false;
+                    });
+                }
+            }
+        }
+    }
+    
+    // Add event listeners for recurring events
+    if (isRecurring) {
+        isRecurring.addEventListener('change', toggleRecurringOptions);
+        toggleRecurringOptions(); // Initial state
+    }
+    
+    if (recurrencePattern) {
+        recurrencePattern.addEventListener('change', toggleRecurrenceDaysField);
+        toggleRecurrenceDaysField(); // Initial state
+    }
+    
+    // Add event listeners for preview
     ['title', 'description', 'priority', 'custom_color', 'custom_background'].forEach(field => {
         const element = document.getElementById('id_' + field);
         if (element) {

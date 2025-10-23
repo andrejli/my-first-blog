@@ -593,7 +593,7 @@ print(divide(15, 3))
         
         submission = Submission.objects.get(assignment=assignment, student=student)
         assert submission.status == 'submitted'
-        assert submission.submitted_at is not None
+        assert submission.submitted_date is not None
         
         # Switch to instructor to grade
         client.login(username='prof', password='profpass')

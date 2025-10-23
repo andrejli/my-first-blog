@@ -1,33 +1,187 @@
 #!/bin/bash
-#
-# Quick Test Runner for Django LMS
-# Simple script to run Django tests with proper settings
-#
-# Usage: ./test.sh [test_args...]
-# Examples:
-#   ./test.sh                                # Run all 26 tests (event/calendar + markdown)
-#   ./test.sh blog.tests                     # Run only event/calendar tests (11 tests)
-#   ./test.sh tests.test_enhanced_markdown   # Run only markdown tests (15 tests)
-#   ./test.sh blog.tests.EventModelTest      # Run specific test class
-#   ./test.sh -v 2                           # Run with verbose output
+# Bash Test Runner for Django LMS
+# Run all tests for the my-first-blog Django project
 
-# Set Django settings
-export DJANGO_SETTINGS_MODULE="mysite.settings"
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
+CYAN='\033[0;36m'
+GRAY='\033[0;37m'
+NC='\033[0m' # No Color
 
-# Check if virtual environment exists and activate it
-if [[ ! "$VIRTUAL_ENV" && -d "venv" ]]; then
-    echo "🔧 Activating virtual environment..."
-    source venv/bin/activate
+echo -e "${GREEN}🚀 Starting Django LMS Test Suite${NC}"
+echo -e "${GREEN}=====================================${NC}\n"
+
+# Set up environment
+PROJECT_DIR="/c/Users/forti/Documents/GitHub/my-first-blog"
+PYTHON_EXE="$PROJECT_DIR/venv/Scripts/python.exe"
+
+# Change to project directory
+cd "$PROJECT_DIR" || exit 1
+
+echo -e "${CYAN}📁 Working Directory: $PROJECT_DIR${NC}"
+echo -e "${CYAN}🐍 Python Executable: $PYTHON_EXE${NC}\n"
+
+# Function to run test and capture results
+run_test() {
+    local test_name="$1"
+    local command="$2"
+    local description="$3"
+    
+    echo -e "${YELLOW}🧪 Running: $test_name${NC}"
+    echo -e "${GRAY}   Description: $description${NC}"
+    echo -e "${GRAY}   Command: $command${NC}"
+    
+    start_time=$(date +%s.%N)
+    
+    # Execute the command and capture exit code
+    eval "$command" >/dev/null 2>&1
+    exit_code=$?
+    
+    end_time=$(date +%s.%N)
+    duration=$(echo "$end_time - $start_time" | bc -l)
+    
+    if [ $exit_code -eq 0 ]; then
+        echo -e "${GREEN}   ✅ PASSED${NC}"
+        echo -e "${GRAY}   Duration: $(printf "%.2f" "$duration")s${NC}\n"
+        return 0
+    else
+        echo -e "${RED}   ❌ FAILED (Exit Code: $exit_code)${NC}"
+        echo -e "${GRAY}   Duration: $(printf "%.2f" "$duration")s${NC}\n"
+        return 1
+    fi
+}
+
+# Test results tracking
+total_tests=0
+passed_tests=0
+test_results=()
+
+echo -e "${MAGENTA}🔍 Pre-flight Checks${NC}"
+echo -e "${MAGENTA}====================${NC}\n"
+
+# Check if virtual environment exists
+if [ ! -f "$PROJECT_DIR/venv/Scripts/python.exe" ]; then
+    echo -e "${RED}❌ Virtual environment not found at $PROJECT_DIR/venv${NC}"
+    echo -e "${YELLOW}Please create virtual environment first:${NC}"
+    echo -e "${GRAY}   python -m venv venv${NC}"
+    echo -e "${GRAY}   source venv/Scripts/activate${NC}"
+    echo -e "${GRAY}   pip install -r requirements.txt${NC}\n"
+    exit 1
 fi
 
-# Run Django tests with all passed arguments
-echo "🧪 Running Django tests with settings: $DJANGO_SETTINGS_MODULE"
-
-if [[ $# -eq 0 ]]; then
-    # No arguments, run ALL Django tests
-    echo "🧪 Running ALL Django tests (event/calendar + markdown + more)..."
-    python manage.py test -v 2
+# Check Django installation
+django_version=$("$PYTHON_EXE" -c "import django; print(f'Django {django.get_version()}')" 2>/dev/null)
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✅ $django_version detected${NC}"
 else
-    # Pass all arguments to Django test runner
-    python manage.py test "$@"
+    echo -e "${RED}❌ Django not found. Please install requirements:${NC}"
+    echo -e "${GRAY}   pip install -r requirements.txt${NC}\n"
+    exit 1
 fi
+
+# Check database
+"$PYTHON_EXE" manage.py check --quiet 2>/dev/null
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✅ Database configuration OK${NC}\n"
+else
+    echo -e "${RED}❌ Database configuration issues detected${NC}"
+    echo -e "${YELLOW}   Running migrations...${NC}\n"
+    "$PYTHON_EXE" manage.py migrate --quiet
+fi
+
+echo -e "${MAGENTA}🧪 Django Test Suite${NC}"
+echo -e "${MAGENTA}====================${NC}\n"
+
+# 1. Django System Check
+((total_tests++))
+if run_test "System Check" "\"$PYTHON_EXE\" manage.py check --quiet" "Validate Django configuration and models"; then
+    ((passed_tests++))
+    test_results+=("System Check:PASS")
+else
+    test_results+=("System Check:FAIL")
+fi
+
+# 2. Database Migration Check
+((total_tests++))
+if run_test "Migration Check" "\"$PYTHON_EXE\" manage.py showmigrations --plan | grep -c blog" "Check database migrations"; then
+    ((passed_tests++))
+    test_results+=("Migration Check:PASS")
+else
+    test_results+=("Migration Check:FAIL")
+fi
+
+# 3. Recurring Events Tests
+((total_tests++))
+if run_test "Recurring Events Tests" "\"$PYTHON_EXE\" manage.py test tests.test_recurring_events --verbosity=1" "Test recurring events system"; then
+    ((passed_tests++))
+    test_results+=("Recurring Events Tests:PASS")
+else
+    test_results+=("Recurring Events Tests:FAIL")
+fi
+
+# 4. All Django Tests
+((total_tests++))
+if run_test "All Django Tests" "\"$PYTHON_EXE\" manage.py test --verbosity=1" "Run all Django application tests"; then
+    ((passed_tests++))
+    test_results+=("All Django Tests:PASS")
+else
+    test_results+=("All Django Tests:FAIL")
+fi
+
+# 5. Management Command Tests
+((total_tests++))
+if run_test "Management Commands" "\"$PYTHON_EXE\" manage.py generate_recurring_events --dry-run --verbosity=0" "Test custom Django management commands"; then
+    ((passed_tests++))
+    test_results+=("Management Commands:PASS")
+else
+    test_results+=("Management Commands:FAIL")
+fi
+
+# 6. Static Files Collection Test (if collectstatic works)
+((total_tests++))
+if run_test "Static Files" "\"$PYTHON_EXE\" manage.py collectstatic --noinput --verbosity=0" "Test static files collection"; then
+    ((passed_tests++))
+    test_results+=("Static Files:PASS")
+else
+    test_results+=("Static Files:FAIL")
+fi
+
+echo -e "${GREEN}📊 Test Results Summary${NC}"
+echo -e "${GREEN}======================${NC}\n"
+
+# Display results table
+for result in "${test_results[@]}"; do
+    test_name=$(echo "$result" | cut -d: -f1)
+    status=$(echo "$result" | cut -d: -f2)
+    
+    if [ "$status" = "PASS" ]; then
+        printf "   %-25s ${GREEN}✅ PASS${NC}\n" "$test_name"
+    else
+        printf "   %-25s ${RED}❌ FAIL${NC}\n" "$test_name"
+    fi
+done
+
+echo ""
+percentage=$(echo "scale=1; ($passed_tests / $total_tests) * 100" | bc -l)
+echo -e "${CYAN}📈 Overall Results:${NC}"
+
+if [ "$passed_tests" -eq "$total_tests" ]; then
+    echo -e "   ${GREEN}Passed: $passed_tests/$total_tests (${percentage}%)${NC}"
+    echo ""
+    echo -e "${GREEN}🎉 ALL TESTS PASSED! 🎉${NC}"
+    echo -e "${GREEN}Your Django LMS is working perfectly!${NC}"
+    exit 0
+else
+    failed_tests=$((total_tests - passed_tests))
+    echo -e "   ${YELLOW}Passed: $passed_tests/$total_tests (${percentage}%)${NC}"
+    echo ""
+    echo -e "${YELLOW}⚠️  $failed_tests TEST(S) FAILED${NC}"
+    echo -e "${YELLOW}Please review the failed tests above and fix any issues.${NC}"
+    exit 1
+fi
+
+echo -e "\n${GREEN}🏁 Test Suite Completed${NC}"

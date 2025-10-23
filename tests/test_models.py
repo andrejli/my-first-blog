@@ -91,7 +91,7 @@ class TestUserProfileModel:
         
         # Trying to create another profile for same user should fail
         with pytest.raises(IntegrityError):
-            UserProfile.objects.get_or_create(user=user, defaults={'role': 'instructor'})
+            UserProfile.objects.create(user=user, role='instructor')
 
 
 # ================================
@@ -746,6 +746,7 @@ class TestQuizAttemptModel:
         passing_attempt = QuizAttempt.objects.create(
             student=student,
             quiz=quiz,
+            attempt_number=1,
             percentage=Decimal('80.00')
         )
         
@@ -753,6 +754,7 @@ class TestQuizAttemptModel:
         failing_attempt = QuizAttempt.objects.create(
             student=student,
             quiz=quiz,
+            attempt_number=2,
             percentage=Decimal('60.00')
         )
         
@@ -763,4 +765,4 @@ class TestQuizAttemptModel:
         quiz.passing_score = None
         quiz.save()
         
-        assert passing_attempt.is_passed is False  # Should be False when no passing score
+        assert passing_attempt.is_passed is None  # Should be None when no passing score

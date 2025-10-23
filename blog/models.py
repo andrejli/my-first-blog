@@ -246,6 +246,7 @@ class Assignment(models.Model):
     def __str__(self):
         return f"{self.course.course_code} - {self.title}"
     
+    @property
     def is_overdue(self):
         """Check if assignment is past due date"""
         return timezone.now() > self.due_date
@@ -987,6 +988,42 @@ class Event(models.Model):
     end_date = models.DateTimeField(null=True, blank=True)
     all_day = models.BooleanField(default=False)
     
+    # Recurring Event Fields
+    is_recurring = models.BooleanField(default=False, help_text="Create recurring events")
+    recurrence_pattern = models.CharField(max_length=20, choices=[
+        ('daily', 'Daily'),
+        ('weekly', 'Weekly'),
+        ('biweekly', 'Bi-weekly (Every 2 weeks)'),
+        ('monthly', 'Monthly'),
+        ('custom', 'Custom Pattern'),
+    ], blank=True, help_text="How often should this event repeat?")
+    
+    recurrence_interval = models.PositiveIntegerField(default=1, 
+        help_text="Repeat every N intervals (e.g., every 2 weeks)")
+    
+    # Days of the week for weekly/biweekly patterns (stored as comma-separated)
+    # Format: "mon,wed,fri" or "1,3,5" (1=Monday, 7=Sunday)
+    recurrence_days = models.CharField(max_length=50, blank=True,
+        help_text="Days of week for recurring events (mon,tue,wed,thu,fri,sat,sun)")
+    
+    # End conditions for recurring events
+    recurrence_end_date = models.DateTimeField(null=True, blank=True,
+        help_text="When should recurring events stop?")
+    max_occurrences = models.PositiveIntegerField(null=True, blank=True,
+        help_text="Maximum number of occurrences (alternative to end date)")
+    
+    # Recurring event management
+    parent_event = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True,
+        related_name='recurring_instances', help_text="Parent event for recurring series")
+    occurrence_date = models.DateField(null=True, blank=True, 
+        help_text="Original date for this occurrence (for modified instances)")
+    
+    # Academic calendar integration
+    exclude_holidays = models.BooleanField(default=True,
+        help_text="Skip events that fall on holidays")
+    exclude_weekends = models.BooleanField(default=False,
+        help_text="Skip weekend occurrences (for daily patterns)")
+    
     # Visibility and permissions
     is_published = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False, help_text="Show on homepage")
@@ -1220,4 +1257,346 @@ class Event(models.Model):
     def has_lesson_link(self):
         """Check if event has a lesson link"""
         return bool(self.linked_lesson or self.obsidian_link)
+    
+    # ==========================================
+    # RECURRING EVENTS METHODS
+    # ==========================================
+    
+    @property
+    def is_recurring_parent(self):
+        """Check if this is the parent event of a recurring series"""
+        return self.is_recurring and self.parent_event is None
+    
+    @property
+    def is_recurring_instance(self):
+        """Check if this is an instance of a recurring series"""
+        return self.parent_event is not None
+    
+    def get_recurrence_days_list(self):
+        """Convert recurrence_days string to list of day names"""
+        if not self.recurrence_days:
+            return []
+        
+        day_map = {
+            'mon': 'Monday', 'tue': 'Tuesday', 'wed': 'Wednesday',
+            'thu': 'Thursday', 'fri': 'Friday', 'sat': 'Saturday', 'sun': 'Sunday',
+            '1': 'Monday', '2': 'Tuesday', '3': 'Wednesday',
+            '4': 'Thursday', '5': 'Friday', '6': 'Saturday', '7': 'Sunday'
+        }
+        
+        days = []
+        for day in self.recurrence_days.split(','):
+            day = day.strip().lower()
+            if day in day_map:
+                days.append(day_map[day])
+        return days
+    
+    def get_next_occurrence_date(self, from_date=None):
+        """Calculate the next occurrence date based on recurrence pattern"""
+        from datetime import timedelta
+        import calendar
+        
+        if not self.is_recurring:
+            return None
+        
+        if from_date is None:
+            from_date = self.start_date.date()
+        
+        if self.recurrence_pattern == 'daily':
+            return from_date + timedelta(days=self.recurrence_interval)
+            
+        elif self.recurrence_pattern == 'weekly':
+            return from_date + timedelta(weeks=self.recurrence_interval)
+            
+        elif self.recurrence_pattern == 'biweekly':
+            return from_date + timedelta(weeks=2 * self.recurrence_interval)
+            
+        elif self.recurrence_pattern == 'monthly':
+            # Add months (approximate)
+            try:
+                if from_date.month == 12:
+                    return from_date.replace(year=from_date.year + 1, month=1)
+                else:
+                    return from_date.replace(month=from_date.month + self.recurrence_interval)
+            except ValueError:
+                # Handle month overflow (e.g., Jan 31 + 1 month)
+                import calendar
+                next_month = from_date.month + self.recurrence_interval
+                year = from_date.year
+                while next_month > 12:
+                    next_month -= 12
+                    year += 1
+                
+                # Handle day overflow (e.g., Jan 31 -> Feb 28)
+                max_day = calendar.monthrange(year, next_month)[1]
+                day = min(from_date.day, max_day)
+                return from_date.replace(year=year, month=next_month, day=day)
+        
+        return None
+    
+    def generate_recurring_events(self, save=True):
+        """Generate all recurring event instances"""
+        from datetime import datetime, timedelta
+        
+        if not self.is_recurring or self.parent_event is not None:
+            return []
+        
+        instances = []
+        current_date = self.start_date
+        count = 0
+        
+        # Determine end condition
+        max_count = self.max_occurrences or 100  # Safety limit
+        end_date = self.recurrence_end_date or (self.start_date + timedelta(days=365))  # 1 year max
+        
+        # Generate occurrences
+        while count < max_count and current_date.date() <= end_date.date():
+            # Skip the original event (count = 0)
+            if count > 0:
+                # Create new instance
+                instance = Event(
+                    title=self.title,
+                    description=self.description,
+                    event_type_new=self.event_type_new,
+                    event_type=self.event_type,
+                    priority=self.priority,
+                    visibility=self.visibility,
+                    custom_color=self.custom_color,
+                    custom_background=self.custom_background,
+                    start_date=current_date,
+                    end_date=current_date + (self.end_date - self.start_date) if self.end_date else None,
+                    all_day=self.all_day,
+                    is_published=self.is_published,
+                    is_featured=False,  # Only parent should be featured
+                    created_by=self.created_by,
+                    course=self.course,
+                    linked_lesson=self.linked_lesson,
+                    obsidian_link=self.obsidian_link,
+                    parent_event=self,
+                    occurrence_date=current_date.date(),
+                    # Recurring fields should be False for instances
+                    is_recurring=False,
+                )
+                
+                if save:
+                    instance.save()
+                instances.append(instance)
+            
+            # Calculate next occurrence
+            if self.recurrence_pattern == 'daily':
+                current_date += timedelta(days=self.recurrence_interval)
+                
+                # Skip weekends if specified
+                if self.exclude_weekends and current_date.weekday() >= 5:
+                    days_to_add = 7 - current_date.weekday()  # Skip to Monday
+                    current_date += timedelta(days=days_to_add)
+                    
+            elif self.recurrence_pattern == 'weekly':
+                # Handle specific days of the week
+                if self.recurrence_days:
+                    target_days = []
+                    try:
+                        # Parse comma-separated day numbers (0=Monday, 6=Sunday)
+                        for day in self.recurrence_days.split(','):
+                            day = day.strip()
+                            if day.isdigit():
+                                day_num = int(day)
+                                if 0 <= day_num <= 6:
+                                    target_days.append(day_num)
+                    except (ValueError, AttributeError):
+                        # Fallback to weekly interval if parsing fails
+                        current_date += timedelta(weeks=self.recurrence_interval)
+                        count += 1
+                        continue
+                    
+                    if target_days:
+                        target_days = sorted(target_days)
+                        current_weekday = current_date.weekday()
+                        next_day = None
+                        
+                        # Look for next target day in current week
+                        for day in target_days:
+                            if day > current_weekday:
+                                next_day = day
+                                break
+                        
+                        if next_day is not None:
+                            # Next occurrence is in current week
+                            days_ahead = next_day - current_weekday
+                            current_date += timedelta(days=days_ahead)
+                        else:
+                            # Go to next week, first target day
+                            days_ahead = 7 - current_weekday + min(target_days)
+                            current_date += timedelta(days=days_ahead)
+                    else:
+                        # No valid days, just weekly
+                        current_date += timedelta(weeks=self.recurrence_interval)
+                else:
+                    current_date += timedelta(weeks=self.recurrence_interval)
+                    
+            elif self.recurrence_pattern == 'biweekly':
+                # Handle specific days of the week for biweekly pattern
+                if self.recurrence_days:
+                    target_days = []
+                    try:
+                        # Parse comma-separated day numbers (0=Monday, 6=Sunday)
+                        for day in self.recurrence_days.split(','):
+                            day = day.strip()
+                            if day.isdigit():
+                                day_num = int(day)
+                                if 0 <= day_num <= 6:
+                                    target_days.append(day_num)
+                    except (ValueError, AttributeError):
+                        # Fallback to biweekly interval if parsing fails
+                        current_date += timedelta(weeks=2 * self.recurrence_interval)
+                        count += 1
+                        continue
+                    
+                    if target_days:
+                        target_days = sorted(target_days)
+                        current_weekday = current_date.weekday()
+                        next_day = None
+                        
+                        # Look for next target day in current week
+                        for day in target_days:
+                            if day > current_weekday:
+                                next_day = day
+                                break
+                        
+                        if next_day is not None:
+                            # Next occurrence is in current week
+                            days_ahead = next_day - current_weekday
+                            current_date += timedelta(days=days_ahead)
+                        else:
+                            # Go to next occurrence in 2 weeks, first target day
+                            days_ahead = 14 - current_weekday + min(target_days)
+                            current_date += timedelta(days=days_ahead)
+                    else:
+                        # No valid days, just biweekly
+                        current_date += timedelta(weeks=2 * self.recurrence_interval)
+                else:
+                    current_date += timedelta(weeks=2 * self.recurrence_interval)
+                
+            elif self.recurrence_pattern == 'custom':
+                # Handle custom pattern with specific weekdays
+                if self.recurrence_days:
+                    target_days = []
+                    try:
+                        # Parse comma-separated day numbers (0=Monday, 6=Sunday)
+                        for day in self.recurrence_days.split(','):
+                            day = day.strip()
+                            if day.isdigit():
+                                day_num = int(day)
+                                if 0 <= day_num <= 6:
+                                    target_days.append(day_num)
+                    except (ValueError, AttributeError):
+                        # Fallback - just advance one day if parsing fails
+                        current_date += timedelta(days=1)
+                        count += 1
+                        continue
+                    
+                    if target_days:
+                        target_days = sorted(target_days)
+                        current_weekday = current_date.weekday()
+                        next_day = None
+                        
+                        # Look for next target day in current week
+                        for day in target_days:
+                            if day > current_weekday:
+                                next_day = day
+                                break
+                        
+                        if next_day is not None:
+                            # Next occurrence is in current week
+                            days_ahead = next_day - current_weekday
+                            current_date += timedelta(days=days_ahead)
+                        else:
+                            # Go to next week, first target day
+                            days_ahead = 7 - current_weekday + min(target_days)
+                            current_date += timedelta(days=days_ahead)
+                    else:
+                        # No valid days, just advance one day
+                        current_date += timedelta(days=1)
+                else:
+                    # No recurrence days specified, just advance one day
+                    current_date += timedelta(days=1)
+                
+            elif self.recurrence_pattern == 'monthly':
+                # Add months
+                month = current_date.month
+                year = current_date.year
+                month += self.recurrence_interval
+                
+                while month > 12:
+                    month -= 12
+                    year += 1
+                
+                try:
+                    current_date = current_date.replace(year=year, month=month)
+                except ValueError:
+                    # Handle day overflow
+                    import calendar
+                    max_day = calendar.monthrange(year, month)[1]
+                    day = min(current_date.day, max_day)
+                    current_date = current_date.replace(year=year, month=month, day=day)
+            
+            count += 1
+        
+        return instances
+    
+    def update_recurring_series(self, **kwargs):
+        """Update all instances in a recurring series"""
+        if not self.is_recurring_parent:
+            return 0
+        
+        # Update all instances
+        instances = self.recurring_instances.all()
+        updated_count = 0
+        for instance in instances:
+            for key, value in kwargs.items():
+                if hasattr(instance, key):
+                    setattr(instance, key, value)
+            instance.save()
+            updated_count += 1
+        return updated_count
+    
+    def delete_recurring_series(self):
+        """Delete all instances in a recurring series"""
+        deleted_count = 0
+        if self.is_recurring_parent:
+            deleted_count = self.recurring_instances.count()
+            self.recurring_instances.all().delete()
+        elif self.parent_event:
+            # If deleting an instance, just delete this one
+            deleted_count = 1
+        self.delete()
+        return deleted_count
+    
+    def get_series_info(self):
+        """Get information about the recurring series"""
+        if not self.is_recurring and not self.parent_event:
+            return None
+        
+        parent = self.parent_event if self.parent_event else self
+        total_instances = parent.recurring_instances.count() + 1  # +1 for parent
+        
+        pattern_text = {
+            'daily': f"Daily (every {parent.recurrence_interval} day{'s' if parent.recurrence_interval > 1 else ''})",
+            'weekly': f"Weekly (every {parent.recurrence_interval} week{'s' if parent.recurrence_interval > 1 else ''})",
+            'biweekly': f"Bi-weekly (every {parent.recurrence_interval * 2} weeks)",
+            'monthly': f"Monthly (every {parent.recurrence_interval} month{'s' if parent.recurrence_interval > 1 else ''})"
+        }.get(parent.recurrence_pattern, 'Custom')
+        
+        if parent.recurrence_days:
+            days = parent.get_recurrence_days_list()
+            pattern_text += f" on {', '.join(days)}"
+        
+        return {
+            'parent': parent,
+            'total_instances': total_instances,
+            'pattern': pattern_text,
+            'end_date': parent.recurrence_end_date,
+            'max_occurrences': parent.max_occurrences,
+            'is_parent': self.is_recurring_parent
+        }
 

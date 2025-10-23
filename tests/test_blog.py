@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.core.files.uploadedfile import SimpleUploadedFile
 from datetime import datetime, timedelta
-from .models import Event, Course, UserProfile
+from blog.models import Event, Course, UserProfile
 import tempfile
 import os
 

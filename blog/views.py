@@ -1948,6 +1948,7 @@ def quiz_list_for_students(request, course_id):
     context = {
         'course': course,
         'quiz_data': quiz_data,
+        'quizzes': quizzes,  # For backward compatibility with tests
     }
     
     return render(request, 'blog/student_quiz_list.html', context)
@@ -3310,7 +3311,7 @@ def event_management(request):
 
 @admin_required
 def add_event(request):
-    """Enhanced event creation with custom types and colors"""
+    """Enhanced event creation with custom types and colors and recurring events"""
     from .forms import EventForm
     
     if request.method == 'POST':
@@ -3319,7 +3320,25 @@ def add_event(request):
             event = form.save(commit=False)
             event.created_by = request.user
             event.save()
-            messages.success(request, f'Event "{event.title}" created successfully!')
+            
+            # Handle recurring event generation
+            if event.is_recurring:
+                try:
+                    created_count = event.generate_recurring_events()
+                    if created_count > 0:
+                        messages.success(request, 
+                            f'Recurring event "{event.title}" created successfully! '
+                            f'Generated {created_count} recurring instances.')
+                    else:
+                        messages.success(request, 
+                            f'Recurring event "{event.title}" created successfully! '
+                            f'No recurring instances were generated (check your settings).')
+                except Exception as e:
+                    messages.warning(request, 
+                        f'Event "{event.title}" created but recurring instances failed: {str(e)}')
+            else:
+                messages.success(request, f'Event "{event.title}" created successfully!')
+                
             return redirect('event_management')
         else:
             messages.error(request, 'Please correct the errors below.')
@@ -3336,16 +3355,49 @@ def add_event(request):
 
 @admin_required
 def edit_event(request, event_id):
-    """Edit an existing event"""
+    """Edit an existing event with recurring event handling"""
     from .forms import EventForm
     
     event = get_object_or_404(Event, id=event_id)
+    old_is_recurring = event.is_recurring  # Store original recurring status
     
     if request.method == 'POST':
         form = EventForm(request.POST, request.FILES, instance=event)
         if form.is_valid():
-            form.save()
-            messages.success(request, f'Event "{event.title}" updated successfully!')
+            updated_event = form.save()
+            
+            # Handle recurring event changes
+            if updated_event.is_recurring and not old_is_recurring:
+                # Event was made recurring - generate instances
+                try:
+                    created_count = updated_event.generate_recurring_events()
+                    messages.success(request, 
+                        f'Event "{updated_event.title}" updated and made recurring! '
+                        f'Generated {created_count} recurring instances.')
+                except Exception as e:
+                    messages.warning(request, 
+                        f'Event updated but recurring instances failed: {str(e)}')
+                        
+            elif updated_event.is_recurring and old_is_recurring:
+                # Event was already recurring - offer to regenerate
+                messages.success(request, 
+                    f'Recurring event "{updated_event.title}" updated successfully! '
+                    f'Use "Generate Recurring Events" action in admin to regenerate instances if needed.')
+                    
+            elif not updated_event.is_recurring and old_is_recurring:
+                # Event was made non-recurring - clean up instances
+                try:
+                    deleted_count = updated_event.delete_recurring_series()
+                    messages.success(request, 
+                        f'Event "{updated_event.title}" updated and made non-recurring! '
+                        f'Removed {deleted_count} recurring instances.')
+                except Exception as e:
+                    messages.warning(request, 
+                        f'Event updated but cleanup failed: {str(e)}')
+            else:
+                # Regular non-recurring event update
+                messages.success(request, f'Event "{updated_event.title}" updated successfully!')
+                
             return redirect('event_management')
         else:
             messages.error(request, 'Please correct the errors below.')

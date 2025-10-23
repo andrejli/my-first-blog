@@ -9,6 +9,7 @@ from .models import (
     Forum, Topic, ForumPost, SiteTheme, UserThemePreference,
     Event
 )
+from .forms import WeekdayMultipleChoiceField
 
 
 # Custom form for Course to handle instructor selection
@@ -29,6 +30,18 @@ class CourseAdminForm(forms.ModelForm):
         self.fields['instructor'].queryset = User.objects.filter(
             userprofile__role='instructor'
         ).order_by('first_name', 'last_name')
+
+
+# Custom form for Event to handle recurrence_days checkboxes
+class EventAdminForm(forms.ModelForm):
+    recurrence_days = WeekdayMultipleChoiceField(
+        required=False,
+        help_text="Select which days of the week this event should repeat"
+    )
+    
+    class Meta:
+        model = Event
+        fields = '__all__'
 
 
 # User Profile Admin
@@ -416,10 +429,11 @@ class UserThemePreferenceAdmin(admin.ModelAdmin):
 # Event Administration
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
-    list_display = ['title', 'event_type', 'start_date', 'end_date', 'priority', 'visibility', 'is_published', 'is_featured', 'has_poster', 'has_materials', 'created_by', 'course']
-    list_filter = ['event_type', 'priority', 'visibility', 'is_published', 'is_featured', 'start_date', 'created_by']
+    form = EventAdminForm  # Use custom form for checkboxes
+    list_display = ['title', 'event_type', 'start_date', 'end_date', 'priority', 'visibility', 'is_published', 'is_featured', 'is_recurring_display', 'recurring_count', 'has_poster', 'has_materials', 'created_by', 'course']
+    list_filter = ['event_type', 'priority', 'visibility', 'is_published', 'is_featured', 'is_recurring', 'recurrence_pattern', 'start_date', 'created_by']
     search_fields = ['title', 'description']
-    readonly_fields = ['created_at', 'updated_at']
+    readonly_fields = ['created_at', 'updated_at', 'recurring_info_display']
     date_hierarchy = 'start_date'
     
     fieldsets = [
@@ -429,6 +443,11 @@ class EventAdmin(admin.ModelAdmin):
         ('Date & Time', {
             'fields': ('start_date', 'end_date', 'all_day')
         }),
+        ('Recurring Events', {
+            'fields': ('is_recurring', 'recurrence_pattern', 'recurrence_interval', 'recurrence_days', 'recurrence_end_date', 'max_occurrences', 'exclude_holidays', 'exclude_weekends'),
+            'classes': ('collapse',),
+            'description': 'Configure recurring event patterns for course schedules'
+        }),
         ('Files & Materials', {
             'fields': ('poster', 'materials'),
             'description': 'Upload event poster and materials (admin only)'
@@ -436,11 +455,18 @@ class EventAdmin(admin.ModelAdmin):
         ('Visibility', {
             'fields': ('is_published', 'is_featured', 'course')
         }),
+        ('Advanced', {
+            'fields': ('parent_event', 'occurrence_date', 'recurring_info_display'),
+            'classes': ('collapse',),
+            'description': 'Advanced recurring event settings (mostly read-only)'
+        }),
         ('Metadata', {
             'fields': ('created_by', 'created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     ]
+    
+    actions = ['generate_recurring_instances', 'delete_recurring_series']
     
     def has_poster(self, obj):
         return obj.has_poster
@@ -452,10 +478,93 @@ class EventAdmin(admin.ModelAdmin):
     has_materials.boolean = True
     has_materials.short_description = 'Materials'
     
+    def is_recurring_display(self, obj):
+        if obj.is_recurring:
+            return f"🔄 {obj.recurrence_pattern.title()}"
+        elif obj.parent_event:
+            return f"🔗 Instance of #{obj.parent_event.id}"
+        return "❌ Single"
+    is_recurring_display.short_description = 'Recurring'
+    
+    def recurring_count(self, obj):
+        if obj.is_recurring:
+            count = obj.recurring_instances.count()
+            return f"{count} instances" if count else "No instances"
+        elif obj.parent_event:
+            return f"Parent: #{obj.parent_event.id}"
+        return "-"
+    recurring_count.short_description = 'Instances'
+    
+    def recurring_info_display(self, obj):
+        if obj.is_recurring:
+            info = obj.get_series_info()
+            if info:
+                lines = [
+                    f"Pattern: {info['pattern']}",
+                    f"Total instances: {info['total_instances']}",
+                ]
+                if info['end_date']:
+                    lines.append(f"Ends: {info['end_date'].strftime('%Y-%m-%d')}")
+                if info['max_occurrences']:
+                    lines.append(f"Max occurrences: {info['max_occurrences']}")
+                return "\n".join(lines)
+        elif obj.parent_event:
+            return f"Instance of recurring series: {obj.parent_event.title}"
+        return "Not a recurring event"
+    recurring_info_display.short_description = 'Recurring Info'
+    
+    def generate_recurring_instances(self, request, queryset):
+        """Admin action to generate recurring instances"""
+        count = 0
+        for event in queryset.filter(is_recurring=True, parent_event=None):
+            instances = event.generate_recurring_events()
+            count += len(instances)
+        
+        self.message_user(
+            request,
+            f'Successfully generated {count} recurring event instances.',
+            level='SUCCESS'
+        )
+    generate_recurring_instances.short_description = "Generate recurring instances for selected events"
+    
+    def delete_recurring_series(self, request, queryset):
+        """Admin action to delete entire recurring series"""
+        series_count = 0
+        instance_count = 0
+        
+        for event in queryset:
+            if event.is_recurring:
+                # Delete parent and all instances
+                instance_count += event.recurring_instances.count()
+                event.recurring_instances.all().delete()
+                event.delete()
+                series_count += 1
+            elif event.parent_event:
+                # Delete just this instance
+                event.delete()
+                instance_count += 1
+        
+        self.message_user(
+            request,
+            f'Deleted {series_count} recurring series and {instance_count} instances.',
+            level='SUCCESS'
+        )
+    delete_recurring_series.short_description = "Delete recurring series and instances"
+    
     def save_model(self, request, obj, form, change):
         if not change:  # Creating new event
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
+        
+        # Auto-generate recurring instances if this is a new recurring event
+        if obj.is_recurring and not change:
+            instances = obj.generate_recurring_events()
+            if instances:
+                self.message_user(
+                    request,
+                    f'Created recurring event with {len(instances)} instances.',
+                    level='SUCCESS'
+                )
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('created_by', 'course')

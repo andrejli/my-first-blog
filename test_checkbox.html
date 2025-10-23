@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekday Checkbox Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>Weekday Checkbox Test</h2>
+        
+        <form method="post">
+            <div class="mb-3">
+                <label class="form-label">Days of Week *</label>
+                <div class="row">
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-check">
+                            <input type="checkbox" name="recurrence_days" value="0" class="form-check-input" id="id_recurrence_days_0">
+                            <label class="form-check-label" for="id_recurrence_days_0">Monday</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-check">
+                            <input type="checkbox" name="recurrence_days" value="1" class="form-check-input" id="id_recurrence_days_1">
+                            <label class="form-check-label" for="id_recurrence_days_1">Tuesday</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-check">
+                            <input type="checkbox" name="recurrence_days" value="2" class="form-check-input" id="id_recurrence_days_2">
+                            <label class="form-check-label" for="id_recurrence_days_2">Wednesday</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-check">
+                            <input type="checkbox" name="recurrence_days" value="3" class="form-check-input" id="id_recurrence_days_3">
+                            <label class="form-check-label" for="id_recurrence_days_3">Thursday</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-check">
+                            <input type="checkbox" name="recurrence_days" value="4" class="form-check-input" id="id_recurrence_days_4">
+                            <label class="form-check-label" for="id_recurrence_days_4">Friday</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-check">
+                            <input type="checkbox" name="recurrence_days" value="5" class="form-check-input" id="id_recurrence_days_5">
+                            <label class="form-check-label" for="id_recurrence_days_5">Saturday</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-check">
+                            <input type="checkbox" name="recurrence_days" value="6" class="form-check-input" id="id_recurrence_days_6">
+                            <label class="form-check-label" for="id_recurrence_days_6">Sunday</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-primary" onclick="testCheckboxes()">Test Selected Days</button>
+            <button type="button" class="btn btn-secondary" onclick="selectWeekdays()">Select Weekdays</button>
+            <button type="button" class="btn btn-secondary" onclick="clearAll()">Clear All</button>
+        </form>
+        
+        <div id="result" class="mt-3"></div>
+    </div>
+
+    <script>
+        function testCheckboxes() {
+            const checkboxes = document.querySelectorAll('input[name="recurrence_days"]:checked');
+            const values = Array.from(checkboxes).map(cb => parseInt(cb.value));
+            const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            const selectedNames = values.map(v => dayNames[v]);
+            
+            document.getElementById('result').innerHTML = `
+                <div class="alert alert-info">
+                    <strong>Selected days:</strong><br>
+                    Values: [${values.join(', ')}]<br>
+                    Names: ${selectedNames.join(', ')}<br>
+                    Comma-separated: "${values.sort().join(',')}"
+                </div>
+            `;
+        }
+        
+        function selectWeekdays() {
+            // Select Monday, Wednesday, Friday (0, 2, 4)
+            const weekdays = [0, 2, 4];
+            document.querySelectorAll('input[name="recurrence_days"]').forEach(cb => {
+                cb.checked = weekdays.includes(parseInt(cb.value));
+            });
+        }
+        
+        function clearAll() {
+            document.querySelectorAll('input[name="recurrence_days"]').forEach(cb => {
+                cb.checked = false;
+            });
+            document.getElementById('result').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

@@ -442,7 +442,7 @@ class TestAssignmentViews:
         
         # Submission should be created
         submission = Submission.objects.get(assignment=assignment, student=student)
-        assert submission.content == 'This is my assignment submission'
+        assert submission.text_submission == 'This is my assignment submission'
         assert submission.status == 'submitted'
 
 

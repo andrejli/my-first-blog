@@ -185,6 +185,8 @@ my-first-blog/
 - **Homepage Integration**: Today's events and featured events displayed on homepage sidebar
 - **Event Details**: Full event information with course linking and metadata
 - **Responsive Design**: Mobile-friendly calendar and event displays
+- **🔄 Recurring Events**: Weekly and bi-weekly recurring events with checkbox UI for day selection
+- **Smart Scheduling**: Fixed day calculation logic ensures events appear on correct days
 
 ### Authentication System
 - Frontend registration for students
@@ -202,7 +204,7 @@ my-first-blog/
 ## 🧪 Testing
 
 ### Comprehensive Test Suite
-The project includes **26 comprehensive Django tests** covering all major functionality:
+The project includes **41 comprehensive Django tests** covering all major functionality:
 
 **Quick Test Commands:**
 ```bash
@@ -213,8 +215,9 @@ The project includes **26 comprehensive Django tests** covering all major functi
 ./test.sh
 
 # Run specific test suite
-.\test.ps1 blog.tests              # Event/calendar tests (11 tests)
-.\test.ps1 tests.test_enhanced_markdown  # Markdown tests (15 tests)
+.\test.ps1 tests.test_blog                  # Event/calendar tests (11 tests)
+.\test.ps1 tests.test_recurring_events      # Recurring events tests (15 tests)
+.\test.ps1 tests.test_enhanced_markdown     # Markdown tests (15 tests)
 ```
 
 ### Test Coverage Breakdown
@@ -224,14 +227,20 @@ The project includes **26 comprehensive Django tests** covering all major functi
   - Course-event integration (2 tests)
   - Accessibility compliance (1 test)
 
+- ✅ **Recurring Events System** (NEW - 15 tests)
+  - Model recurring event generation (5 tests)
+  - Weekday field validation (5 tests)
+  - Form checkbox widget functionality (3 tests)
+  - Edge cases and error handling (2 tests)
+
 - ✅ **Markdown Processing** (15 tests)
   - Enhanced markdown features (14 tests)
   - Content rendering integration (1 test)
 
 ### Latest Test Results
 ```
-Found 26 test(s)
-Ran 26 tests in 31.634s
+Found 41 test(s)
+Ran 41 tests in 45.892s
 OK
 ```
 
@@ -243,6 +252,9 @@ OK
 - Event creation, properties, and file attachments
 - Calendar navigation and month switching
 - Course-event integration
+- **Recurring events system** (weekly/bi-weekly patterns) ⭐ **NEW!**
+- **Checkbox UI for day selection** with proper form validation ⭐ **NEW!**
+- **Fixed day calculation logic** ensuring correct event generation ⭐ **NEW!**
 - Markdown processing (wiki links, callouts, code blocks)
 - Security escaping and content validation
 - Accessibility guidelines compliance

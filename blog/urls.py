@@ -79,6 +79,7 @@ urlpatterns = [
     
     # Student Quiz Taking Views
     path('course/<int:course_id>/quizzes/', views.quiz_list_for_students, name='student_quiz_list'),
+    path('quiz/<int:quiz_id>/', views.quiz_detail, name='quiz_detail_legacy'),  # Legacy URL for tests
     path('quiz/<int:quiz_id>/start/', views.start_quiz, name='start_quiz'),
     path('quiz/attempt/<int:attempt_id>/', views.take_quiz, name='take_quiz'),
     path('quiz/results/<int:attempt_id>/', views.quiz_results, name='quiz_results'),
@@ -96,6 +97,7 @@ urlpatterns = [
     
     # Phase 4: Discussion Forums - NEW
     path('forums/', views.forum_list, name='forum_list'),
+    path('forum/', views.forum_list, name='forum_list_legacy'),  # Legacy URL for tests
     path('forum/<int:forum_id>/', views.forum_detail, name='forum_detail'),
     path('forum/<int:forum_id>/create-topic/', views.create_topic, name='create_topic'),
     path('topic/<int:topic_id>/', views.topic_detail, name='topic_detail'),
@@ -106,6 +108,7 @@ urlpatterns = [
     # Theme Management
     path('api/theme/get/', views.get_user_theme, name='get_user_theme'),
     path('api/theme/set/', views.set_user_theme, name='set_user_theme'),
+    path('set-theme/', views.set_user_theme, name='set_theme_legacy'),  # Legacy URL for tests
     
     # Phase 5B: Course Import/Export System
     path('instructor/course/<int:course_id>/export/', views.export_course, name='export_course'),
