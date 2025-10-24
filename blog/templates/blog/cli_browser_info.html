@@ -1,0 +1,17 @@
+{% if is_cli %}
+<div class="cli-browser-info" style="background-color: #d1ecf1; padding: 10px; margin: 10px 0; border: 1px solid #bee5eb; border-radius: 4px;">
+    <h5 style="margin-top: 0;">📟 CLI Browser Detected: {{ browser.name }}</h5>
+    <p style="margin-bottom: 5px;">
+        <strong>Browser:</strong> {{ browser.name }}<br>
+        <strong>CSS Support:</strong> {{ browser.supports_css|yesno:"Yes,No" }}<br>
+        <strong>JavaScript Support:</strong> {{ browser.supports_js|yesno:"Yes,No" }}<br>
+    </p>
+    <p style="margin-bottom: 0; font-size: 12px; color: #666;">
+        <strong>Tips for CLI browsers:</strong><br>
+        • Use Tab to navigate between links and form fields<br>
+        • Press Enter to follow links or submit forms<br>
+        • Use arrow keys to scroll through content<br>
+        • Look for text summaries of visual elements
+    </p>
+</div>
+{% endif %}

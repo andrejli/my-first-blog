@@ -35,6 +35,16 @@
                                     </div>
                                     <div class="col-md-4">
                                         <div class="progress-info">
+                                            <!-- CLI Browser Progress Summary -->
+                                            <noscript>
+                                            <div style="background-color: #f8f9fa; padding: 8px; margin: 8px 0; border: 1px solid #dee2e6; border-radius: 4px;">
+                                                <strong>Course Progress Summary:</strong><br>
+                                                Progress: {{ item.completed_lessons }} of {{ item.total_lessons }} lessons completed<br>
+                                                Completion: {{ item.progress_percentage|floatformat:0 }}%<br>
+                                                Status: {% if item.progress_percentage == 100 %}✅ Course Completed{% elif item.progress_percentage > 0 %}🔄 In Progress{% else %}📚 Not Started{% endif %}
+                                            </div>
+                                            </noscript>
+                                            
                                             <div class="progress-stats">
                                                 <span class="completed">{{ item.completed_lessons }}</span> / 
                                                 <span class="total">{{ item.total_lessons }}</span> lessons

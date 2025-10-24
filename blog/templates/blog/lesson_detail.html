@@ -36,6 +36,14 @@
 
                 <!-- Progress Indicator -->
                 <div class="lesson-progress">
+                    <!-- CLI Browser Progress Summary -->
+                    <noscript>
+                    <div style="background-color: #fff3cd; padding: 10px; margin: 10px 0; border: 1px solid #ffeaa7; border-radius: 4px;">
+                        <strong>Course Progress:</strong> Lesson {{ lesson_number }} of {{ total_lessons }} 
+                        ({{ lesson_number|mul:100|div:total_lessons|floatformat:0 }}% through course)
+                    </div>
+                    </noscript>
+                    
                     <div class="progress">
                         <div class="progress-bar" role="progressbar" 
                              style="width: {{ lesson_number|mul:100|div:total_lessons }}%">
@@ -50,6 +58,17 @@
                     {% if lesson.video_url %}
                     <div class="lesson-video">
                         <h4><i class="glyphicon glyphicon-play-circle"></i> Video Content</h4>
+                        
+                        <!-- CLI Browser Video Alternative -->
+                        <noscript>
+                        <div style="background-color: #f8d7da; padding: 10px; margin: 10px 0; border: 1px solid #f5c6cb; border-radius: 4px;">
+                            <strong>🎥 Video Content Available:</strong><br>
+                            This lesson includes video content that cannot be displayed in CLI browsers.<br>
+                            Video URL: <a href="{{ lesson.video_url }}" target="_blank">{{ lesson.video_url }}</a><br>
+                            <em>Tip: Copy the URL and open it in a regular browser to view the video.</em>
+                        </div>
+                        </noscript>
+                        
                         <div class="video-container">
                             {% if 'youtube.com' in lesson.video_url or 'youtu.be' in lesson.video_url %}
                                 <!-- YouTube embed -->

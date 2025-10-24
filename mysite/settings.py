@@ -44,14 +44,34 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'blog.apps.BlogConfig',
+    
+    # Security monitoring apps (install these packages first)
+    # 'django_otp',
+    # 'django_otp.plugins.otp_totp', 
+    # 'django_otp.plugins.otp_static',
+    # 'corsheaders',
+    # 'csp',
 )
 
 MIDDLEWARE = [
+    # Core Django middleware
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware', 
+    
+    # Security monitoring middleware (uncomment after installing dependencies)
+    # 'blog.security_middleware.SecurityMonitoringMiddleware',
+    
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    
+    # Tor detection middleware (uncomment after installing dependencies)  
+    # 'blog.security_middleware.TorDetectionMiddleware',
+    
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    
+    # Authentication monitoring middleware (uncomment after installing dependencies)
+    # 'blog.security_middleware.AuthenticationMonitoringMiddleware',
+    
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -150,3 +170,76 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/courses/'
 LOGOUT_REDIRECT_URL = '/'
+
+# =============================================================================
+# SECURITY MONITORING CONFIGURATION
+# =============================================================================
+
+# Basic security settings (ready to use)
+SECURITY_RATE_LIMIT_REQUESTS = 100
+SECURITY_RATE_LIMIT_WINDOW = 3600
+SECURITY_MAX_FAILED_ATTEMPTS = 5
+SECURITY_LOCKOUT_DURATION = 3600
+SECURITY_TOR_POLICY = 'log'
+SECURITY_SCAN_UPLOADS = True
+SECURITY_DASHBOARD_ENABLED = True
+
+# Enhanced password validation
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 12,  # Enhanced security
+        }
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
+
+# Session security (enhanced)
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Strict'
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_AGE = 3600
+
+# CSRF protection (enhanced)
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Strict'
+
+# Additional security headers
+X_FRAME_OPTIONS = 'DENY'
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+# =============================================================================
+# PRODUCTION SECURITY NOTES
+# =============================================================================
+
+# For production, also set:
+# SECURE_SSL_REDIRECT = True
+# SESSION_COOKIE_SECURE = True  
+# CSRF_COOKIE_SECURE = True
+# SECURE_HSTS_SECONDS = 31536000
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# SECURE_HSTS_PRELOAD = True
+
+# =============================================================================
+# SECURITY PACKAGES TO INSTALL
+# =============================================================================
+
+# Run these commands to install security dependencies:
+# pip install django-otp pyotp qrcode[pil]
+# pip install django-ratelimit 
+# pip install django-cors-headers
+# pip install django-csp
+# pip install rich tabulate
+# pip install django-ipware user-agents
+# pip install geoip2 python-whois
+
+# After installing, uncomment the middleware and apps sections above

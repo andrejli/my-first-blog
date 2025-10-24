@@ -569,3 +569,11 @@ class EventAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('created_by', 'course')
 
+
+# =============================================================================
+# SECURITY MONITORING ADMIN - Import from separate admin file
+# =============================================================================
+
+# Import security admin classes (they self-register)
+from .admin_security import *
+

@@ -48,6 +48,17 @@
                                     </div>
                                     <div class="col-md-5">
                                         <div class="course-stats">
+                                            <!-- CLI Browser Course Statistics -->
+                                            <noscript>
+                                            <div style="background-color: #e6f3ff; padding: 8px; margin: 8px 0; border: 1px solid #b3d9ff; border-radius: 4px;">
+                                                <strong>Course Statistics:</strong><br>
+                                                Students: {{ stat.enrolled_count }} of {{ stat.course.max_students }} enrolled<br>
+                                                Capacity: {{ stat.capacity_percentage|floatformat:0 }}% full<br>
+                                                Lessons: {{ stat.total_lessons }} available<br>
+                                                {% if stat.total_assignments > 0 %}Assignments: {{ stat.total_assignments }}{% if stat.pending_grading > 0 %} ({{ stat.pending_grading }} need grading){% endif %}<br>{% endif %}
+                                            </div>
+                                            </noscript>
+                                            
                                             <div class="enrollment-stats">
                                                 <div class="stat-box">
                                                     <span class="stat-number">{{ stat.enrolled_count }}</span>

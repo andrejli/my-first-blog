@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 {% load static %}
+{% load cli_browser_tags %}
 <html lang="en"{% if user_theme != 'terminal-amber' %} data-theme="{{ user_theme }}"{% endif %}>
 <head>
     <meta charset="UTF-8">
@@ -18,10 +19,72 @@
 </head>
 <body>
     {% csrf_token %}
+    <!-- CLI Browser Navigation - Accessible for Links2, w3m, ELinks, Lynx -->
+    <noscript>
+    <div class="cli-navigation" style="background-color: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc;">
+        <h4>CLI Browser Navigation</h4>
+        <p><strong>FORTIS AURIS LMS</strong> - Main Navigation:</p>
+        <ul style="list-style-type: none; padding: 0; margin: 10px 0;">
+            <li style="margin: 5px 0;">
+                <a href="{% url 'landing' %}">[HOME]</a> - Main dashboard and course overview
+            </li>
+            <li style="margin: 5px 0;">
+                <a href="{% url 'event_calendar' %}">[CALENDAR]</a> - View all events and schedules
+            </li>
+            {% if user.is_authenticated %}
+                <li style="margin: 5px 0;">
+                    <strong>Logged in as: {{ user.username }}</strong>
+                </li>
+                <li style="margin: 5px 0;">
+                    <a href="{% url 'forum_list' %}">[FORUMS]</a> - Discussion forums
+                </li>
+                <li style="margin: 5px 0;">
+                    <a href="{% url 'all_blogs' %}">[BLOGS]</a> - All user blogs
+                </li>
+                <li style="margin: 5px 0;">
+                    <a href="{% url 'my_blog_dashboard' %}">[MY BLOG]</a> - Personal blog management
+                </li>
+                {% if user.is_staff and user.is_superuser %}
+                    <li style="margin: 5px 0;">
+                        <a href="/admin/">[ADMIN]</a> - Site administration
+                    </li>
+                {% else %}
+                    {% if user.userprofile.role == 'instructor' %}
+                        <li style="margin: 5px 0;">
+                            <a href="{% url 'instructor_dashboard' %}">[DASHBOARD]</a> - Instructor control panel
+                        </li>
+                    {% else %}
+                        <li style="margin: 5px 0;">
+                            <a href="{% url 'student_dashboard' %}">[DASHBOARD]</a> - Student progress and courses
+                        </li>
+                    {% endif %}
+                {% endif %}
+                <li style="margin: 5px 0;">
+                    <a href="{% url 'logout' %}">[LOGOUT]</a> - Sign out of system
+                </li>
+            {% else %}
+                <li style="margin: 5px 0;">
+                    <a href="{% url 'login' %}">[LOGIN]</a> - Sign in to access courses
+                </li>
+                <li style="margin: 5px 0;">
+                    <a href="{% url 'register' %}">[REGISTER]</a> - Create new account
+                </li>
+            {% endif %}
+        </ul>
+        <hr style="margin: 10px 0;">
+    </div>
+    </noscript>
+
+    <!-- CLI Browser Information Widget -->
+    {% cli_browser_info %}
+
     <div class="page-header">
         <h1><a href="{% url 'landing' %}">⚡ FORTIS AURIS LMS</a></h1>
         <div class="top-menu">
-            <span class="zulu-time">ZULU: <span id="watch">--:--:--:---</span></span>
+            <span class="zulu-time">
+                ZULU: <span id="watch">--:--:--:---</span>
+                <noscript>({{ "now"|date:"H:i:s" }} UTC)</noscript>
+            </span>
             <!-- Public Calendar Link - Available to Everyone -->
             <a href="{% url 'event_calendar' %}" class="btn btn-warning"><i class="glyphicon glyphicon-calendar"></i> calendar</a>
             {% if user.is_authenticated %}

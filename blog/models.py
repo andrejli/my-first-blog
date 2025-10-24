@@ -1600,3 +1600,25 @@ class Event(models.Model):
             'is_parent': self.is_recurring_parent
         }
 
+
+# =============================================================================
+# SECURITY MONITORING MODELS - Import from separate file
+# =============================================================================
+
+# Import all security models from models_security.py
+from .models_security import (
+    SecurityEvent, SystemMetrics, ThreatIntelligence, 
+    AuditLog, AlertRule
+)
+
+# Add to __all__ for proper model discovery
+__all__ = [
+    'UserProfile', 'SiteTheme', 'UserThemePreference', 'Course', 'Enrollment',
+    'Lesson', 'CourseMaterial', 'Assignment', 'Submission', 'Progress', 'Post',
+    'Quiz', 'Question', 'Answer', 'QuizAttempt', 'QuizResponse', 'Announcement',
+    'AnnouncementRead', 'Forum', 'Topic', 'ForumPost', 'BlogPost', 'BlogComment',
+    'EventType', 'Event', 
+    # Security models
+    'SecurityEvent', 'SystemMetrics', 'ThreatIntelligence', 'AuditLog', 'AlertRule'
+]
+

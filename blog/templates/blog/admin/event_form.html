@@ -86,6 +86,16 @@
                                 </div>
                             </div>
                             
+                            <!-- CLI Browser Color Input Instructions -->
+                            <noscript>
+                            <div style="background-color: #d1ecf1; padding: 8px; margin: 8px 0; border: 1px solid #bee5eb; border-radius: 4px;">
+                                <strong>CLI Browser Color Input:</strong><br>
+                                • Enter hex color codes manually (e.g., #FF5733, #3498db)<br>
+                                • Color pickers won't work - type colors directly<br>
+                                • Leave blank to use default event type colors
+                            </div>
+                            </noscript>
+                            
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="{{ form.custom_color.id_for_label }}" class="form-label">Custom Color (Optional)</label>
@@ -98,7 +108,7 @@
                                     {% if form.custom_color.errors %}
                                         <div class="text-danger small">{{ form.custom_color.errors.0 }}</div>
                                     {% endif %}
-                                    <small class="form-text text-muted">Override event type color</small>
+                                    <small class="form-text text-muted">Override event type color (e.g., #FF5733)</small>
                                 </div>
                                 
                                 <div class="col-md-6 mb-3">
@@ -186,6 +196,18 @@
                                 
                                 <div class="mb-3" id="recurrence-days-field" style="display: none;">
                                     <label class="form-label">Days of Week *</label>
+                                    
+                                    <!-- CLI Browser Instructions -->
+                                    <noscript>
+                                    <div style="background-color: #e8f4fd; padding: 8px; margin: 8px 0; border: 1px solid #bee5eb; border-radius: 4px;">
+                                        <strong>CLI Browser Instructions:</strong><br>
+                                        • Use Tab to navigate between checkboxes<br>
+                                        • Press Space to check/uncheck each day<br>
+                                        • Select multiple days for weekly events<br>
+                                        • Monday=0, Tuesday=1, ..., Sunday=6
+                                    </div>
+                                    </noscript>
+                                    
                                     <div class="row">
                                         {% for choice in form.recurrence_days %}
                                             <div class="col-md-6 col-lg-4">
@@ -348,6 +370,17 @@
                         <!-- File Uploads -->
                         <div class="form-section mb-4">
                             <h6 class="text-info mb-3"><i class="fas fa-file-upload"></i> Files</h6>
+                            
+                            <!-- CLI Browser File Upload Instructions -->
+                            <noscript>
+                            <div style="background-color: #fff3cd; padding: 8px; margin: 8px 0; border: 1px solid #ffeaa7; border-radius: 4px;">
+                                <strong>CLI Browser File Upload:</strong><br>
+                                • Tab to file input field and press Enter<br>
+                                • Type full file path or use file browser<br>
+                                • File uploads work without preview in CLI browsers<br>
+                                • Verify file selection before form submission
+                            </div>
+                            </noscript>
                             
                             <div class="row">
                                 <div class="col-md-6 mb-3">
