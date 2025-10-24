@@ -1131,7 +1131,7 @@ The Terminal LMS now features a **comprehensive enhanced markdown system** with 
 - `markdown>=3.5.0` - Core markdown processing
 - `pygments>=2.16.0` - Syntax highlighting for code blocks
 - `pymdown-extensions>=10.3.0` - Advanced markdown extensions
-- `markdown-math>=0.8` - Math equation support
+- ~~`markdown-math>=0.8`~~ - **REMOVED** (Math handled by MathJax frontend)
 
 **📁 Files Created/Modified:**
 - `blog/templatetags/markdown_extras.py` - Custom markdown processing engine

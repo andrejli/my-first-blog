@@ -82,7 +82,13 @@ venv\Scripts\activate
 source venv/bin/activate
 
 # Install dependencies
-pip install -r requirements.txt
+# Choose based on your Python version:
+pip install -r requirements.txt           # Python 3.9-3.12 (recommended)
+# pip install -r requirements-python313.txt  # Python 3.13+ (Debian 13, etc.)
+# pip install -r requirements-legacy.txt     # Older environments
+
+# For Debian 13 / Python 3.13 users:
+# See INSTALLATION.md for detailed instructions
 
 # Run database migrations
 python manage.py migrate

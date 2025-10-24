@@ -1,8 +1,6 @@
-# Django LMS - Python Package Requirements
-# Install with: pip install -r requirements.txt
-#
-# This is an ultralight Learning Management System built with Django
-# For development and educational purposes
+# Django LMS - Legacy Python Requirements
+# For Python 3.9-3.12 environments
+# Install with: pip install -r requirements-legacy.txt
 
 # Core Django Framework
 Django>=5.2.0,<6.0.0
@@ -17,7 +15,10 @@ django-crispy-forms>=2.0
 markdown>=3.5.0
 pygments>=2.16.0
 pymdown-extensions>=10.3.0
-# Note: Math equations handled by MathJax frontend, not markdown-math
+
+# Math support for older environments (optional)
+# Only install if you need server-side math processing
+# markdown-math>=0.8
 
 # Development and testing (optional)
 # Uncomment the following for development:

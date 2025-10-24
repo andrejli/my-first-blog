@@ -1,0 +1,33 @@
+# Django LMS - Python 3.13 Compatible Requirements
+# For Debian 13 and other modern environments
+# Install with: pip install -r requirements-python313.txt
+
+# Core Django Framework
+Django>=5.2.0,<6.0.0
+
+# Image processing for user profiles and course content
+Pillow>=10.0.0
+
+# Forms enhancement
+django-crispy-forms>=2.0
+
+# Enhanced Markdown Support with Obsidian Compatibility
+# All packages compatible with Python 3.13
+markdown>=3.6.0
+pygments>=2.17.0
+pymdown-extensions>=10.7.0
+
+# Note: Math equations are handled by MathJax in the frontend
+# The markdown-math package is not needed and often incompatible with newer Python
+
+# Development and testing (optional)
+# Uncomment the following for development:
+pytest>=8.0.0
+pytest-django>=4.8.0
+coverage>=7.4.0
+
+# Production deployment
+gunicorn>=21.2.0
+psycopg2-binary>=2.9.9    # For PostgreSQL
+whitenoise>=6.6.0         # For static files
+django-environ>=0.11.2    # For environment variables
