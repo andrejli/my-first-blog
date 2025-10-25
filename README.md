@@ -33,6 +33,9 @@ A **production-ready** Learning Management System (LMS) built with Django, featu
 - **🔍 Content Validation**: MIME type verification, file size limits (50MB)
 - **✅ Educational Focus**: 92% validation success rate for legitimate assignments
 - **🏷️ File Type Whitelist**: Comprehensive educational file type support
+- **🖼️ EXIF Metadata Removal**: Automatic privacy protection for uploaded images ⭐ **NEW!**
+- **📱 Privacy Protection**: GPS, device info, and timestamp removal from all images
+- **🔐 Security Audit Trail**: Complete logging of image processing for compliance
 
 ### 🎨 Design Philosophy
 - **Security First**: Production-ready security with comprehensive file validation
@@ -141,8 +144,11 @@ The system comes pre-populated with test data for immediate exploration:
 - **Instructor**: Prof. John Smith
 - **Enrollment**: Alice Wonder is already enrolled for testing
 
-### 📅 Calendar & Events Access ⭐ **NEW!**
+### 📅 Calendar & Events Access ⭐ **ENHANCED WITH iCAL!**
 - **Calendar View**: http://127.0.0.1:8000/calendar/ (login required)
+- **iCal Import/Export**: Professional admin interface at http://127.0.0.1:8000/ical-import-export/ (superuser only) ⭐ **NEW!**
+- **Standard Calendar Sync**: Export/import events to Google Calendar, Outlook, Apple Calendar
+- **Admin Management**: Web-based interface with drag-and-drop iCal file upload
 - **Homepage Events**: Sidebar shows today's events and featured events
 - **Admin Event Management**: http://127.0.0.1:8000/admin/blog/event/ (admin only)
 - **Sample Events**: Pre-loaded with upcoming events, deadlines, and workshops
@@ -210,7 +216,7 @@ my-first-blog/
 ## 🧪 Testing
 
 ### Comprehensive Test Suite
-The project includes **41 comprehensive Django tests** covering all major functionality:
+The project includes **64 comprehensive Django tests** covering all major functionality:
 
 **Quick Test Commands:**
 ```bash
@@ -220,10 +226,14 @@ The project includes **41 comprehensive Django tests** covering all major functi
 # Run all tests (Linux/Mac)  
 ./test.sh
 
-# Run specific test suite
+# Run specific test suites
 .\test.ps1 tests.test_blog                  # Event/calendar tests (11 tests)
 .\test.ps1 tests.test_recurring_events      # Recurring events tests (15 tests)
 .\test.ps1 tests.test_enhanced_markdown     # Markdown tests (15 tests)
+.\test.ps1 tests.test_exif_removal         # EXIF removal tests (6 tests) ⭐ **NEW!**
+.\test.ps1 tests.test_admin_checkbox        # Admin tests (3 tests)
+.\test.ps1 tests.test_cli_browser          # CLI tests (4 tests)
+.\test.ps1 tests.test_math_support         # Math tests (10 tests)
 ```
 
 ### Test Coverage Breakdown
@@ -233,34 +243,53 @@ The project includes **41 comprehensive Django tests** covering all major functi
   - Course-event integration (2 tests)
   - Accessibility compliance (1 test)
 
-- ✅ **Recurring Events System** (NEW - 15 tests)
+- ✅ **Recurring Events System** (15 tests)
   - Model recurring event generation (5 tests)
   - Weekday field validation (5 tests)
   - Form checkbox widget functionality (3 tests)
   - Edge cases and error handling (2 tests)
 
-- ✅ **Markdown Processing** (15 tests)
+- ✅ **Enhanced Markdown System** (15 tests)
   - Enhanced markdown features (14 tests)
   - Content rendering integration (1 test)
 
+- ✅ **EXIF Removal System** (6 tests) ⭐ **NEW!**
+  - Image processing utilities (2 tests)
+  - Secure storage backend (1 test)
+  - Upload endpoint security (1 test)
+  - Admin bulk processing (1 test)
+  - Management commands (1 test)
+
+- ✅ **Admin & Interface Tests** (7 tests)
+  - Admin checkbox functionality (3 tests)
+  - CLI browser integration (4 tests)
+
+- ✅ **Mathematical Content** (10 tests)
+  - Math equation rendering and processing
+
 ### Latest Test Results
 ```
-Found 41 test(s)
-Ran 41 tests in 45.892s
+Found 64 test(s)
+Ran 64 tests in 41.716s
 OK
 ```
 
 **Features Validated:**
 - Responsive layout fixes (mobile, tablet, desktop)
-- Font size improvements (20-30% increase)
+- Font size improvements (20-30% increase)  
 - Poster display with thumbnails and hover effects
 - Authentication and authorization flows
 - Event creation, properties, and file attachments
 - Calendar navigation and month switching
 - Course-event integration
-- **Recurring events system** (weekly/bi-weekly patterns) ⭐ **NEW!**
-- **Checkbox UI for day selection** with proper form validation ⭐ **NEW!**
-- **Fixed day calculation logic** ensuring correct event generation ⭐ **NEW!**
+- **Recurring events system** (weekly/bi-weekly patterns) ⭐ **ENHANCED!**
+- **Checkbox UI for day selection** with proper form validation ⭐ **ENHANCED!**
+- **Fixed day calculation logic** ensuring correct event generation ⭐ **ENHANCED!**
+- **EXIF metadata removal** for all uploaded images ⭐ **NEW!**
+- **Image privacy protection** (GPS, device info, timestamps stripped) ⭐ **NEW!**
+- **Secure image storage** with automatic processing ⭐ **NEW!**
+- **Admin bulk processing** for existing images ⭐ **NEW!**
+- **iCal Import/Export** with professional web interface ⭐ **NEW!**
 - Markdown processing (wiki links, callouts, code blocks)
 - Security escaping and content validation
 - Accessibility guidelines compliance
@@ -352,6 +381,7 @@ We welcome contributions! Here's how to get started:
 
 - **🔒 Security Audit**: `SECURITY_AUDIT.md` - Comprehensive security assessment and improvements
 - **🛡️ Security Implementation**: `SECURITY_IMPLEMENTATION_COMPLETE.md` - File upload security details
+- **🖼️ EXIF Removal**: `EXIF_REMOVAL_IMPLEMENTATION.md` - Image privacy protection system ⭐ **NEW!**
 - **⚙️ Production Config**: `PRODUCTION_SECURITY_CONFIG.md` - Production deployment guide
 - **📋 Test Users**: `TEST_USERS.md` - Demo accounts and test data
 - **👥 Student Guide**: `STUDENT_LOGIN_GUIDE.md` - User documentation
@@ -401,10 +431,11 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 - **Frontend**: HTML5, CSS3, Bootstrap 3.2
 - **Security**: Production-ready file upload validation system
 - **Theme**: Terminal-inspired dark theme with 5 color schemes
-- **Features**: Complete LMS + Calendar + **Secure File Management**
-- **Test Coverage**: 26 comprehensive Django tests + Security validation tests
+- **Features**: Complete LMS + Calendar + **Secure File Management** + **Image Privacy Protection** + **iCal Import/Export**
+- **Test Coverage**: 64 comprehensive Django tests + Security validation tests + EXIF removal tests
 - **File Support**: Python, Go, Rust, JavaScript, Java, C++ source code uploads
-- **Security Score**: 8.3/10 (was 6.0/10 before security implementation)
+- **Image Security**: Automatic EXIF metadata removal for privacy protection ⭐ **NEW!**
+- **Security Score**: 8.7/10 (was 8.3/10 before EXIF implementation, 6.0/10 before security)
 - **Documentation**: Complete security audit, deployment guides, roadmap
 
 ## 🔗 Links

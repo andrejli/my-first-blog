@@ -1,8 +1,10 @@
 from django.contrib import admin
 from django import forms
 from django.contrib.auth.models import User
+from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from .models import (
-    Post, Course, UserProfile, Enrollment, Lesson, Progress, 
+    Post, BlogPost, Course, UserProfile, Enrollment, Lesson, Progress, 
     CourseMaterial, Assignment, Submission,
     Quiz, Question, Answer, QuizAttempt, QuizResponse,
     Announcement, AnnouncementRead,
@@ -10,6 +12,8 @@ from .models import (
     Event
 )
 from .forms import WeekdayMultipleChoiceField
+from .utils.image_processing import process_uploaded_image, get_image_info
+import logging
 
 
 # Custom form for Course to handle instructor selection
@@ -426,14 +430,147 @@ class UserThemePreferenceAdmin(admin.ModelAdmin):
         return super().get_queryset(request).select_related('user', 'theme')
 
 
+# BlogPost Administration with EXIF processing
+@admin.register(BlogPost)
+class BlogPostAdmin(admin.ModelAdmin):
+    list_display = ['title', 'author', 'status', 'created_date', 'published_date', 'has_featured_image', 'image_security_status']
+    list_filter = ['status', 'created_date', 'published_date', 'author']
+    search_fields = ['title', 'content', 'excerpt', 'author__username', 'author__first_name', 'author__last_name']
+    prepopulated_fields = {'slug': ('title',)}
+    ordering = ['-created_date']
+    date_hierarchy = 'created_date'
+    
+    fieldsets = (
+        ('Content', {
+            'fields': ('title', 'slug', 'author', 'content', 'excerpt')
+        }),
+        ('Publication', {
+            'fields': ('status', 'featured_image', 'published_date'),
+            'description': 'Featured images automatically have EXIF metadata removed for privacy protection.'
+        }),
+        ('Settings', {
+            'fields': ('allow_comments',),
+            'classes': ('collapse',)
+        }),
+        ('Metadata', {
+            'fields': ('view_count', 'created_date', 'updated_date'),
+            'classes': ('collapse',),
+            'description': 'Read-only fields for tracking and statistics.'
+        })
+    )
+    
+    readonly_fields = ['created_date', 'updated_date', 'view_count']
+    actions = ['process_featured_images', 'make_published', 'make_draft']
+    
+    def has_featured_image(self, obj):
+        """Display if blog post has a featured image."""
+        return bool(obj.featured_image)
+    has_featured_image.boolean = True
+    has_featured_image.short_description = 'Featured Image'
+    
+    def image_security_status(self, obj):
+        """Display security status of featured image."""
+        if not obj.featured_image:
+            return format_html('<span style="color: gray;">No Image</span>')
+        
+        try:
+            # Check if image has EXIF data
+            obj.featured_image.seek(0)
+            image_info = get_image_info(obj.featured_image)
+            if image_info.get('has_exif', False):
+                return format_html('<span style="color: red;">⚠️ Has EXIF</span>')
+            else:
+                return format_html('<span style="color: green;">✓ Clean</span>')
+        except Exception:
+            return format_html('<span style="color: orange;">Unknown</span>')
+    image_security_status.short_description = 'Image Security'
+    
+    def process_featured_images(self, request, queryset):
+        """Admin action to process featured images and remove EXIF data."""
+        processed_count = 0
+        error_count = 0
+        
+        for blog_post in queryset:
+            if blog_post.featured_image:
+                try:
+                    # Process the image
+                    blog_post.featured_image.seek(0)
+                    processed_image, processing_info = process_uploaded_image(
+                        blog_post.featured_image, 
+                        strip_exif=True
+                    )
+                    
+                    if processing_info.get('exif_removed', False):
+                        # Save the processed image
+                        blog_post.featured_image.save(
+                            blog_post.featured_image.name,
+                            processed_image,
+                            save=True
+                        )
+                        processed_count += 1
+                        
+                        # Log the processing
+                        logger = logging.getLogger(__name__)
+                        logger.info(f"Admin EXIF removal: {blog_post.title} (ID: {blog_post.id}) processed by {request.user.username}")
+                    
+                except Exception as e:
+                    error_count += 1
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Failed to process featured image for {blog_post.title}: {str(e)}")
+        
+        if processed_count > 0:
+            self.message_user(
+                request,
+                f'Successfully processed {processed_count} featured images. EXIF metadata removed.',
+                level='SUCCESS'
+            )
+        if error_count > 0:
+            self.message_user(
+                request,
+                f'Failed to process {error_count} images. Check logs for details.',
+                level='WARNING'
+            )
+        if processed_count == 0 and error_count == 0:
+            self.message_user(
+                request,
+                'No images found to process or all images are already clean.',
+                level='INFO'
+            )
+    
+    process_featured_images.short_description = "Remove EXIF metadata from featured images"
+    
+    def make_published(self, request, queryset):
+        """Admin action to publish selected blog posts."""
+        updated = queryset.update(status='published')
+        self.message_user(
+            request,
+            f'{updated} blog posts were successfully published.',
+            level='SUCCESS'
+        )
+    make_published.short_description = "Mark selected posts as published"
+    
+    def make_draft(self, request, queryset):
+        """Admin action to set selected blog posts as draft."""
+        updated = queryset.update(status='draft')
+        self.message_user(
+            request,
+            f'{updated} blog posts were set to draft status.',
+            level='SUCCESS'
+        )
+    make_draft.short_description = "Mark selected posts as draft"
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('author')
+
+
 # Event Administration
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
     form = EventAdminForm  # Use custom form for checkboxes
-    list_display = ['title', 'event_type', 'start_date', 'end_date', 'priority', 'visibility', 'is_published', 'is_featured', 'is_recurring_display', 'recurring_count', 'has_poster', 'has_materials', 'created_by', 'course']
-    list_filter = ['event_type', 'priority', 'visibility', 'is_published', 'is_featured', 'is_recurring', 'recurrence_pattern', 'start_date', 'created_by']
+    list_display = ['title', 'event_type', 'start_date', 'end_date', 'priority', 'visibility', 'is_published', 'is_featured', 'has_poster', 'has_materials', 'created_by', 'course']
+    list_filter = ['event_type', 'priority', 'visibility', 'is_published', 'is_featured', 'start_date', 'created_by']
     search_fields = ['title', 'description']
-    readonly_fields = ['created_at', 'updated_at', 'recurring_info_display']
+    readonly_fields = ['created_at', 'updated_at']
     date_hierarchy = 'start_date'
     
     fieldsets = [
@@ -443,22 +580,17 @@ class EventAdmin(admin.ModelAdmin):
         ('Date & Time', {
             'fields': ('start_date', 'end_date', 'all_day')
         }),
-        ('Recurring Events', {
-            'fields': ('is_recurring', 'recurrence_pattern', 'recurrence_interval', 'recurrence_days', 'recurrence_end_date', 'max_occurrences', 'exclude_holidays', 'exclude_weekends'),
-            'classes': ('collapse',),
-            'description': 'Configure recurring event patterns for course schedules'
-        }),
         ('Files & Materials', {
             'fields': ('poster', 'materials'),
             'description': 'Upload event poster and materials (admin only)'
         }),
-        ('Visibility', {
-            'fields': ('is_published', 'is_featured', 'course')
-        }),
-        ('Advanced', {
-            'fields': ('parent_event', 'occurrence_date', 'recurring_info_display'),
+        ('Course Integration', {
+            'fields': ('course', 'linked_lesson', 'obsidian_link'),
             'classes': ('collapse',),
-            'description': 'Advanced recurring event settings (mostly read-only)'
+            'description': 'Link event to course content'
+        }),
+        ('Visibility & Publishing', {
+            'fields': ('is_published', 'is_featured')
         }),
         ('Metadata', {
             'fields': ('created_by', 'created_at', 'updated_at'),
@@ -466,7 +598,7 @@ class EventAdmin(admin.ModelAdmin):
         }),
     ]
     
-    actions = ['generate_recurring_instances', 'delete_recurring_series']
+    actions = ['process_poster_images', 'export_to_ical', 'show_import_instructions', 'go_to_import_export_interface']
     
     def has_poster(self, obj):
         return obj.has_poster
@@ -478,78 +610,171 @@ class EventAdmin(admin.ModelAdmin):
     has_materials.boolean = True
     has_materials.short_description = 'Materials'
     
-    def is_recurring_display(self, obj):
-        if obj.is_recurring:
-            return f"🔄 {obj.recurrence_pattern.title()}"
-        elif obj.parent_event:
-            return f"🔗 Instance of #{obj.parent_event.id}"
-        return "❌ Single"
-    is_recurring_display.short_description = 'Recurring'
+    def go_to_import_export_interface(self, request, queryset=None):
+        """Redirect to dedicated import/export interface."""
+        from django.shortcuts import redirect
+        return redirect('ical_import_export_page')
+    go_to_import_export_interface.short_description = "🚀 Go to iCal Import/Export Interface"
     
-    def recurring_count(self, obj):
-        if obj.is_recurring:
-            count = obj.recurring_instances.count()
-            return f"{count} instances" if count else "No instances"
-        elif obj.parent_event:
-            return f"Parent: #{obj.parent_event.id}"
-        return "-"
-    recurring_count.short_description = 'Instances'
-    
-    def recurring_info_display(self, obj):
-        if obj.is_recurring:
-            info = obj.get_series_info()
-            if info:
-                lines = [
-                    f"Pattern: {info['pattern']}",
-                    f"Total instances: {info['total_instances']}",
-                ]
-                if info['end_date']:
-                    lines.append(f"Ends: {info['end_date'].strftime('%Y-%m-%d')}")
-                if info['max_occurrences']:
-                    lines.append(f"Max occurrences: {info['max_occurrences']}")
-                return "\n".join(lines)
-        elif obj.parent_event:
-            return f"Instance of recurring series: {obj.parent_event.title}"
-        return "Not a recurring event"
-    recurring_info_display.short_description = 'Recurring Info'
-    
-    def generate_recurring_instances(self, request, queryset):
-        """Admin action to generate recurring instances"""
-        count = 0
-        for event in queryset.filter(is_recurring=True, parent_event=None):
-            instances = event.generate_recurring_events()
-            count += len(instances)
+    def show_import_instructions(self, request, queryset=None):
+        """Show import instructions without requiring event selection."""
+        from django.contrib import messages
+        
+        instructions = """
+        📅 EASY iCal Import/Export - Multiple Options Available:
+        
+        🌟 OPTION 1: WEB INTERFACE (Recommended)
+        Click "🚀 Go to iCal Import/Export Interface" action above for easy web-based import/export
+        
+        🔧 OPTION 2: Management Commands
+        Open terminal in project folder and run:
+        
+        📥 IMPORT:
+        python manage.py import_ical your_file.ics --dry-run --creator=admin
+        python manage.py import_ical your_file.ics --creator=admin --default-course=CS101
+        
+        📤 EXPORT: 
+        python manage.py export_ical events.ics --published-only
+        python manage.py export_ical events.ics --course=CS101 --start-date=2024-01-01
+        
+        ✅ SUPPORTED: Google Calendar, Outlook, Apple Calendar
+        🔍 FEATURES: Duplicate detection, course assignment, date filtering
+        """
         
         self.message_user(
             request,
-            f'Successfully generated {count} recurring event instances.',
+            instructions,
+            level=messages.INFO
+        )
+        
+        # Additional success message
+        self.message_user(
+            request,
+            '💡 Use the web interface for the easiest import/export experience!',
+            level=messages.SUCCESS
+        )
+    show_import_instructions.short_description = "📋 Show iCal Import/Export Instructions"
+    
+    def export_to_ical(self, request, queryset):
+        """Export selected events to iCal format."""
+        import io
+        from django.http import HttpResponse
+        from datetime import datetime
+        
+        # Create iCal content
+        ical_content = self._create_ical_content(queryset)
+        
+        # Create HTTP response
+        response = HttpResponse(ical_content, content_type='text/calendar')
+        response['Content-Disposition'] = f'attachment; filename="events_{datetime.now().strftime("%Y%m%d")}.ics"'
+        
+        self.message_user(
+            request,
+            f'Exported {queryset.count()} events to iCal format.',
             level='SUCCESS'
         )
-    generate_recurring_instances.short_description = "Generate recurring instances for selected events"
+        
+        return response
+    export_to_ical.short_description = "📤 Export selected events to iCal (.ics)"
     
-    def delete_recurring_series(self, request, queryset):
-        """Admin action to delete entire recurring series"""
-        series_count = 0
-        instance_count = 0
+    def _create_ical_content(self, queryset):
+        """Create iCal content from event queryset."""
+        from datetime import datetime
+        
+        lines = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//FORTIS AURIS LMS//Event Calendar//EN',
+            'CALSCALE:GREGORIAN',
+            'METHOD:PUBLISH',
+        ]
         
         for event in queryset:
-            if event.is_recurring:
-                # Delete parent and all instances
-                instance_count += event.recurring_instances.count()
-                event.recurring_instances.all().delete()
-                event.delete()
-                series_count += 1
-            elif event.parent_event:
-                # Delete just this instance
-                event.delete()
-                instance_count += 1
+            # Format dates for iCal
+            start_dt = event.start_date.strftime('%Y%m%dT%H%M%S')
+            end_dt = event.end_date.strftime('%Y%m%dT%H%M%S') if event.end_date else start_dt
+            created_dt = event.created_at.strftime('%Y%m%dT%H%M%SZ')
+            
+            lines.extend([
+                'BEGIN:VEVENT',
+                f'UID:{event.id}@fortisauris.lms',
+                f'DTSTART:{start_dt}',
+                f'DTEND:{end_dt}',
+                f'DTSTAMP:{created_dt}',
+                f'SUMMARY:{event.title}',
+                f'DESCRIPTION:{event.description or ""}',
+                f'LOCATION:{event.course.title if event.course else ""}',
+                f'CATEGORIES:{event.get_event_type_display()}',
+                f'PRIORITY:{self._get_ical_priority(event.priority)}',
+                'END:VEVENT',
+            ])
         
-        self.message_user(
-            request,
-            f'Deleted {series_count} recurring series and {instance_count} instances.',
-            level='SUCCESS'
-        )
-    delete_recurring_series.short_description = "Delete recurring series and instances"
+        lines.append('END:VCALENDAR')
+        return '\r\n'.join(lines)
+    
+    def _get_ical_priority(self, priority):
+        """Convert LMS priority to iCal priority (1=high, 5=medium, 9=low)."""
+        priority_map = {
+            'urgent': '1',
+            'high': '3', 
+            'normal': '5',
+            'low': '9'
+        }
+        return priority_map.get(priority, '5')
+    
+    def process_poster_images(self, request, queryset):
+        """Admin action to process poster images and remove EXIF data."""
+        processed_count = 0
+        error_count = 0
+        
+        for event in queryset:
+            if event.poster:
+                try:
+                    # Process the poster image
+                    event.poster.seek(0)
+                    processed_image, processing_info = process_uploaded_image(
+                        event.poster, 
+                        strip_exif=True
+                    )
+                    
+                    if processing_info.get('exif_removed', False):
+                        # Save the processed image
+                        event.poster.save(
+                            event.poster.name,
+                            processed_image,
+                            save=True
+                        )
+                        processed_count += 1
+                        
+                        # Log the processing
+                        logger = logging.getLogger(__name__)
+                        logger.info(f"Admin EXIF removal: Event '{event.title}' (ID: {event.id}) poster processed by {request.user.username}")
+                    
+                except Exception as e:
+                    error_count += 1
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Failed to process poster image for event '{event.title}': {str(e)}")
+        
+        if processed_count > 0:
+            self.message_user(
+                request,
+                f'Successfully processed {processed_count} event posters. EXIF metadata removed.',
+                level='SUCCESS'
+            )
+        if error_count > 0:
+            self.message_user(
+                request,
+                f'Failed to process {error_count} poster images. Check logs for details.',
+                level='WARNING'
+            )
+        if processed_count == 0 and error_count == 0:
+            self.message_user(
+                request,
+                'No poster images found to process or all images are already clean.',
+                level='INFO'
+            )
+    
+    process_poster_images.short_description = "Remove EXIF metadata from poster images"
     
     def save_model(self, request, obj, form, change):
         if not change:  # Creating new event

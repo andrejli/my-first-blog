@@ -8,11 +8,18 @@
         <div class="col-12">
             <h2 class="mb-4">
                 <i class="fas fa-calendar-alt"></i> Event Calendar
-                {% if user.is_staff %}
-                <a href="{% url 'event_management' %}" class="btn btn-primary btn-sm float-right">
-                    <i class="fas fa-cog"></i> Manage Events
-                </a>
-                {% endif %}
+                <div class="float-right">
+                    {% if user.is_superuser %}
+                    <a href="{% url 'ical_import_export_page' %}" class="btn btn-info btn-sm mr-2" title="Import/Export Calendar Events">
+                        <i class="fas fa-upload"></i> <i class="fas fa-download"></i> iCal Import/Export
+                    </a>
+                    {% endif %}
+                    {% if user.is_staff %}
+                    <a href="{% url 'event_management' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-cog"></i> Manage Events
+                    </a>
+                    {% endif %}
+                </div>
             </h2>
         </div>
     </div>
@@ -249,7 +256,7 @@
                                         {% for hour_block in day_hours %}
                                         <tr class="hour-row">
                                             <td class="hour-label">
-                                                <span class="hour-time">{{ hour_block.hour_12 }}</span>
+                                                <span class="hour-time">{{ hour_block.hour_24 }}</span>
                                             </td>
                                             <td class="hour-events">
                                                 {% for event in hour_block.events %}

@@ -1,0 +1,153 @@
+{% extends 'blog/base.html' %}
+
+{% block title %}Import iCal Events - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="fas fa-upload"></i> Import iCal Events</h4>
+                    <p class="mb-0">Import events from standard iCal (.ics) files</p>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Instructions -->
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-info-circle"></i> Import Instructions</h5>
+                        <ul class="mb-0">
+                            <li><strong>Supported files:</strong> .ics files from Google Calendar, Outlook, Apple Calendar</li>
+                            <li><strong>Dry run:</strong> Preview events before importing</li>
+                            <li><strong>Duplicates:</strong> Automatically skipped based on title and date</li>
+                            <li><strong>Course assignment:</strong> Optionally assign all events to a specific course</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Import Form -->
+                    <form method="post" enctype="multipart/form-data" id="importForm">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="ical_file" class="form-label">
+                                        <i class="fas fa-file"></i> iCal File (.ics)
+                                    </label>
+                                    <input type="file" 
+                                           class="form-control" 
+                                           id="ical_file" 
+                                           name="ical_file" 
+                                           accept=".ics"
+                                           required>
+                                    <small class="form-text text-muted">
+                                        Select an .ics file exported from your calendar application
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="default_course" class="form-label">
+                                        <i class="fas fa-book"></i> Default Course (Optional)
+                                    </label>
+                                    <select class="form-control" id="default_course" name="default_course">
+                                        <option value="">No default course</option>
+                                        {% for course in courses %}
+                                            <option value="{{ course.id }}">{{ course.course_code }} - {{ course.title }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="form-text text-muted">
+                                        Assign all imported events to this course
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input type="checkbox" 
+                                       class="form-check-input" 
+                                       id="dry_run" 
+                                       name="dry_run" 
+                                       checked>
+                                <label class="form-check-label" for="dry_run">
+                                    <strong>Dry Run</strong> - Preview events without importing
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">
+                                Recommended: Run preview first to see what will be imported
+                            </small>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Action Buttons -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    <i class="fas fa-upload"></i> 
+                                    <span id="submitText">Preview Import</span>
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="{% url 'event_management' %}" class="btn btn-secondary btn-block">
+                                    <i class="fas fa-arrow-left"></i> Back to Event Management
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Command Line Alternative -->
+            <div class="card mt-4">
+                <div class="card-header bg-dark text-white">
+                    <h5><i class="fas fa-terminal"></i> Alternative: Command Line Import</h5>
+                </div>
+                <div class="card-body">
+                    <p>For advanced users, you can also import via management command:</p>
+                    <div class="bg-dark text-white p-3 rounded">
+                        <code>
+                            # Preview import<br>
+                            python manage.py import_ical events.ics --dry-run<br><br>
+                            # Actual import<br>
+                            python manage.py import_ical events.ics --creator={{ request.user.username }}<br><br>
+                            # With course assignment<br>
+                            python manage.py import_ical events.ics --creator={{ request.user.username }} --default-course=CS101
+                        </code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dryRunCheckbox = document.getElementById('dry_run');
+    const submitText = document.getElementById('submitText');
+    
+    function updateSubmitButton() {
+        if (dryRunCheckbox.checked) {
+            submitText.textContent = 'Preview Import';
+        } else {
+            submitText.textContent = 'Import Events';
+        }
+    }
+    
+    dryRunCheckbox.addEventListener('change', updateSubmitButton);
+    updateSubmitButton();
+    
+    // File validation
+    const fileInput = document.getElementById('ical_file');
+    fileInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file && !file.name.toLowerCase().endsWith('.ics')) {
+            alert('Please select a valid .ics file');
+            this.value = '';
+        }
+    });
+});
+</script>
+{% endblock %}

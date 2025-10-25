@@ -1,0 +1,310 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}iCal Import/Export - Event Management{% endblock %}
+
+{% block extrastyle %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    .admin-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #ddd;
+        padding: 15px 20px;
+        font-weight: bold;
+    }
+    
+    .card-body {
+        padding: 20px;
+    }
+    
+    .btn-icon {
+        margin-right: 8px;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .help-text {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 5px;
+    }
+    
+    .status-messages {
+        margin-bottom: 20px;
+    }
+    
+    .export-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    @media (max-width: 768px) {
+        .export-options {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .option-card {
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 15px;
+        background-color: #f8f9fa;
+    }
+    
+    .import-preview {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 15px;
+        margin-top: 15px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .command-example {
+        background-color: #1e1e1e;
+        color: #00ff41;
+        padding: 15px;
+        border-radius: 6px;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 14px;
+        margin: 10px 0;
+        overflow-x: auto;
+    }
+</style>
+{% endblock %}
+
+{% block extrahead %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2">📅 iCal Import/Export</h1>
+            <p class="text-muted">Manage calendar events with iCal (.ics) files</p>
+        </div>
+        <a href="{% url 'admin:blog_event_changelist' %}" class="btn btn-secondary">
+            ← Back to Events
+        </a>
+    </div>
+
+    <!-- Status Messages -->
+    {% if messages %}
+    <div class="status-messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message|safe }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Export Section -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    📤 Export Events to iCal
+                </div>
+                <div class="card-body">
+                    <p>Export your LMS events to standard iCal format for use in Google Calendar, Outlook, Apple Calendar, and other calendar applications.</p>
+                    
+                    <form method="post" action="{% url 'admin_export_ical' %}">
+                        {% csrf_token %}
+                        
+                        <div class="export-options">
+                            <div class="option-card">
+                                <h6>📅 All Events</h6>
+                                <p class="small">Export all published events</p>
+                                <button type="submit" name="export_type" value="all" class="btn btn-primary">
+                                    <span class="btn-icon">📤</span>Export All Events
+                                </button>
+                            </div>
+                            
+                            <div class="option-card">
+                                <h6>🎯 Published Only</h6>
+                                <p class="small">Export only published events</p>
+                                <button type="submit" name="export_type" value="published" class="btn btn-primary">
+                                    <span class="btn-icon">✅</span>Export Published
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="course_filter" class="form-label">🎓 Filter by Course (Optional)</label>
+                            <select name="course_filter" id="course_filter" class="form-select">
+                                <option value="">All Courses</option>
+                                {% for course in courses %}
+                                <option value="{{ course.id }}">{{ course.course_code }} - {{ course.title }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="help-text">Select a specific course to export only its events</div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="start_date" class="form-label">📅 Start Date (Optional)</label>
+                                    <input type="date" name="start_date" id="start_date" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="end_date" class="form-label">📅 End Date (Optional)</label>
+                                    <input type="date" name="end_date" id="end_date" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="help-text">
+                            💡 <strong>Tip:</strong> Exported files are compatible with Google Calendar, Outlook, Apple Calendar, and other iCal-compliant applications.
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Section -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    📥 Import Events from iCal
+                </div>
+                <div class="card-body">
+                    <p>Import events from iCal (.ics) files exported from Google Calendar, Outlook, Apple Calendar, or other calendar applications.</p>
+                    
+                    <form method="post" action="{% url 'admin_import_ical' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            <label for="ical_file" class="form-label">📎 Select iCal File (.ics)</label>
+                            <input type="file" name="ical_file" id="ical_file" class="form-control" accept=".ics,.ical" required>
+                            <div class="help-text">Choose an .ics file exported from your calendar application</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="default_course" class="form-label">🎓 Default Course (Optional)</label>
+                            <select name="default_course" id="default_course" class="form-select">
+                                <option value="">No Course Assignment</option>
+                                {% for course in courses %}
+                                <option value="{{ course.id }}">{{ course.course_code }} - {{ course.title }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="help-text">Assign imported events to a specific course if not specified in the file</div>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input type="checkbox" name="dry_run" id="dry_run" class="form-check-input" value="1">
+                            <label for="dry_run" class="form-check-label">
+                                🔍 Preview Only (Dry Run)
+                            </label>
+                            <div class="help-text">Preview what would be imported without actually creating events</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <span class="btn-icon">📥</span>Import iCal File
+                            </button>
+                        </div>
+                        
+                        <div class="help-text mt-3">
+                            ✅ <strong>Supported:</strong> Google Calendar, Outlook, Apple Calendar exports<br>
+                            🔍 <strong>Auto-detection:</strong> Duplicate events are automatically skipped<br>
+                            🛡️ <strong>Safe Import:</strong> Use preview mode to verify before importing
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Command Line Alternative -->
+    <div class="card">
+        <div class="card-header">
+            💻 Command Line Alternative
+        </div>
+        <div class="card-body">
+            <p>For advanced users or batch operations, you can also use the management commands directly:</p>
+            
+            <h6>📤 Export Command:</h6>
+            <div class="command-example">
+# Export all events
+python manage.py export_ical events.ics
+
+# Export specific course events
+python manage.py export_ical events.ics --course=CS101
+
+# Export with date range
+python manage.py export_ical events.ics --start-date=2024-01-01 --end-date=2024-12-31
+
+# Export only published events
+python manage.py export_ical events.ics --published-only
+            </div>
+            
+            <h6>📥 Import Command:</h6>
+            <div class="command-example">
+# Preview import (safe)
+python manage.py import_ical calendar.ics --dry-run
+
+# Import with specific creator
+python manage.py import_ical calendar.ics --creator=admin
+
+# Import with default course assignment
+python manage.py import_ical calendar.ics --default-course=CS101 --creator=admin
+            </div>
+            
+            <div class="help-text">
+                💡 <strong>Pro Tip:</strong> Always use <code>--dry-run</code> first to preview what will be imported.
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="card">
+        <div class="card-header">
+            📊 Event Statistics
+        </div>
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-3">
+                    <div class="h4 text-primary">{{ total_events }}</div>
+                    <div class="text-muted">Total Events</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="h4 text-success">{{ published_events }}</div>
+                    <div class="text-muted">Published Events</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="h4 text-info">{{ upcoming_events }}</div>
+                    <div class="text-muted">Upcoming Events</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="h4 text-warning">{{ courses_with_events }}</div>
+                    <div class="text-muted">Courses with Events</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

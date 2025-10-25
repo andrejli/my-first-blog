@@ -1,0 +1,421 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block title %}iCal Import/Export - Calendar Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ical-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .card {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        background-color: var(--card-bg);
+    }
+    
+    .card-header {
+        background-color: var(--secondary-bg);
+        border-bottom: 1px solid var(--border-color);
+        padding: 15px 20px;
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+    
+    .card-body {
+        padding: 20px;
+    }
+    
+    .upload-area {
+        border: 2px dashed var(--border-color);
+        border-radius: 8px;
+        padding: 40px 20px;
+        text-align: center;
+        background-color: var(--secondary-bg);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .upload-area:hover {
+        border-color: var(--primary-color);
+        background-color: var(--primary-bg);
+    }
+    
+    .upload-area.dragover {
+        border-color: var(--success-color);
+        background-color: var(--success-bg);
+    }
+    
+    .file-input {
+        display: none;
+    }
+    
+    .btn-group {
+        margin-bottom: 15px;
+    }
+    
+    .export-filters {
+        background-color: var(--secondary-bg);
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+    }
+    
+    .command-example {
+        background-color: #1e1e1e;
+        color: #00ff41;
+        padding: 15px;
+        border-radius: 6px;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 14px;
+        margin: 10px 0;
+        overflow-x: auto;
+    }
+    
+    .status-icon {
+        font-size: 2em;
+        margin-bottom: 10px;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
+    }
+    
+    .stat-card {
+        background-color: var(--secondary-bg);
+        padding: 15px;
+        border-radius: 6px;
+        text-align: center;
+        border: 1px solid var(--border-color);
+    }
+    
+    .stat-number {
+        font-size: 2em;
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+    
+    .preview-box {
+        max-height: 300px;
+        overflow-y: auto;
+        background-color: var(--secondary-bg);
+        border: 1px solid var(--border-color);
+        padding: 15px;
+        border-radius: 6px;
+        margin-top: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ical-container">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="text-primary">📅 iCal Import/Export</h1>
+            <p class="text-muted">Import and export calendar events with standard iCal (.ics) files</p>
+        </div>
+        <div>
+            <a href="{% url 'event_management' %}" class="btn btn-secondary">
+                ← Back to Events
+            </a>
+            <a href="{% url 'event_calendar' %}" class="btn btn-info ml-2">
+                📅 View Calendar
+            </a>
+        </div>
+    </div>
+
+    <!-- Status Messages -->
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message|safe }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close">×</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_events }}</div>
+            <div>Total Events</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ published_events }}</div>
+            <div>Published Events</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ upcoming_events }}</div>
+            <div>Upcoming Events</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ courses_with_events }}</div>
+            <div>Courses with Events</div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Import Section -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    📥 Import Events from iCal
+                </div>
+                <div class="card-body">
+                    <p>Upload an iCal (.ics) file to import events into your calendar. Compatible with Google Calendar, Outlook, Apple Calendar, and other standard calendar applications.</p>
+                    
+                    <form method="post" action="{% url 'admin_import_ical' %}" enctype="multipart/form-data" id="importForm">
+                        {% csrf_token %}
+                        
+                        <!-- File Upload Area -->
+                        <div class="upload-area" id="uploadArea">
+                            <div class="status-icon">📎</div>
+                            <h5>Drop your iCal file here or click to browse</h5>
+                            <p class="text-muted">Supports .ics and .ical files</p>
+                            <input type="file" name="ical_file" id="icalFile" class="file-input" accept=".ics,.ical" required>
+                            <div id="fileName" class="mt-2" style="display: none;"></div>
+                        </div>
+                        
+                        <!-- Import Options -->
+                        <div class="mt-4">
+                            <div class="form-group mb-3">
+                                <label for="default_course" class="form-label">🎓 Default Course (Optional)</label>
+                                <select name="default_course" id="default_course" class="form-select">
+                                    <option value="">No Course Assignment</option>
+                                    {% for course in courses %}
+                                    <option value="{{ course.id }}">{{ course.course_code }} - {{ course.title }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">Assign imported events to a specific course if not specified in the file</small>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input type="checkbox" name="dry_run" id="dry_run" class="form-check-input" value="1" checked>
+                                <label for="dry_run" class="form-check-label">
+                                    🔍 Preview Mode (Recommended)
+                                </label>
+                                <small class="form-text text-muted">Preview what will be imported without actually creating events</small>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success btn-lg" id="importBtn" disabled>
+                                    📥 Import iCal File
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            ✅ <strong>Supported:</strong> Google Calendar, Outlook, Apple Calendar exports<br>
+                            🔍 <strong>Auto-detection:</strong> Duplicate events are automatically skipped<br>
+                            🛡️ <strong>Safe Import:</strong> Preview mode shows what will be imported
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Section -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    📤 Export Events to iCal
+                </div>
+                <div class="card-body">
+                    <p>Export your calendar events to iCal format for use in external calendar applications.</p>
+                    
+                    <form method="post" action="{% url 'admin_export_ical' %}">
+                        {% csrf_token %}
+                        
+                        <div class="export-filters">
+                            <h6>Export Options</h6>
+                            
+                            <div class="form-group mb-3">
+                                <label class="form-label">Export Type</label>
+                                <div>
+                                    <div class="form-check form-check-inline">
+                                        <input type="radio" name="export_type" value="all" id="export_all" class="form-check-input" checked>
+                                        <label for="export_all" class="form-check-label">All Events</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input type="radio" name="export_type" value="published" id="export_published" class="form-check-input">
+                                        <label for="export_published" class="form-check-label">Published Only</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group mb-3">
+                                <label for="course_filter" class="form-label">Course Filter</label>
+                                <select name="course_filter" id="course_filter" class="form-select">
+                                    <option value="">All Courses</option>
+                                    {% for course in courses %}
+                                    <option value="{{ course.id }}">{{ course.course_code }} - {{ course.title }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="start_date" class="form-label">Start Date</label>
+                                        <input type="date" name="start_date" id="start_date" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="end_date" class="form-label">End Date</label>
+                                        <input type="date" name="end_date" id="end_date" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                📤 Export to iCal
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Command Line Reference -->
+    <div class="card mt-4">
+        <div class="card-header">
+            💻 Command Line Alternative
+        </div>
+        <div class="card-body">
+            <p>For advanced users or automation, you can also use management commands:</p>
+            
+            <h6>📥 Import Command:</h6>
+            <div class="command-example">
+# Preview import (safe)
+python manage.py import_ical calendar.ics --dry-run --creator=admin
+
+# Import with specific course
+python manage.py import_ical calendar.ics --creator=admin --default-course=CS101
+            </div>
+            
+            <h6>📤 Export Command:</h6>
+            <div class="command-example">
+# Export all events
+python manage.py export_ical events.ics
+
+# Export specific course
+python manage.py export_ical events.ics --course=CS101 --published-only
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Section -->
+    <div class="card mt-4">
+        <div class="card-header">
+            ❓ How to Use
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>📥 Importing Events:</h6>
+                    <ol>
+                        <li>Export calendar from Google Calendar, Outlook, or Apple Calendar as .ics file</li>
+                        <li>Upload the file using the form above</li>
+                        <li>Select a course if you want to assign events to it</li>
+                        <li>Use Preview Mode to see what will be imported</li>
+                        <li>Click Import to add events to your calendar</li>
+                    </ol>
+                </div>
+                <div class="col-md-6">
+                    <h6>📤 Exporting Events:</h6>
+                    <ol>
+                        <li>Choose export options (all events or published only)</li>
+                        <li>Optionally filter by course or date range</li>
+                        <li>Click Export to download .ics file</li>
+                        <li>Import the file into Google Calendar, Outlook, etc.</li>
+                        <li>Your events will appear in the external calendar</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('icalFile');
+    const fileName = document.getElementById('fileName');
+    const importBtn = document.getElementById('importBtn');
+    
+    // Click to browse
+    uploadArea.addEventListener('click', function() {
+        fileInput.click();
+    });
+    
+    // File selection
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            const file = e.target.files[0];
+            fileName.innerHTML = `<strong>Selected:</strong> ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+            fileName.style.display = 'block';
+            importBtn.disabled = false;
+            uploadArea.classList.add('border-success');
+        }
+    });
+    
+    // Drag and drop
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            const file = files[0];
+            if (file.name.toLowerCase().endsWith('.ics') || file.name.toLowerCase().endsWith('.ical')) {
+                fileInput.files = files;
+                fileName.innerHTML = `<strong>Selected:</strong> ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                fileName.style.display = 'block';
+                importBtn.disabled = false;
+                uploadArea.classList.add('border-success');
+            } else {
+                alert('Please select a valid iCal file (.ics or .ical)');
+            }
+        }
+    });
+    
+    // Auto-dismiss alerts after 10 seconds
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            const closeBtn = alert.querySelector('.btn-close');
+            if (closeBtn) {
+                closeBtn.click();
+            }
+        });
+    }, 10000);
+});
+</script>
+{% endblock %}

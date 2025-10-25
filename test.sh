@@ -132,7 +132,43 @@ else
     test_results+=("All Django Tests:FAIL")
 fi
 
-# 5. Management Command Tests
+# 5. EXIF Removal Tests
+((total_tests++))
+if run_test "EXIF Removal Tests" "\"$PYTHON_EXE\" manage.py test tests.test_exif_removal --verbosity=1" "Test EXIF metadata removal functionality"; then
+    ((passed_tests++))
+    test_results+=("EXIF Removal Tests:PASS")
+else
+    test_results+=("EXIF Removal Tests:FAIL")
+fi
+
+# 6. Image Processing Tests
+((total_tests++))
+if run_test "Image Processing Utils" "\"$PYTHON_EXE\" -c 'import django; django.setup(); from blog.utils.image_processing import is_image_file; print(\"Image utils OK\")'" "Test image processing utilities"; then
+    ((passed_tests++))
+    test_results+=("Image Processing Utils:PASS")
+else
+    test_results+=("Image Processing Utils:FAIL")
+fi
+
+# 7. Secure Storage Tests
+((total_tests++))
+if run_test "Secure Storage Backend" "\"$PYTHON_EXE\" -c 'import django; django.setup(); from blog.utils.storage import MediaStorage; s=MediaStorage(); print(\"Storage OK\")'" "Test secure image storage backend"; then
+    ((passed_tests++))
+    test_results+=("Secure Storage Backend:PASS")
+else
+    test_results+=("Secure Storage Backend:FAIL")
+fi
+
+# 8. EXIF Management Command
+((total_tests++))
+if run_test "EXIF Management Command" "\"$PYTHON_EXE\" manage.py process_exif_removal --dry-run --verbosity=0" "Test EXIF removal management command"; then
+    ((passed_tests++))
+    test_results+=("EXIF Management Command:PASS")
+else
+    test_results+=("EXIF Management Command:FAIL")
+fi
+
+# 9. Management Command Tests
 ((total_tests++))
 if run_test "Management Commands" "\"$PYTHON_EXE\" manage.py generate_recurring_events --dry-run --verbosity=0" "Test custom Django management commands"; then
     ((passed_tests++))
@@ -141,7 +177,7 @@ else
     test_results+=("Management Commands:FAIL")
 fi
 
-# 6. Static Files Collection Test (if collectstatic works)
+# 10. Static Files Collection Test (if collectstatic works)
 ((total_tests++))
 if run_test "Static Files" "\"$PYTHON_EXE\" manage.py collectstatic --noinput --verbosity=0" "Test static files collection"; then
     ((passed_tests++))

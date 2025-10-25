@@ -135,7 +135,35 @@ if (Run-Test "All Django Tests" "& '$PYTHON_EXE' manage.py test --verbosity=1" "
 }
 $testResults += [PSCustomObject]@{Name="All Django Tests"; Passed=($LASTEXITCODE -eq 0)}
 
-# 5. Management Command Tests
+# 5. EXIF Removal Tests
+$totalTests++
+if (Run-Test "EXIF Removal Tests" "& '$PYTHON_EXE' manage.py test tests.test_exif_removal --verbosity=1" "Test EXIF metadata removal functionality") {
+    $passedTests++
+}
+$testResults += [PSCustomObject]@{Name="EXIF Removal Tests"; Passed=($LASTEXITCODE -eq 0)}
+
+# 6. Image Processing Tests
+$totalTests++
+if (Run-Test "Image Processing Utils" "`$env:DJANGO_SETTINGS_MODULE='mysite.settings'; & '$PYTHON_EXE' -c `"import django; django.setup(); from blog.utils.image_processing import is_image_file; print('Image utils OK')`"" "Test image processing utilities") {
+    $passedTests++
+}
+$testResults += [PSCustomObject]@{Name="Image Processing Utils"; Passed=($LASTEXITCODE -eq 0)}
+
+# 7. Secure Storage Tests
+$totalTests++
+if (Run-Test "Secure Storage Backend" "`$env:DJANGO_SETTINGS_MODULE='mysite.settings'; & '$PYTHON_EXE' -c `"import django; django.setup(); from blog.utils.storage import MediaStorage; s=MediaStorage(); print('Storage OK')`"" "Test secure image storage backend") {
+    $passedTests++
+}
+$testResults += [PSCustomObject]@{Name="Secure Storage Backend"; Passed=($LASTEXITCODE -eq 0)}
+
+# 8. EXIF Management Command
+$totalTests++
+if (Run-Test "EXIF Management Command" "& '$PYTHON_EXE' manage.py process_exif_removal --dry-run" "Test EXIF removal management command") {
+    $passedTests++
+}
+$testResults += [PSCustomObject]@{Name="EXIF Management Command"; Passed=($LASTEXITCODE -eq 0)}
+
+# 9. Management Command Tests
 $totalTests++
 if (Run-Test "Management Commands" "& '$PYTHON_EXE' manage.py generate_recurring_events --dry-run" "Test custom Django management commands") {
     $passedTests++

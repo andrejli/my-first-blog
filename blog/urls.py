@@ -135,6 +135,16 @@ urlpatterns = [
     path('event-management/<int:event_id>/edit/', views.edit_event, name='edit_event'),
     path('event-management/<int:event_id>/delete/', views.delete_event, name='delete_event'),
     
+    # iCal Import/Export (Admin Only)
+    path('ical-import-export/', views.ical_import_export_page, name='ical_import_export_page'),
+    path('event-management/export-ical/', views.export_events_ical, name='export_events_ical'),
+    path('event-management/import-ical/', views.import_events_ical, name='import_events_ical'),
+    
+    # Admin iCal Import/Export Interface
+    path('admin/events/import-export/', views.admin_event_import_export, name='admin_event_import_export'),
+    path('admin/events/export/', views.admin_export_ical, name='admin_export_ical'),
+    path('admin/events/import/', views.admin_import_ical, name='admin_import_ical'),
+    
     # Event Type Management
     path('event-types/', views.manage_event_types, name='manage_event_types'),
     path('event-types/add/', views.add_event_type, name='add_event_type'),

@@ -1,12 +1,13 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse
 from django.db import transaction
+import logging
 from .models import Post, Course, Enrollment, Lesson, Progress, UserProfile, CourseMaterial, Assignment, Submission, Quiz, Question, Answer, QuizAttempt, QuizResponse, Announcement, AnnouncementRead, Forum, Topic, ForumPost, Event, EventType
 from .course_import_export import export_course, import_course, confirm_import_course
 
@@ -3203,24 +3204,45 @@ def upload_blog_image(request):
             import os
             import uuid
             from django.core.files.storage import default_storage
+            from .utils.image_processing import process_uploaded_image
+            
+            # Process image to remove EXIF metadata
+            processed_image, processing_info = process_uploaded_image(image, strip_exif=True)
             
             # Generate unique filename
             ext = os.path.splitext(image.name)[1].lower()
             filename = f"user_{request.user.id}_{uuid.uuid4().hex[:8]}{ext}"
             
+            # Update processed image name
+            processed_image.name = filename
+            
             # Save to blog_images directory
             file_path = f"blog_images/{filename}"
-            saved_path = default_storage.save(file_path, image)
+            saved_path = default_storage.save(file_path, processed_image)
             
             # Get the full URL
             image_url = default_storage.url(saved_path)
+            
+            # Log EXIF removal for security audit
+            if processing_info.get('exif_removed', False):
+                exif_summary = processing_info.get('summary', {}).get('exif_summary', {})
+                logger = logging.getLogger(__name__)
+                logger.info(f"EXIF data stripped from blog image upload: {filename}, "
+                           f"GPS={exif_summary.get('gps_data', False)}, "
+                           f"Device={exif_summary.get('device_info', False)}, "
+                           f"User={request.user.username}")
             
             return JsonResponse({
                 'success': True,
                 'image_url': image_url,
                 'filename': filename,
                 'markdown_embed': f'![[{filename}]]',
-                'markdown_standard': f'![Image]({image_url})'
+                'markdown_standard': f'![Image]({image_url})',
+                'processing_info': {
+                    'exif_removed': processing_info.get('exif_removed', False),
+                    'original_size': processing_info.get('summary', {}).get('original_size', 0),
+                    'processed_size': processing_info.get('summary', {}).get('processed_size', 0)
+                }
             })
             
         except Exception as e:
@@ -3307,6 +3329,227 @@ def event_management(request):
     }
     
     return render(request, 'blog/admin/event_management.html', context)
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def ical_import_export_page(request):
+    """Dedicated standalone page for iCal import/export - SUPERUSER ONLY."""
+    from datetime import datetime, timezone
+    
+    # Get statistics
+    total_events = Event.objects.count()
+    published_events = Event.objects.filter(is_published=True).count()
+    upcoming_events = Event.objects.filter(
+        start_date__gte=datetime.now().date(),
+        is_published=True
+    ).count()
+    courses_with_events = Course.objects.filter(event__isnull=False).distinct().count()
+    
+    # Get all courses for dropdown
+    courses = Course.objects.all().order_by('course_code')
+    
+    context = {
+        'total_events': total_events,
+        'published_events': published_events,
+        'upcoming_events': upcoming_events,
+        'courses_with_events': courses_with_events,
+        'courses': courses,
+    }
+    
+    return render(request, 'blog/ical_import_export.html', context)
+
+
+@admin_required
+def admin_event_import_export(request):
+    """Admin interface for iCal import/export with web-based functionality."""
+    from datetime import datetime, timezone
+    
+    # Get statistics
+    total_events = Event.objects.count()
+    published_events = Event.objects.filter(is_published=True).count()
+    upcoming_events = Event.objects.filter(
+        start_date__gte=datetime.now().date(),
+        is_published=True
+    ).count()
+    courses_with_events = Course.objects.filter(event__isnull=False).distinct().count()
+    
+    # Get all courses for dropdown
+    courses = Course.objects.all().order_by('course_code')
+    
+    context = {
+        'total_events': total_events,
+        'published_events': published_events,
+        'upcoming_events': upcoming_events,
+        'courses_with_events': courses_with_events,
+        'courses': courses,
+    }
+    
+    return render(request, 'blog/admin/event_import_export.html', context)
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def admin_export_ical(request):
+    """Handle iCal export from admin interface - SUPERUSER ONLY."""
+    """Handle iCal export from admin interface."""
+    if request.method != 'POST':
+        return redirect('admin_event_import_export')
+    
+    try:
+        from django.core.management import call_command
+        import io
+        import sys
+        from django.http import HttpResponse
+        from datetime import datetime
+        import tempfile
+        import os
+        
+        # Get form parameters
+        export_type = request.POST.get('export_type', 'all')
+        course_filter = request.POST.get('course_filter', '')
+        start_date = request.POST.get('start_date', '')
+        end_date = request.POST.get('end_date', '')
+        
+        # Create temporary file for export
+        with tempfile.NamedTemporaryFile(mode='w+', suffix='.ics', delete=False) as temp_file:
+            temp_filename = temp_file.name
+        
+        # Build command arguments
+        cmd_args = [temp_filename]
+        
+        if course_filter:
+            try:
+                course = Course.objects.get(id=course_filter)
+                cmd_args.extend(['--course', course.course_code])
+            except Course.DoesNotExist:
+                pass
+        
+        if start_date:
+            cmd_args.extend(['--start-date', start_date])
+        
+        if end_date:
+            cmd_args.extend(['--end-date', end_date])
+        
+        if export_type == 'published':
+            cmd_args.append('--published-only')
+        
+        # Run export command
+        call_command('export_ical', *cmd_args)
+        
+        # Read the exported file
+        with open(temp_filename, 'r', encoding='utf-8') as f:
+            ical_content = f.read()
+        
+        # Clean up temporary file
+        os.unlink(temp_filename)
+        
+        # Create response
+        response = HttpResponse(ical_content, content_type='text/calendar; charset=utf-8')
+        
+        # Generate filename
+        filename_parts = ['events']
+        if course_filter:
+            try:
+                course = Course.objects.get(id=course_filter)
+                filename_parts.append(course.course_code)
+            except Course.DoesNotExist:
+                pass
+        if export_type == 'published':
+            filename_parts.append('published')
+        filename_parts.append(datetime.now().strftime('%Y%m%d'))
+        
+        filename = '_'.join(filename_parts) + '.ics'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        messages.success(request, f'Successfully exported events to {filename}')
+        return response
+        
+    except Exception as e:
+        messages.error(request, f'Export failed: {str(e)}')
+        return redirect('admin_event_import_export')
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def admin_import_ical(request):
+    """Handle iCal import from admin interface - SUPERUSER ONLY."""
+    """Handle iCal import from admin interface."""
+    if request.method != 'POST':
+        return redirect('admin_event_import_export')
+    
+    try:
+        from django.core.management import call_command
+        import tempfile
+        import os
+        import io
+        import sys
+        
+        # Get uploaded file
+        ical_file = request.FILES.get('ical_file')
+        if not ical_file:
+            messages.error(request, 'Please select an iCal file to import.')
+            return redirect('admin_event_import_export')
+        
+        # Get form parameters
+        default_course = request.POST.get('default_course', '')
+        dry_run = request.POST.get('dry_run') == '1'
+        
+        # Save uploaded file to temporary location
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.ics', delete=False) as temp_file:
+            for chunk in ical_file.chunks():
+                temp_file.write(chunk)
+            temp_filename = temp_file.name
+        
+        # Build command arguments
+        cmd_args = [temp_filename]
+        
+        if dry_run:
+            cmd_args.append('--dry-run')
+        
+        cmd_args.extend(['--creator', request.user.username])
+        
+        if default_course:
+            try:
+                course = Course.objects.get(id=default_course)
+                cmd_args.extend(['--default-course', course.course_code])
+            except Course.DoesNotExist:
+                pass
+        
+        # Capture command output
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        stdout_capture = io.StringIO()
+        stderr_capture = io.StringIO()
+        
+        try:
+            sys.stdout = stdout_capture
+            sys.stderr = stderr_capture
+            
+            # Run import command
+            call_command('import_ical', *cmd_args)
+            
+            # Get output
+            stdout_content = stdout_capture.getvalue()
+            stderr_content = stderr_capture.getvalue()
+            
+        finally:
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
+        
+        # Clean up temporary file
+        os.unlink(temp_filename)
+        
+        # Process results
+        if stderr_content:
+            messages.error(request, f'Import error: {stderr_content}')
+        elif dry_run:
+            messages.info(request, f'Preview completed successfully:\n{stdout_content}')
+        else:
+            messages.success(request, f'Import completed successfully:\n{stdout_content}')
+        
+        return redirect('admin_event_import_export')
+        
+    except Exception as e:
+        messages.error(request, f'Import failed: {str(e)}')
+        return redirect('admin_event_import_export')
 
 
 @admin_required
@@ -3822,7 +4065,7 @@ def event_calendar(request):
             
             day_hours.append({
                 'hour': hour,
-                'hour_12': timezone.datetime.combine(current_date, timezone.datetime.min.time().replace(hour=hour)).strftime('%I %p'),
+                'hour_24': timezone.datetime.combine(current_date, timezone.datetime.min.time().replace(hour=hour)).strftime('%H:00'),
                 'events': hour_events
             })
         
@@ -4015,3 +4258,270 @@ def theme_debug_view(request):
     )
     
     return HttpResponse(html_content)
+
+
+# =============================================================================
+# iCAL IMPORT/EXPORT ADMIN VIEWS - Phase 7
+# =============================================================================
+
+@login_required
+def export_events_ical(request):
+    """Export events to iCal format with admin interface."""
+    from django.http import HttpResponse
+    from datetime import datetime
+    import os
+    
+    # Check if user is admin
+    if not request.user.is_staff:
+        messages.error(request, 'Only administrators can export events.')
+        return redirect('event_management')
+    
+    # Get filter parameters
+    course_id = request.GET.get('course')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    published_only = request.GET.get('published_only') == 'on'
+    
+    # Build queryset
+    queryset = Event.objects.all()
+    
+    if published_only:
+        queryset = queryset.filter(is_published=True)
+    
+    if course_id:
+        try:
+            course = Course.objects.get(id=course_id)
+            queryset = queryset.filter(course=course)
+        except Course.DoesNotExist:
+            messages.error(request, f'Course not found.')
+            return redirect('event_management')
+    
+    if start_date:
+        queryset = queryset.filter(start_date__date__gte=start_date)
+    
+    if end_date:
+        queryset = queryset.filter(start_date__date__lte=end_date)
+    
+    queryset = queryset.order_by('start_date')
+    event_count = queryset.count()
+    
+    if event_count == 0:
+        messages.warning(request, 'No events found matching the criteria.')
+        return redirect('event_management')
+    
+    # Generate iCal content
+    ical_content = _create_admin_ical_content(queryset)
+    
+    # Create HTTP response
+    response = HttpResponse(ical_content, content_type='text/calendar')
+    filename = f"events_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.ics"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    messages.success(request, f'Successfully exported {event_count} events to {filename}')
+    
+    return response
+
+
+@login_required
+def import_events_ical(request):
+    """Import events from iCal file with admin interface."""
+    from django.core.files.storage import default_storage
+    from django.core.files.base import ContentFile
+    import tempfile
+    import os
+    from django.core.management import call_command
+    from io import StringIO
+    import sys
+    
+    # Check if user is admin
+    if not request.user.is_staff:
+        messages.error(request, 'Only administrators can import events.')
+        return redirect('event_management')
+    
+    if request.method == 'POST':
+        ical_file = request.FILES.get('ical_file')
+        dry_run = request.POST.get('dry_run') == 'on'
+        default_course_id = request.POST.get('default_course')
+        
+        if not ical_file:
+            messages.error(request, 'Please select an iCal file to import.')
+            return redirect('import_events_ical')
+        
+        if not ical_file.name.lower().endswith('.ics'):
+            messages.error(request, 'Please upload a valid .ics file.')
+            return redirect('import_events_ical')
+        
+        try:
+            # Save file temporarily
+            with tempfile.NamedTemporaryFile(mode='w+b', suffix='.ics', delete=False) as temp_file:
+                for chunk in ical_file.chunks():
+                    temp_file.write(chunk)
+                temp_file_path = temp_file.name
+            
+            # Prepare command arguments
+            cmd_args = [temp_file_path]
+            cmd_kwargs = {
+                'creator': request.user.username,
+                'verbosity': 1,
+            }
+            
+            if dry_run:
+                cmd_kwargs['dry_run'] = True
+            
+            if default_course_id:
+                try:
+                    course = Course.objects.get(id=default_course_id)
+                    cmd_kwargs['default_course'] = course.course_code
+                except Course.DoesNotExist:
+                    pass
+            
+            # Capture command output
+            old_stdout = sys.stdout
+            old_stderr = sys.stderr
+            stdout_capture = StringIO()
+            stderr_capture = StringIO()
+            
+            try:
+                sys.stdout = stdout_capture
+                sys.stderr = stderr_capture
+                
+                # Import management command from the same module
+                from blog.management.commands.import_ical import Command
+                import_command = Command()
+                import_command.handle(*cmd_args, **cmd_kwargs)
+                
+                output = stdout_capture.getvalue()
+                errors = stderr_capture.getvalue()
+                
+                if errors:
+                    messages.error(request, f'Import errors: {errors}')
+                else:
+                    if dry_run:
+                        messages.info(request, f'Dry run completed. Output: {output}')
+                    else:
+                        messages.success(request, f'Import completed successfully. {output}')
+                
+            except Exception as e:
+                messages.error(request, f'Import failed: {str(e)}')
+            finally:
+                sys.stdout = old_stdout
+                sys.stderr = old_stderr
+                
+            # Clean up temp file
+            try:
+                os.unlink(temp_file_path)
+            except:
+                pass
+                
+        except Exception as e:
+            messages.error(request, f'Error processing file: {str(e)}')
+        
+        return redirect('event_management')
+    
+    # GET request - show import form
+    courses = Course.objects.all().order_by('course_code')
+    context = {
+        'courses': courses,
+        'page_title': 'Import iCal Events',
+    }
+    
+    return render(request, 'blog/admin/import_ical.html', context)
+
+
+def _create_admin_ical_content(queryset):
+    """Create iCal content from event queryset for admin export."""
+    from datetime import datetime
+    
+    lines = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//FORTIS AURIS LMS//Event Calendar//EN',
+        'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH',
+        f'X-WR-CALNAME:FORTIS AURIS LMS Events',
+        f'X-WR-CALDESC:Events exported from FORTIS AURIS Learning Management System',
+    ]
+    
+    for event in queryset:
+        lines.extend(_create_admin_event_lines(event))
+    
+    lines.append('END:VCALENDAR')
+    return '\r\n'.join(lines)
+
+
+def _create_admin_event_lines(event):
+    """Create iCal lines for a single event in admin export."""
+    # Format dates for iCal
+    start_dt = event.start_date.strftime('%Y%m%dT%H%M%S')
+    end_dt = event.end_date.strftime('%Y%m%dT%H%M%S') if event.end_date else start_dt
+    created_dt = event.created_at.strftime('%Y%m%dT%H%M%SZ')
+    updated_dt = event.updated_at.strftime('%Y%m%dT%H%M%SZ')
+    
+    lines = [
+        'BEGIN:VEVENT',
+        f'UID:{event.id}@fortisauris.lms',
+        f'DTSTART:{start_dt}',
+        f'DTEND:{end_dt}',
+        f'DTSTAMP:{created_dt}',
+        f'CREATED:{created_dt}',
+        f'LAST-MODIFIED:{updated_dt}',
+        f'SUMMARY:{_escape_ical_text(event.title)}',
+    ]
+    
+    # Add description if present
+    if event.description:
+        lines.append(f'DESCRIPTION:{_escape_ical_text(event.description)}')
+    
+    # Add location (course title)
+    if event.course:
+        lines.append(f'LOCATION:{_escape_ical_text(event.course.title)}')
+    
+    # Add categories
+    lines.append(f'CATEGORIES:{event.get_event_type_display()}')
+    
+    # Add priority
+    lines.append(f'PRIORITY:{_get_admin_ical_priority(event.priority)}')
+    
+    # Add organizer (event creator)
+    if event.created_by:
+        organizer_email = event.created_by.email or f'{event.created_by.username}@fortisauris.lms'
+        organizer_name = event.created_by.get_full_name() or event.created_by.username
+        lines.append(f'ORGANIZER;CN={_escape_ical_text(organizer_name)}:MAILTO:{organizer_email}')
+    
+    # Add custom properties
+    lines.append(f'X-LMS-EVENT-TYPE:{event.event_type}')
+    lines.append(f'X-LMS-PRIORITY:{event.priority}')
+    lines.append(f'X-LMS-VISIBILITY:{event.visibility}')
+    
+    if event.course:
+        lines.append(f'X-LMS-COURSE-CODE:{event.course.course_code}')
+    
+    lines.append('END:VEVENT')
+    return lines
+
+
+def _escape_ical_text(text):
+    """Escape text for iCal format."""
+    if not text:
+        return ''
+    
+    # Replace special characters
+    text = str(text)
+    text = text.replace('\\', '\\\\')
+    text = text.replace(',', '\\,')
+    text = text.replace(';', '\\;')
+    text = text.replace('\n', '\\n')
+    text = text.replace('\r', '')
+    
+    return text
+
+
+def _get_admin_ical_priority(priority):
+    """Convert LMS priority to iCal priority (1=high, 5=medium, 9=low)."""
+    priority_map = {
+        'urgent': '1',
+        'high': '3',
+        'normal': '5',
+        'low': '9'
+    }
+    return priority_map.get(priority, '5')

@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
 from .validators import validate_assignment_file
+from .utils.storage import MediaStorage
 import os
 
 
@@ -784,7 +785,13 @@ class BlogPost(models.Model):
     
     # Publication settings
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
-    featured_image = models.ImageField(upload_to='blog_images/', blank=True, null=True)
+    featured_image = models.ImageField(
+        upload_to='blog_images/', 
+        blank=True, 
+        null=True,
+        storage=MediaStorage(),
+        help_text="Blog featured image (EXIF metadata will be automatically removed for privacy)"
+    )
     
     # Metadata
     created_date = models.DateTimeField(default=timezone.now)
@@ -1040,8 +1047,13 @@ class Event(models.Model):
                                     help_text="Obsidian-style link: [[Course Name - Lesson Title]] or lesson URL")
     
     # File uploads for posters and materials (admin only)
-    poster = models.ImageField(upload_to='event_posters/', null=True, blank=True,
-                              help_text="Event poster image (JPG, PNG)")
+    poster = models.ImageField(
+        upload_to='event_posters/', 
+        null=True, 
+        blank=True,
+        storage=MediaStorage(),
+        help_text="Event poster image (JPG, PNG) - EXIF metadata will be automatically removed for privacy"
+    )
     materials = models.FileField(upload_to='event_materials/', null=True, blank=True,
                                 help_text="Event materials (PDF, DOC, etc.)")
     

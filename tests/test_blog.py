@@ -327,10 +327,10 @@ class CalendarViewTest(TestCase):
         self.client = Client()
     
     def test_calendar_view_anonymous(self):
-        """Test calendar view for anonymous users - should redirect to login"""
+        """Test calendar view for anonymous users - should show public events only"""
         response = self.client.get(reverse('event_calendar'))
-        self.assertEqual(response.status_code, 302)  # Redirect to login
-        self.assertTrue(response['Location'].endswith('login/?next=/calendar/'))  # Should redirect to login page
+        self.assertEqual(response.status_code, 200)  # Should be accessible to anonymous users
+        self.assertContains(response, 'calendar')  # Should contain calendar content
     
     def test_calendar_view_authenticated(self):
         """Test calendar view for authenticated users"""
