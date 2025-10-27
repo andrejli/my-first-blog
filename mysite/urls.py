@@ -9,6 +9,9 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     
+    # Secret Chamber (admin-only secure polling system)
+    path('secret-chamber/', include('blog.secret_chamber.urls')),
+    
     # Dedicated security monitoring admin (uncomment after setup)
     # path('security-admin/', security_admin_site.urls),
     

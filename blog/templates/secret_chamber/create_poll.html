@@ -1,0 +1,255 @@
+{% extends "blog/base.html" %}
+
+{% block title %}Create New Poll - Admin Polling{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 30px;">
+        <h1 style="color: #343a40; margin-bottom: 20px; text-align: center;">🗳️ Create New Admin Poll</h1>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}" style="padding: 15px; margin-bottom: 20px; border-radius: 5px; 
+                    background: {% if message.tags == 'success' %}#d4edda{% elif message.tags == 'error' %}#f8d7da{% else %}#d1ecf1{% endif %};
+                    border: 1px solid {% if message.tags == 'success' %}#c3e6cb{% elif message.tags == 'error' %}#f5c6cb{% else %}#bee5eb{% endif %};
+                    color: {% if message.tags == 'success' %}#155724{% elif message.tags == 'error' %}#721c24{% else %}#0c5460{% endif %};">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post" style="max-width: 100%;">
+            {% csrf_token %}
+            
+            <!-- Poll Title -->
+            <div style="margin-bottom: 20px;">
+                <label for="title" style="display: block; font-weight: bold; color: #495057; margin-bottom: 8px;">
+                    Poll Title *
+                </label>
+                <input type="text" name="title" id="title" required
+                       style="width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 5px; font-size: 1em;"
+                       placeholder="Enter a clear, concise poll title">
+            </div>
+
+            <!-- Poll Description -->
+            <div style="margin-bottom: 20px;">
+                <label for="description" style="display: block; font-weight: bold; color: #495057; margin-bottom: 8px;">
+                    Description
+                </label>
+                <textarea name="description" id="description" rows="3"
+                          style="width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 5px; font-size: 1em; resize: vertical;"
+                          placeholder="Optional: Provide context or details about this poll"></textarea>
+            </div>
+
+            <!-- Poll Type -->
+            <div style="margin-bottom: 20px;">
+                <label for="poll_type" style="display: block; font-weight: bold; color: #495057; margin-bottom: 8px;">
+                    Poll Type *
+                </label>
+                <select name="poll_type" id="poll_type" required
+                        style="width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 5px; font-size: 1em;">
+                    <option value="">Choose poll type...</option>
+                    <option value="single">Single Choice (voters pick one option)</option>
+                    <option value="multiple">Multiple Choice (voters can pick multiple options)</option>
+                    <option value="yesno">Yes/No (simple approval vote)</option>
+                </select>
+            </div>
+
+            <!-- End Date -->
+            <div style="margin-bottom: 20px;">
+                <label for="end_date" style="display: block; font-weight: bold; color: #495057; margin-bottom: 8px;">
+                    Poll End Date & Time *
+                </label>
+                <input type="datetime-local" name="end_date" id="end_date" required
+                       style="width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 5px; font-size: 1em;">
+                <small style="color: #6c757d; font-size: 0.9em;">When should voting close?</small>
+            </div>
+
+            <!-- Poll Options -->
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: bold; color: #495057; margin-bottom: 12px;">
+                    Poll Options *
+                </label>
+                <div id="poll-options">
+                    <div class="option-input" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <input type="text" name="option_1" placeholder="Option 1" required
+                               style="flex: 1; padding: 10px; border: 1px solid #ced4da; border-radius: 5px;">
+                        <button type="button" onclick="removeOption(this)" disabled
+                                style="background: #dc3545; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: not-allowed;">
+                            ❌
+                        </button>
+                    </div>
+                    <div class="option-input" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <input type="text" name="option_2" placeholder="Option 2" required
+                               style="flex: 1; padding: 10px; border: 1px solid #ced4da; border-radius: 5px;">
+                        <button type="button" onclick="removeOption(this)" disabled
+                                style="background: #dc3545; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: not-allowed;">
+                            ❌
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="button" onclick="addOption()" 
+                        style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 5px; margin-top: 10px; cursor: pointer;">
+                    ➕ Add Option
+                </button>
+                <small style="display: block; color: #6c757d; font-size: 0.9em; margin-top: 5px;">
+                    Add 2-10 options for voters to choose from
+                </small>
+            </div>
+
+            <!-- Poll Settings -->
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
+                <h4 style="color: #495057; margin-bottom: 15px;">Poll Settings</h4>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" name="show_results" value="true" checked
+                               style="margin-right: 10px; transform: scale(1.2);">
+                        <span style="color: #495057;">Show results to voters immediately</span>
+                    </label>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" name="allow_comments" value="true"
+                               style="margin-right: 10px; transform: scale(1.2);">
+                        <span style="color: #495057;">Allow voters to add optional comments</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px;">
+                <a href="{% url 'secret_chamber:dashboard' %}" 
+                   style="background: #6c757d; color: white; padding: 12px 24px; border-radius: 5px; text-decoration: none;">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        style="background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 5px; font-size: 1.1em; cursor: pointer; font-weight: bold;">
+                    🗳️ Create Poll
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Info Notice -->
+    <div style="background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; padding: 20px; border-radius: 8px; margin-top: 20px;">
+        <strong>📋 Phase 1 Implementation:</strong> This creates a basic admin poll where all votes are recorded with voter identification. 
+        In Phase 2, we will add anonymous voting with encryption for the full Secret Chamber experience.
+    </div>
+</div>
+
+<script>
+let optionCount = 2;
+
+function addOption() {
+    if (optionCount >= 10) {
+        alert('Maximum 10 options allowed');
+        return;
+    }
+    
+    optionCount++;
+    const container = document.getElementById('poll-options');
+    const newOption = document.createElement('div');
+    newOption.className = 'option-input';
+    newOption.style = 'display: flex; gap: 10px; margin-bottom: 10px;';
+    
+    newOption.innerHTML = `
+        <input type="text" name="option_${optionCount}" placeholder="Option ${optionCount}" required
+               style="flex: 1; padding: 10px; border: 1px solid #ced4da; border-radius: 5px;">
+        <button type="button" onclick="removeOption(this)"
+                style="background: #dc3545; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;">
+            ❌
+        </button>
+    `;
+    
+    container.appendChild(newOption);
+    updateRemoveButtons();
+}
+
+function removeOption(button) {
+    if (optionCount <= 2) {
+        alert('Minimum 2 options required');
+        return;
+    }
+    
+    button.parentElement.remove();
+    optionCount--;
+    updateRemoveButtons();
+    
+    // Renumber the options
+    const options = document.querySelectorAll('.option-input input');
+    options.forEach((input, index) => {
+        input.name = `option_${index + 1}`;
+        input.placeholder = `Option ${index + 1}`;
+    });
+}
+
+function updateRemoveButtons() {
+    const removeButtons = document.querySelectorAll('.option-input button');
+    removeButtons.forEach((button, index) => {
+        if (optionCount <= 2) {
+            button.disabled = true;
+            button.style.cursor = 'not-allowed';
+            button.style.background = '#6c757d';
+        } else {
+            button.disabled = false;
+            button.style.cursor = 'pointer';
+            button.style.background = '#dc3545';
+        }
+    });
+}
+
+// Set minimum date to current time
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // Adjust for timezone
+    document.getElementById('end_date').min = now.toISOString().slice(0, 16);
+    
+    // Set default end date to 1 week from now
+    const oneWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    document.getElementById('end_date').value = oneWeek.toISOString().slice(0, 16);
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const options = document.querySelectorAll('.option-input input');
+    const filledOptions = Array.from(options).filter(input => input.value.trim() !== '');
+    
+    if (filledOptions.length < 2) {
+        e.preventDefault();
+        alert('Please provide at least 2 poll options');
+        return;
+    }
+    
+    // Check for duplicate options
+    const optionTexts = filledOptions.map(input => input.value.trim().toLowerCase());
+    const uniqueOptions = [...new Set(optionTexts)];
+    
+    if (uniqueOptions.length !== optionTexts.length) {
+        e.preventDefault();
+        alert('Poll options must be unique (no duplicates)');
+        return;
+    }
+});
+</script>
+
+<style>
+button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.option-input input:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 2px rgba(40,167,69,0.25);
+}
+</style>
+{% endblock %}

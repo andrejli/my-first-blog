@@ -1,0 +1,441 @@
+{% extends "blog/base.html" %}
+{% load static %}
+
+{% block title %}🕵️ Secret Chamber - Admin Decision Center{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'secret_chamber/css/chamber.css' %}" rel="stylesheet">
+<style>
+    .chamber-container {
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        min-height: calc(100vh - 200px);
+        border-radius: 10px;
+        padding: 30px;
+        margin: 20px 0;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        border: 1px solid #444;
+    }
+    
+    .chamber-header {
+        text-align: center;
+        padding: 20px 0;
+        border-bottom: 2px solid #00ff88;
+        margin-bottom: 30px;
+    }
+    
+    .chamber-title {
+        color: #00ff88;
+        font-family: 'Courier New', monospace;
+        font-size: 2.5em;
+        text-shadow: 0 0 10px #00ff88;
+        margin: 0;
+    }
+    
+    .chamber-subtitle {
+        color: #888;
+        font-family: 'Courier New', monospace;
+        margin: 10px 0 0 0;
+    }
+    
+    .chamber-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+    
+    .chamber-card {
+        background: rgba(0,0,0,0.6);
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+    }
+    
+    .chamber-card:hover {
+        border-color: #00ff88;
+        box-shadow: 0 5px 15px rgba(0,255,136,0.2);
+        transform: translateY(-2px);
+    }
+    
+    .card-title {
+        color: #00ff88;
+        font-size: 1.2em;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .poll-item {
+        background: rgba(0,0,0,0.4);
+        border-left: 3px solid #00ff88;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 0 5px 5px 0;
+    }
+    
+    .poll-title {
+        color: #fff;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .poll-meta {
+        color: #888;
+        font-size: 0.9em;
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .status-badge {
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.8em;
+        font-weight: bold;
+    }
+    
+    .status-active { background: #28a745; color: white; }
+    .status-completed { background: #dc3545; color: white; }
+    .status-scheduled { background: #ffc107; color: black; }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 15px;
+        background: rgba(0,255,136,0.1);
+        border-radius: 5px;
+        border: 1px solid rgba(0,255,136,0.3);
+    }
+    
+    .stat-number {
+        font-size: 2em;
+        font-weight: bold;
+        color: #00ff88;
+        display: block;
+    }
+    
+    .stat-label {
+        color: #ccc;
+        font-size: 0.9em;
+    }
+    
+    .action-buttons {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .btn-chamber {
+        background: linear-gradient(45deg, #00ff88, #00cc6a);
+        border: none;
+        color: black;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-weight: bold;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-chamber:hover {
+        background: linear-gradient(45deg, #00cc6a, #00aa55);
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(0,255,136,0.3);
+        color: black;
+        text-decoration: none;
+    }
+    
+    .btn-secondary {
+        background: rgba(255,255,255,0.1);
+        border: 1px solid #666;
+        color: #ccc;
+        padding: 10px 20px;
+        border-radius: 5px;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+        background: rgba(255,255,255,0.2);
+        border-color: #888;
+        color: #fff;
+        text-decoration: none;
+    }
+    
+    .alert-chamber {
+        background: rgba(0,255,136,0.1);
+        border: 1px solid rgba(0,255,136,0.3);
+        color: #00ff88;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 20px 0;
+    }
+    
+    .no-polls {
+        text-align: center;
+        color: #888;
+        font-style: italic;
+        padding: 20px;
+    }
+    
+    .activity-item {
+        padding: 10px 0;
+        border-bottom: 1px solid #333;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    
+    .activity-description {
+        color: #ccc;
+    }
+    
+    .activity-time {
+        color: #888;
+        font-size: 0.9em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chamber-container">
+    <div class="chamber-header">
+        <h1 class="chamber-title">🕵️ SECRET CHAMBER</h1>
+        <p class="chamber-subtitle">Admin Decision Making System</p>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-chamber">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Quick Stats -->
+    <div class="stats-grid">
+        <div class="stat-item">
+            <span class="stat-number">{{ chamber_stats.active_polls_count }}</span>
+            <span class="stat-label">Active Polls</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">{{ chamber_stats.pending_votes }}</span>
+            <span class="stat-label">Pending Votes</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">{{ chamber_stats.participation_rate|floatformat:0 }}%</span>
+            <span class="stat-label">Your Participation</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">{{ total_polls }}</span>
+            <span class="stat-label">Total Polls</span>
+        </div>
+    </div>
+
+    <div class="chamber-grid">
+        <!-- Active Polls -->
+        <div class="chamber-card">
+            <div class="card-title">
+                🗳️ Active Polls
+                {% if active_polls %}
+                    <span class="badge badge-success">{{ active_polls|length }}</span>
+                {% endif %}
+            </div>
+            
+            {% if active_polls %}
+                {% for poll in active_polls %}
+                    <div class="poll-item">
+                        <div class="poll-title">
+                            <a href="{% url 'secret_chamber:poll_detail' poll.id %}" style="color: #fff; text-decoration: none;">
+                                {{ poll.title }}
+                            </a>
+                        </div>
+                        <div class="poll-meta">
+                            <span>{{ poll.get_poll_type_display }}</span>
+                            <span class="status-badge status-active">Active</span>
+                            <span>{{ poll.participation_rate|floatformat:0 }}% participation</span>
+                            <span>Ends: {{ poll.end_date|date:"M d, H:i" }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-polls">No active polls</div>
+            {% endif %}
+        </div>
+
+        <!-- Your Pending Votes -->
+        <div class="chamber-card">
+            <div class="card-title">
+                ⏳ Your Pending Votes
+                {% if user_votable_polls %}
+                    <span class="badge badge-warning">{{ user_votable_polls|length }}</span>
+                {% endif %}
+            </div>
+            
+            {% if user_votable_polls %}
+                {% for poll in user_votable_polls %}
+                    <div class="poll-item">
+                        <div class="poll-title">
+                            <a href="{% url 'secret_chamber:poll_detail' poll.id %}" style="color: #fff; text-decoration: none;">
+                                {{ poll.title }}
+                            </a>
+                        </div>
+                        <div class="poll-meta">
+                            <span>{{ poll.get_poll_type_display }}</span>
+                            <span>Ends: {{ poll.end_date|date:"M d, H:i" }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+                
+                <div style="margin-top: 15px;">
+                    <a href="{% url 'secret_chamber:poll_list' %}?status=active" class="btn-chamber">
+                        Vote Now
+                    </a>
+                </div>
+            {% else %}
+                <div class="no-polls">All caught up! No pending votes.</div>
+            {% endif %}
+        </div>
+
+        <!-- Recent Decisions -->
+        <div class="chamber-card">
+            <div class="card-title">📋 Recent Decisions</div>
+            
+            {% if recent_decisions %}
+                {% for poll in recent_decisions %}
+                    <div class="poll-item">
+                        <div class="poll-title">
+                            <a href="{% url 'secret_chamber:poll_results' poll.id %}" style="color: #fff; text-decoration: none;">
+                                {{ poll.title }}
+                            </a>
+                        </div>
+                        <div class="poll-meta">
+                            <span>{{ poll.get_poll_type_display }}</span>
+                            <span class="status-badge status-completed">Completed</span>
+                            <span>{{ poll.participation_rate|floatformat:0 }}% participation</span>
+                            <span>{{ poll.end_date|date:"M d" }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-polls">No recent decisions</div>
+            {% endif %}
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="chamber-card">
+            <div class="card-title">📊 Your Recent Activity</div>
+            
+            {% if recent_activity %}
+                {% for activity in recent_activity %}
+                    <div class="activity-item">
+                        <span class="activity-description">{{ activity.description }}</span>
+                        <span class="activity-time">{{ activity.timestamp|date:"M d, H:i" }}</span>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-polls">No recent activity</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <a href="{% url 'secret_chamber:create_poll' %}" class="btn-chamber">
+            🗳️ Create New Poll
+        </a>
+        <a href="{% url 'secret_chamber:poll_list' %}" class="btn-secondary">
+            📋 View All Polls
+        </a>
+        <a href="{% url 'secret_chamber:analytics' %}" class="btn-secondary">
+            📊 Analytics
+        </a>
+        <a href="{% url 'secret_chamber:reports_list' %}" class="btn-secondary">
+            📄 Reports
+        </a>
+        <a href="{% url 'secret_chamber:audit_log' %}" class="btn-secondary">
+            🔍 Audit Log
+        </a>
+    </div>
+
+    <!-- Security Notice -->
+    <div class="alert-chamber" style="margin-top: 30px;">
+        <strong>🔒 Security Notice:</strong> This is a confidential admin-only area. All activities are logged for security purposes. 
+        Voting is anonymous and encrypted. Do not share chamber access or discuss chamber contents outside of authorized channels.
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh active polls every 30 seconds
+    setInterval(function() {
+        // Only refresh if there are active polls or pending votes
+        const activePolls = {{ chamber_stats.active_polls_count }};
+        const pendingVotes = {{ chamber_stats.pending_votes }};
+        
+        if (activePolls > 0 || pendingVotes > 0) {
+            // Check for updates via AJAX
+            fetch('{% url "secret_chamber:chamber_activity_api" %}')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.needs_refresh) {
+                        // Show notification that new activity is available
+                        showUpdateNotification();
+                    }
+                })
+                .catch(error => console.log('Activity check failed:', error));
+        }
+    }, 30000);
+
+    function showUpdateNotification() {
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-info alert-chamber';
+        notification.innerHTML = `
+            <strong>📊 New Activity:</strong> Chamber activity has been updated. 
+            <a href="#" onclick="location.reload(); return false;" style="color: #00ff88;">Refresh page</a> to see changes.
+        `;
+        
+        const container = document.querySelector('.chamber-container');
+        container.insertBefore(notification, container.firstChild);
+        
+        // Auto-remove after 10 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 10000);
+    }
+
+    // Add terminal-style typing effect to title
+    document.addEventListener('DOMContentLoaded', function() {
+        const title = document.querySelector('.chamber-title');
+        const originalText = title.textContent;
+        title.textContent = '';
+        
+        let i = 0;
+        const typeWriter = () => {
+            if (i < originalText.length) {
+                title.textContent += originalText.charAt(i);
+                i++;
+                setTimeout(typeWriter, 100);
+            }
+        };
+        
+        typeWriter();
+    });
+</script>
+{% endblock %}

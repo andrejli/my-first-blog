@@ -1,0 +1,160 @@
+{% extends "blog/base.html" %}
+
+{% block title %}Admin Polling System - Dashboard{% endblock %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+    <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
+        <h1 style="color: #343a40; margin-bottom: 10px;">🗳️ Admin Polling System</h1>
+        <p style="color: #6c757d; margin: 0;">Secure polling for administrative decisions - Phase 1</p>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}" style="padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Quick Stats -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        <div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; text-align: center;">
+            <div style="font-size: 2em; font-weight: bold; color: #007bff;">{{ stats.active_count }}</div>
+            <div style="color: #6c757d;">Active Polls</div>
+        </div>
+        <div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; text-align: center;">
+            <div style="font-size: 2em; font-weight: bold; color: #28a745;">{{ stats.pending_votes }}</div>
+            <div style="color: #6c757d;">Pending Votes</div>
+        </div>
+        <div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; text-align: center;">
+            <div style="font-size: 2em; font-weight: bold; color: #17a2b8;">{{ total_polls }}</div>
+            <div style="color: #6c757d;">Total Polls</div>
+        </div>
+        <div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; text-align: center;">
+            <div style="font-size: 2em; font-weight: bold; color: #ffc107;">{{ user_votes }}</div>
+            <div style="color: #6c757d;">Your Votes</div>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
+        <!-- Active Polls -->
+        <div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px;">
+            <h3 style="color: #343a40; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                🗳️ Active Polls
+                {% if active_polls %}
+                    <span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8em;">{{ active_polls|length }}</span>
+                {% endif %}
+            </h3>
+            
+            {% if active_polls %}
+                {% for poll in active_polls %}
+                    <div style="border-left: 3px solid {% if poll.all_admins_voted %}#28a745{% else %}#007bff{% endif %}; padding: 15px; margin: 15px 0; background: #f8f9fa;">
+                        <div style="font-weight: bold; margin-bottom: 8px;">
+                            <a href="{% url 'secret_chamber:poll_detail' poll.id %}" style="color: #343a40; text-decoration: none;">
+                                {{ poll.title }}
+                                {% if poll.all_admins_voted %}
+                                    <span style="background: #28a745; color: white; padding: 2px 6px; border-radius: 8px; font-size: 0.7em; margin-left: 8px;">COMPLETE</span>
+                                {% endif %}
+                            </a>
+                        </div>
+                        <div style="color: #6c757d; font-size: 0.9em; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                            <span>{{ poll.get_poll_type_display }}</span>
+                            <span style="{% if poll.all_admins_voted %}color: #28a745; font-weight: bold;{% endif %}">
+                                {{ poll.participation_rate|floatformat:0 }}% participation
+                                {% if poll.all_admins_voted %}🎉{% endif %}
+                            </span>
+                            <span>Ends: {{ poll.end_date|date:"M d, H:i" }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p style="color: #6c757d; font-style: italic; text-align: center; padding: 20px;">No active polls</p>
+            {% endif %}
+        </div>
+
+        <!-- Your Pending Votes -->
+        <div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px;">
+            <h3 style="color: #343a40; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                ⏳ Your Pending Votes
+                {% if user_can_vote_polls %}
+                    <span style="background: #ffc107; color: black; padding: 2px 8px; border-radius: 10px; font-size: 0.8em;">{{ user_can_vote_polls|length }}</span>
+                {% endif %}
+            </h3>
+            
+            {% if user_can_vote_polls %}
+                {% for poll in user_can_vote_polls %}
+                    <div style="border-left: 3px solid #ffc107; padding: 15px; margin: 15px 0; background: #fff3cd;">
+                        <div style="font-weight: bold; margin-bottom: 8px;">
+                            <a href="{% url 'secret_chamber:poll_detail' poll.id %}" style="color: #343a40; text-decoration: none;">
+                                {{ poll.title }}
+                            </a>
+                        </div>
+                        <div style="color: #6c757d; font-size: 0.9em; display: flex; justify-content: space-between;">
+                            <span>{{ poll.get_poll_type_display }}</span>
+                            <span>Ends: {{ poll.end_date|date:"M d, H:i" }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+                
+                <div style="margin-top: 15px; text-align: center;">
+                    <a href="{% url 'secret_chamber:poll_list' %}?status=active" 
+                       style="background: #007bff; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; display: inline-block;">
+                        Vote Now
+                    </a>
+                </div>
+            {% else %}
+                <p style="color: #6c757d; font-style: italic; text-align: center; padding: 20px;">All caught up! No pending votes.</p>
+            {% endif %}
+        </div>
+
+        <!-- Recent Polls -->
+        <div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px;">
+            <h3 style="color: #343a40; margin-bottom: 20px;">📋 Recent Polls</h3>
+            
+            {% if recent_polls %}
+                {% for poll in recent_polls %}
+                    <div style="border-left: 3px solid #6c757d; padding: 15px; margin: 15px 0; background: #f8f9fa;">
+                        <div style="font-weight: bold; margin-bottom: 8px;">
+                            <a href="{% url 'secret_chamber:poll_results' poll.id %}" style="color: #343a40; text-decoration: none;">
+                                {{ poll.title }}
+                            </a>
+                        </div>
+                        <div style="color: #6c757d; font-size: 0.9em; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                            <span>{{ poll.get_poll_type_display }}</span>
+                            <span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 8px; font-size: 0.8em;">Closed</span>
+                            <span>{{ poll.participation_rate|floatformat:0 }}% participation</span>
+                            <span>{{ poll.end_date|date:"M d" }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p style="color: #6c757d; font-style: italic; text-align: center; padding: 20px;">No recent polls</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="margin-top: 30px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;">
+        <a href="{% url 'secret_chamber:create_poll' %}" 
+           style="background: #28a745; color: white; padding: 12px 24px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+            🗳️ Create New Poll
+        </a>
+        <a href="{% url 'secret_chamber:poll_list' %}" 
+           style="background: #6c757d; color: white; padding: 12px 24px; border-radius: 5px; text-decoration: none;">
+            📋 View All Polls
+        </a>
+        <a href="/admin/secret_chamber/" 
+           style="background: #17a2b8; color: white; padding: 12px 24px; border-radius: 5px; text-decoration: none;">
+            ⚙️ Admin Interface
+        </a>
+    </div>
+
+    <!-- Info Notice -->
+    <div style="background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; padding: 20px; border-radius: 8px; margin-top: 30px;">
+        <strong>📋 Phase 1 Implementation:</strong> This is the basic admin polling system. 
+        All votes are recorded with voter identification for transparency. 
+        In Phase 2, we will add encryption and anonymity features to create the full Secret Chamber system.
+    </div>
+</div>
+{% endblock %}

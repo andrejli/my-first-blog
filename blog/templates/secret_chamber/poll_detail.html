@@ -1,0 +1,260 @@
+{% extends "blog/base.html" %}
+
+{% block title %}{{ poll.title }} - Admin Poll{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+    <!-- Poll Header -->
+    <div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+            <h1 style="color: #343a40; margin: 0;">{{ poll.title }}</h1>
+            <div style="display: flex; gap: 10px;">
+                {% if poll.is_active %}
+                    <span style="background: #28a745; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.9em;">
+                        🟢 Active
+                    </span>
+                {% else %}
+                    <span style="background: #dc3545; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.9em;">
+                        🔴 Closed
+                    </span>
+                {% endif %}
+                <span style="background: #6c757d; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.9em;">
+                    {{ poll.get_poll_type_display }}
+                </span>
+            </div>
+        </div>
+        
+        {% if poll.description %}
+            <p style="color: #6c757d; margin-bottom: 20px; line-height: 1.6;">{{ poll.description }}</p>
+        {% endif %}
+        
+        <!-- Poll Meta Info -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; background: #f8f9fa; padding: 15px; border-radius: 5px;">
+            <div>
+                <strong style="color: #495057;">Created:</strong><br>
+                <span style="color: #6c757d;">{{ poll.created_at|date:"M d, Y H:i" }}</span>
+            </div>
+            <div>
+                <strong style="color: #495057;">Ends:</strong><br>
+                <span style="color: {% if poll.is_active %}#28a745{% else %}#dc3545{% endif %};">
+                    {{ poll.end_date|date:"M d, Y H:i" }}
+                </span>
+            </div>
+            <div>
+                <strong style="color: #495057;">Votes:</strong><br>
+                <span style="color: #6c757d;">{{ poll.admin_votes.count }} votes cast</span>
+            </div>
+            <div>
+                <strong style="color: #495057;">Type:</strong><br>
+                <span style="color: #6c757d;">
+                    {% if poll.poll_type == 'single' %}Single Choice{% elif poll.poll_type == 'multiple' %}Multiple Choice{% else %}Yes/No{% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}" style="padding: 15px; margin-bottom: 20px; border-radius: 5px; 
+                background: {% if message.tags == 'success' %}#d4edda{% elif message.tags == 'error' %}#f8d7da{% else %}#d1ecf1{% endif %};
+                border: 1px solid {% if message.tags == 'success' %}#c3e6cb{% elif message.tags == 'error' %}#f5c6cb{% else %}#bee5eb{% endif %};
+                color: {% if message.tags == 'success' %}#155724{% elif message.tags == 'error' %}#721c24{% else %}#0c5460{% endif %};">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Voting Section -->
+    {% if poll.is_active and not user_vote %}
+        <div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
+            <h3 style="color: #343a40; margin-bottom: 20px;">🗳️ Cast Your Vote</h3>
+            
+            <form method="post" action="{% url 'secret_chamber:cast_vote' poll.id %}">
+                {% csrf_token %}
+                
+                {% if poll.poll_type == 'open_response' %}
+                    <!-- Open Response Input -->
+                    <div style="border: 1px solid #dee2e6; border-radius: 5px; padding: 20px; margin: 10px 0; background: #f8f9fa;">
+                        <label for="response_text" style="display: block; font-weight: 500; color: #343a40; margin-bottom: 10px;">
+                            Your Response:
+                        </label>
+                        <textarea 
+                            name="response_text" 
+                            id="response_text" 
+                            rows="6" 
+                            style="width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-family: inherit; font-size: 14px; resize: vertical;"
+                            placeholder="Please share your thoughts and suggestions here..."
+                            required
+                        ></textarea>
+                        <div style="color: #6c757d; font-size: 0.9em; margin-top: 5px;">
+                            Feel free to be detailed in your response. Your feedback is valuable to us.
+                        </div>
+                    </div>
+                {% else %}
+                    <!-- Multiple Choice / Radio Options -->
+                    {% for option in poll.options.all %}
+                        <div style="border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; margin: 10px 0; background: #f8f9fa; transition: all 0.2s;">
+                            <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                                {% if poll.poll_type == 'multiple_choice' %}
+                                    <input type="checkbox" name="options" value="{{ option.id }}" style="margin-right: 15px; transform: scale(1.2);">
+                                {% else %}
+                                    <input type="radio" name="option" value="{{ option.id }}" style="margin-right: 15px; transform: scale(1.2);">
+                                {% endif %}
+                                <div>
+                                    <div style="font-weight: 500; color: #343a40;">{{ option.option_text }}</div>
+                                    {% if option.description %}
+                                        <div style="color: #6c757d; font-size: 0.9em; margin-top: 5px;">{{ option.description }}</div>
+                                    {% endif %}
+                                </div>
+                            </label>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <div style="margin-top: 20px; text-align: center;">
+                    <button type="submit" style="background: #007bff; color: white; padding: 12px 30px; border: none; border-radius: 5px; font-size: 1.1em; cursor: pointer; font-weight: bold;">
+                        Submit Vote
+                    </button>
+                </div>
+            </form>
+        </div>
+    {% elif poll.is_active and user_vote %}
+        <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h4 style="margin: 0 0 10px 0;">✅ You have already voted in this poll</h4>
+            <p style="margin: 0;">Your vote was recorded on {{ user_vote.voted_at|date:"M d, Y \a\t H:i" }}</p>
+        </div>
+    {% elif not poll.is_active %}
+        <div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h4 style="margin: 0 0 10px 0;">🔒 This poll is closed</h4>
+            <p style="margin: 0;">Voting ended on {{ poll.end_date|date:"M d, Y \a\t H:i" }}</p>
+        </div>
+    {% endif %}
+
+    <!-- Results Section -->
+    {% if poll.can_view_results %}
+        <div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
+            {% if poll.all_admins_voted and poll.is_active %}
+                <h3 style="color: #343a40; margin-bottom: 10px;">📊 Results - All Admins Voted!</h3>
+                <p style="color: #28a745; font-weight: 500; margin-bottom: 20px;">
+                    🎉 100% participation achieved! Results are now available even though the poll is still active.
+                </p>
+            {% else %}
+                <h3 style="color: #343a40; margin-bottom: 20px;">📊 Results</h3>
+            {% endif %}
+            
+            {% if poll.admin_votes.count > 0 %}
+                {% if poll.poll_type == 'open_response' %}
+                    <!-- Open Response Results -->
+                    <div style="margin: 20px 0;">
+                        <h4 style="color: #495057; margin-bottom: 15px;">💬 Anonymous Responses ({{ poll.admin_votes.count }} Total)</h4>
+                        <p style="color: #6c757d; font-size: 0.9em; margin-bottom: 20px;">
+                            All responses are displayed anonymously to protect respondent privacy. Names and identifying information have been removed.
+                        </p>
+                        
+                        {% for vote in poll.admin_votes.all %}
+                            {% if vote.text_response and vote.text_response|length > 0 %}
+                                <div style="background: #f8f9fa; border-left: 3px solid #007bff; padding: 15px; margin: 10px 0; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                    <div style="color: #495057; line-height: 1.6; font-size: 14px;">
+                                        {{ vote.text_response|linebreaksbr }}
+                                    </div>
+                                    <div style="color: #6c757d; font-size: 0.8em; margin-top: 10px; border-top: 1px solid #e9ecef; padding-top: 8px;">
+                                        📅 Submitted: {{ vote.timestamp|date:"M d, Y H:i" }}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if not poll.admin_votes.all %}
+                            <div style="text-align: center; color: #6c757d; font-style: italic; padding: 20px;">
+                                No responses submitted yet.
+                            </div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <!-- Traditional Option-Based Results -->
+                    {% for option in poll.options.all %}
+                        {% with vote_count=option.vote_count total_votes=poll.admin_votes.count %}
+                            <div style="margin: 15px 0;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span style="font-weight: 500;">{{ option.option_text }}</span>
+                                    <span style="color: #6c757d;">
+                                        {{ vote_count }} vote{{ vote_count|pluralize }} 
+                                        {% if total_votes > 0 %}
+                                            ({% widthratio vote_count total_votes 100 %}%)
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div style="background: #e9ecef; border-radius: 10px; height: 20px; overflow: hidden;">
+                                    {% if total_votes > 0 %}
+                                        <div style="background: linear-gradient(90deg, #007bff, #0056b3); height: 100%; width: {% widthratio vote_count total_votes 100 %}%; transition: width 1s ease-in-out; border-radius: 10px;"></div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endwith %}
+                    {% endfor %}
+                {% endif %}
+                
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #dee2e6; color: #6c757d; text-align: center;">
+                    Total votes: {{ poll.admin_votes.count }}
+                </div>
+            {% else %}
+                <p style="color: #6c757d; font-style: italic; text-align: center; padding: 20px;">No votes yet</p>
+            {% endif %}
+        </div>
+    {% else %}
+        <div style="background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h4 style="margin: 0 0 10px 0;">👁️ Results are hidden</h4>
+            <p style="margin: 0;">Results will be shown after the poll closes or when all eligible admins have voted (currently {{ poll.participation_rate|floatformat:0 }}% participation).</p>
+        </div>
+    {% endif %}
+
+    <!-- Action Buttons -->
+    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+        <a href="{% url 'secret_chamber:dashboard' %}" 
+           style="background: #6c757d; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">
+            ← Back to Dashboard
+        </a>
+        
+        {% if poll.created_by == user %}
+            <a href="{% url 'secret_chamber:poll_results' poll.id %}" 
+               style="background: #17a2b8; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">
+                📊 View Full Results
+            </a>
+        {% endif %}
+        
+        {% if user.is_superuser %}
+            <a href="/admin/secret_chamber/adminpoll/{{ poll.id }}/change/" 
+               style="background: #ffc107; color: black; padding: 10px 20px; border-radius: 5px; text-decoration: none;">
+                ⚙️ Edit Poll
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- Info Notice -->
+    <div style="background: #f8f9fa; border: 1px solid #dee2e6; color: #495057; padding: 20px; border-radius: 8px; margin-top: 30px;">
+        <strong>📋 Phase 1 Note:</strong> Your vote is recorded with your username for transparency. 
+        In Phase 2, we will implement anonymous voting with encryption for true secret ballots.
+    </div>
+</div>
+
+<style>
+/* Hover effects */
+input[type="radio"]:hover, input[type="checkbox"]:hover {
+    transform: scale(1.3);
+}
+
+label:hover {
+    background: #e9ecef !important;
+}
+
+button:hover {
+    background: #0056b3 !important;
+    transform: translateY(-1px);
+}
+
+a:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}

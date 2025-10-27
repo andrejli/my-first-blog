@@ -153,6 +153,11 @@ db_backup.sqlite3
 *_backup.sqlite3
 test_db.sqlite3
 
+# Secret Chamber - Poll data should not be tracked for privacy
+*/secret_chamber/polls/
+polls/
+poll_data/
+
 # Media files - User uploads should not be tracked
 media/blog_images/
 media/assignments/

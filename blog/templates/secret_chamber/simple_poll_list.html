@@ -1,0 +1,231 @@
+{% extends "blog/base.html" %}
+
+{% block title %}Poll List - Admin Polling{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 0 auto; padding: 20px;">
+    <!-- Header -->
+    <div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1 style="color: #343a40; margin: 0;">📋 All Polls</h1>
+            <a href="{% url 'secret_chamber:create_poll' %}" 
+               style="background: #28a745; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+                🗳️ Create New Poll
+            </a>
+        </div>
+        
+        <!-- Filter Tabs -->
+        <div style="display: flex; gap: 10px; border-bottom: 1px solid #dee2e6;">
+            <a href="{% url 'secret_chamber:poll_list' %}" 
+               style="padding: 10px 20px; text-decoration: none; border-bottom: 2px solid {% if not current_status %}#007bff{% else %}transparent{% endif %}; color: {% if not current_status %}#007bff{% else %}#6c757d{% endif %};">
+                All Polls
+            </a>
+            <a href="{% url 'secret_chamber:poll_list' %}?status=active" 
+               style="padding: 10px 20px; text-decoration: none; border-bottom: 2px solid {% if current_status == 'active' %}#28a745{% else %}transparent{% endif %}; color: {% if current_status == 'active' %}#28a745{% else %}#6c757d{% endif %};">
+                Active Polls
+            </a>
+            <a href="{% url 'secret_chamber:poll_list' %}?status=closed" 
+               style="padding: 10px 20px; text-decoration: none; border-bottom: 2px solid {% if current_status == 'closed' %}#dc3545{% else %}transparent{% endif %}; color: {% if current_status == 'closed' %}#dc3545{% else %}#6c757d{% endif %};">
+                Closed Polls
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}" style="padding: 15px; margin-bottom: 20px; border-radius: 5px; 
+                background: {% if message.tags == 'success' %}#d4edda{% elif message.tags == 'error' %}#f8d7da{% else %}#d1ecf1{% endif %};
+                border: 1px solid {% if message.tags == 'success' %}#c3e6cb{% elif message.tags == 'error' %}#f5c6cb{% else %}#bee5eb{% endif %};
+                color: {% if message.tags == 'success' %}#155724{% elif message.tags == 'error' %}#721c24{% else %}#0c5460{% endif %};">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Poll List -->
+    <div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px;">
+        {% if polls %}
+            <div style="display: grid; gap: 20px;">
+                {% for poll in polls %}
+                    <div style="border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; 
+                        background: {% if poll.is_active %}#f8f9fa{% else %}#f1f1f1{% endif %}; 
+                        transition: all 0.3s ease;">
+                        
+                        <!-- Poll Header -->
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                            <div style="flex: 1;">
+                                <h3 style="margin: 0 0 8px 0; color: #343a40;">
+                                    <a href="{% url 'secret_chamber:poll_detail' poll.id %}" 
+                                       style="color: #343a40; text-decoration: none;">
+                                        {{ poll.title }}
+                                    </a>
+                                </h3>
+                                {% if poll.description %}
+                                    <p style="color: #6c757d; margin: 0; line-height: 1.4;">
+                                        {{ poll.description|truncatewords:25 }}
+                                    </p>
+                                {% endif %}
+                            </div>
+                            
+                            <div style="display: flex; gap: 8px; margin-left: 20px;">
+                                {% if poll.is_active %}
+                                    <span style="background: #28a745; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.9em; white-space: nowrap;">
+                                        🟢 Active
+                                    </span>
+                                {% else %}
+                                    <span style="background: #dc3545; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.9em; white-space: nowrap;">
+                                        🔴 Closed
+                                    </span>
+                                {% endif %}
+                                
+                                <span style="background: #6c757d; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.9em; white-space: nowrap;">
+                                    {{ poll.get_poll_type_display }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Poll Stats -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                            <div style="background: rgba(0,0,0,0.05); padding: 10px; border-radius: 5px; text-align: center;">
+                                <div style="font-size: 1.2em; font-weight: bold; color: #007bff;">{{ poll.votes.count }}</div>
+                                <div style="color: #6c757d; font-size: 0.9em;">Vote{{ poll.votes.count|pluralize }}</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.05); padding: 10px; border-radius: 5px; text-align: center;">
+                                <div style="font-size: 1.2em; font-weight: bold; color: #17a2b8;">{{ poll.options.count }}</div>
+                                <div style="color: #6c757d; font-size: 0.9em;">Option{{ poll.options.count|pluralize }}</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.05); padding: 10px; border-radius: 5px; text-align: center;">
+                                <div style="font-size: 1.2em; font-weight: bold; color: #28a745;">{{ poll.created_by.username }}</div>
+                                <div style="color: #6c757d; font-size: 0.9em;">Created by</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.05); padding: 10px; border-radius: 5px; text-align: center;">
+                                <div style="font-size: 1.2em; font-weight: bold; color: #ffc107;">{{ poll.end_date|date:"M d" }}</div>
+                                <div style="color: #6c757d; font-size: 0.9em;">
+                                    {% if poll.is_active %}Ends{% else %}Ended{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <a href="{% url 'secret_chamber:poll_detail' poll.id %}" 
+                               style="background: #007bff; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 0.9em;">
+                                {% if poll.is_active %}
+                                    {% if poll.can_user_vote %}🗳️ Vote{% else %}👁️ View{% endif %}
+                                {% else %}
+                                    📊 Results
+                                {% endif %}
+                            </a>
+                            
+                            {% if poll.created_by == user %}
+                                <a href="{% url 'secret_chamber:poll_results' poll.id %}" 
+                                   style="background: #17a2b8; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 0.9em;">
+                                    📈 Analytics
+                                </a>
+                            {% endif %}
+                            
+                            {% if user.is_superuser %}
+                                <a href="/admin/secret_chamber/adminpoll/{{ poll.id }}/change/" 
+                                   style="background: #ffc107; color: black; padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 0.9em;">
+                                    ⚙️ Edit
+                                </a>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Poll Timeline -->
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6; color: #6c757d; font-size: 0.9em;">
+                            <span style="margin-right: 20px;">
+                                📅 Created: {{ poll.created_at|date:"M d, Y H:i" }}
+                            </span>
+                            <span style="margin-right: 20px;">
+                                ⏰ {% if poll.is_active %}Ends{% else %}Ended{% endif %}: {{ poll.end_date|date:"M d, Y H:i" }}
+                            </span>
+                            {% if poll.votes.count > 0 and poll.can_user_vote %}
+                                <span style="color: #28a745;">
+                                    ✅ You can vote
+                                </span>
+                            {% elif poll.votes.filter.voter %}
+                                <span style="color: #6c757d;">
+                                    🗳️ Already voted
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Summary Stats -->
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; text-align: center; color: #6c757d;">
+                Showing {{ polls.count }} poll{{ polls.count|pluralize }}
+                {% if current_status == 'active' %}
+                    (active polls only)
+                {% elif current_status == 'closed' %}
+                    (closed polls only)
+                {% endif %}
+            </div>
+            
+        {% else %}
+            <div style="text-align: center; padding: 40px; color: #6c757d;">
+                <div style="font-size: 3em; margin-bottom: 20px;">🗳️</div>
+                <h3 style="color: #6c757d; margin-bottom: 15px;">
+                    {% if current_status == 'active' %}
+                        No Active Polls
+                    {% elif current_status == 'closed' %}
+                        No Closed Polls
+                    {% else %}
+                        No Polls Yet
+                    {% endif %}
+                </h3>
+                <p style="margin-bottom: 20px;">
+                    {% if current_status == 'active' %}
+                        There are currently no active polls. Check back later or create a new poll.
+                    {% elif current_status == 'closed' %}
+                        No polls have been closed yet.
+                    {% else %}
+                        Get started by creating your first admin poll!
+                    {% endif %}
+                </p>
+                
+                {% if not current_status or current_status == 'active' %}
+                    <a href="{% url 'secret_chamber:create_poll' %}" 
+                       style="background: #28a745; color: white; padding: 12px 24px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+                        🗳️ Create First Poll
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Navigation -->
+    <div style="margin-top: 20px; text-align: center;">
+        <a href="{% url 'secret_chamber:dashboard' %}" 
+           style="background: #6c757d; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">
+            ← Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Info Notice -->
+    <div style="background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; padding: 20px; border-radius: 8px; margin-top: 20px;">
+        <strong>📋 Phase 1 Implementation:</strong> This shows all admin polls with basic functionality. 
+        Voting is transparent with usernames recorded. In Phase 2, we will add encryption and anonymous voting 
+        for the full Secret Chamber experience.
+    </div>
+</div>
+
+<style>
+/* Hover effects */
+.poll-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+a:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.filter-tab:hover {
+    background: rgba(0,0,0,0.05);
+}
+</style>
+{% endblock %}

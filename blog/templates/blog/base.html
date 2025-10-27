@@ -48,6 +48,9 @@
                     <li style="margin: 5px 0;">
                         <a href="/admin/">[ADMIN]</a> - Site administration
                     </li>
+                    <li style="margin: 5px 0;">
+                        <a href="{% url 'secret_chamber:dashboard' %}">[SECRET CHAMBER]</a> - Admin decision system (confidential)
+                    </li>
                 {% else %}
                     {% if user.userprofile.role == 'instructor' %}
                         <li style="margin: 5px 0;">
@@ -94,6 +97,7 @@
                 <a href="{% url 'my_blog_dashboard' %}" class="btn btn-default">my blog</a>
                 {% if user.is_superuser %}
                     <a href="{% url 'ical_import_export_page' %}" class="btn btn-info" title="Import/Export Calendar Events">📅 iCal</a>
+                    <a href="{% url 'secret_chamber:dashboard' %}" class="btn btn-danger" title="Secret Chamber - Admin Decision System" style="background: linear-gradient(45deg, #333, #555); border-color: #00ff88; color: #00ff88; font-size: 14px; padding: 6px 10px;">�</a>
                 {% endif %}
                 {% if user.is_staff and user.is_superuser %}
                     <a href="/admin/" class="btn btn-default">admin</a>

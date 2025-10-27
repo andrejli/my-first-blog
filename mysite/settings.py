@@ -22,6 +22,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'test-lms-development-key-not-for-production-use-only'
 
+# Secret Chamber encryption key (generate a new one for production)
+SECRET_CHAMBER_KEY = b'J8f5k2L9n3P6q1R4s7T0u9V2x5Y8z1A4b7C0d3F6g9H2'
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -44,6 +47,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'blog.apps.BlogConfig',
+    'blog.secret_chamber.apps.SecretChamberConfig',
     
     # Security monitoring apps (install these packages first)
     # 'django_otp',
