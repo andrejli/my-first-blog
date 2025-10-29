@@ -1057,6 +1057,16 @@ class Event(models.Model):
     materials = models.FileField(upload_to='event_materials/', null=True, blank=True,
                                 help_text="Event materials (PDF, DOC, etc.)")
     
+    # Zoom Meeting Integration
+    zoom_meeting_url = models.URLField(max_length=500, blank=True, 
+                                      help_text="Zoom meeting join URL")
+    zoom_meeting_id = models.CharField(max_length=50, blank=True,
+                                      help_text="Zoom meeting ID (e.g., 123-456-7890)")
+    zoom_meeting_password = models.CharField(max_length=50, blank=True,
+                                           help_text="Zoom meeting password (optional)")
+    zoom_webinar_url = models.URLField(max_length=500, blank=True,
+                                      help_text="Zoom webinar registration URL")
+    
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -1131,6 +1141,31 @@ class Event(models.Model):
     def get_materials_url(self):
         """Get materials URL if exists"""
         return self.materials.url if self.has_materials else None
+    
+    @property
+    def has_zoom_meeting(self):
+        """Check if event has Zoom meeting information"""
+        return bool(self.zoom_meeting_url or self.zoom_meeting_id)
+    
+    @property
+    def has_zoom_webinar(self):
+        """Check if event has Zoom webinar information"""
+        return bool(self.zoom_webinar_url)
+    
+    @property
+    def has_zoom_info(self):
+        """Check if event has any Zoom information"""
+        return self.has_zoom_meeting or self.has_zoom_webinar
+    
+    def get_zoom_display_text(self):
+        """Get display text for Zoom meeting"""
+        if self.zoom_webinar_url:
+            return "Join Zoom Webinar"
+        elif self.zoom_meeting_url:
+            return "Join Zoom Meeting"
+        elif self.zoom_meeting_id:
+            return f"Zoom Meeting ID: {self.zoom_meeting_id}"
+        return None
     
     def get_display_color(self):
         """Get the display color for this event (custom or event type)"""

@@ -403,6 +403,54 @@
                             </div>
                         </div>
 
+                        <!-- Zoom Integration Section -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="fas fa-video"></i> Zoom Meeting Integration</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.zoom_meeting_url.id_for_label }}" class="form-label">Zoom Meeting URL</label>
+                                        {{ form.zoom_meeting_url }}
+                                        {% if form.zoom_meeting_url.errors %}
+                                            <div class="text-danger small">{{ form.zoom_meeting_url.errors.0 }}</div>
+                                        {% endif %}
+                                        <small class="form-text text-muted">Complete join URL (e.g., https://zoom.us/j/1234567890)</small>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.zoom_meeting_id.id_for_label }}" class="form-label">Meeting ID</label>
+                                        {{ form.zoom_meeting_id }}
+                                        {% if form.zoom_meeting_id.errors %}
+                                            <div class="text-danger small">{{ form.zoom_meeting_id.errors.0 }}</div>
+                                        {% endif %}
+                                        <small class="form-text text-muted">Meeting ID only (e.g., 123-456-7890)</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.zoom_meeting_password.id_for_label }}" class="form-label">Meeting Password</label>
+                                        {{ form.zoom_meeting_password }}
+                                        {% if form.zoom_meeting_password.errors %}
+                                            <div class="text-danger small">{{ form.zoom_meeting_password.errors.0 }}</div>
+                                        {% endif %}
+                                        <small class="form-text text-muted">Optional password for meeting security</small>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.zoom_webinar_url.id_for_label }}" class="form-label">Webinar Registration URL</label>
+                                        {{ form.zoom_webinar_url }}
+                                        {% if form.zoom_webinar_url.errors %}
+                                            <div class="text-danger small">{{ form.zoom_webinar_url.errors.0 }}</div>
+                                        {% endif %}
+                                        <small class="form-text text-muted">For webinars requiring registration</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Form Actions -->
                         <div class="d-flex justify-content-between">
                             <button type="button" class="btn btn-secondary" onclick="history.back()">

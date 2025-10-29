@@ -567,7 +567,7 @@ class BlogPostAdmin(admin.ModelAdmin):
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
     form = EventAdminForm  # Use custom form for checkboxes
-    list_display = ['title', 'event_type', 'start_date', 'end_date', 'priority', 'visibility', 'is_published', 'is_featured', 'has_poster', 'has_materials', 'created_by', 'course']
+    list_display = ['title', 'event_type', 'start_date', 'end_date', 'priority', 'visibility', 'is_published', 'is_featured', 'has_poster', 'has_materials', 'has_zoom', 'created_by', 'course']
     list_filter = ['event_type', 'priority', 'visibility', 'is_published', 'is_featured', 'start_date', 'created_by']
     search_fields = ['title', 'description']
     readonly_fields = ['created_at', 'updated_at']
@@ -579,6 +579,10 @@ class EventAdmin(admin.ModelAdmin):
         }),
         ('Date & Time', {
             'fields': ('start_date', 'end_date', 'all_day')
+        }),
+        ('Zoom Meeting Integration', {
+            'fields': ('zoom_meeting_url', 'zoom_meeting_id', 'zoom_meeting_password', 'zoom_webinar_url'),
+            'description': 'Add Zoom meeting or webinar links for virtual events'
         }),
         ('Files & Materials', {
             'fields': ('poster', 'materials'),
@@ -609,6 +613,11 @@ class EventAdmin(admin.ModelAdmin):
         return obj.has_materials
     has_materials.boolean = True
     has_materials.short_description = 'Materials'
+    
+    def has_zoom(self, obj):
+        return obj.has_zoom_info
+    has_zoom.boolean = True
+    has_zoom.short_description = 'Zoom'
     
     def go_to_import_export_interface(self, request, queryset=None):
         """Redirect to dedicated import/export interface."""

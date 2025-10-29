@@ -170,6 +170,31 @@ if (Run-Test "Management Commands" "& '$PYTHON_EXE' manage.py generate_recurring
 }
 $testResults += [PSCustomObject]@{Name="Management Commands"; Passed=($LASTEXITCODE -eq 0)}
 
+Write-Host "Pytest Test Suite" -ForegroundColor Magenta
+Write-Host "=================" -ForegroundColor Magenta
+Write-Host ""
+
+# 10. Pytest Polling System Tests
+$totalTests++
+if (Run-Test "Polling System Tests (pytest)" "& '$PYTHON_EXE' -m pytest tests/test_polling_system.py -v --tb=short" "Test Secret Chamber polling system with pytest") {
+    $passedTests++
+}
+$testResults += [PSCustomObject]@{Name="Polling System Tests (pytest)"; Passed=($LASTEXITCODE -eq 0)}
+
+# 11. All Pytest Tests
+$totalTests++
+if (Run-Test "All Pytest Tests" "& '$PYTHON_EXE' -m pytest tests/ -v --tb=short --disable-warnings" "Run all pytest tests") {
+    $passedTests++
+}
+$testResults += [PSCustomObject]@{Name="All Pytest Tests"; Passed=($LASTEXITCODE -eq 0)}
+
+# 12. Pytest with Coverage
+$totalTests++
+if (Run-Test "Pytest Coverage Report" "& '$PYTHON_EXE' -m pytest tests/test_polling_system.py --cov=blog.secret_chamber --cov-report=term-missing --tb=short" "Generate coverage report for polling system") {
+    $passedTests++
+}
+$testResults += [PSCustomObject]@{Name="Pytest Coverage Report"; Passed=($LASTEXITCODE -eq 0)}
+
 Write-Host "Test Results Summary" -ForegroundColor Green
 Write-Host "====================" -ForegroundColor Green
 Write-Host ""

@@ -139,15 +139,18 @@
                                             <div class="day-events">
                                                 {% for event in day.events %}
                                                 <div class="calendar-event event-{{ event.event_type }}" 
-                                                     title="{{ event.title }} - {{ event.description|truncatechars:50 }}{% if event.has_poster %} - Has Poster{% endif %}"
+                                                     title="{{ event.title }} - {{ event.description|truncatechars:50 }}{% if event.has_poster %} - Has Poster{% endif %}{% if event.has_zoom_info %} - Has Zoom Link{% endif %}"
                                                      data-toggle="tooltip" 
                                                      data-placement="top"
                                                      data-html="true"
-                                                     data-title="<strong>{{ event.title }}</strong><br>{{ event.get_event_type_display }}<br>{{ event.start_date|date:'M j, Y H:i' }}{% if event.has_poster %}<br><i class='fas fa-image'></i> Poster Available{% endif %}"
+                                                     data-title="<strong>{{ event.title }}</strong><br>{{ event.get_event_type_display }}<br>{{ event.start_date|date:'M j, Y H:i' }}{% if event.has_poster %}<br><i class='fas fa-image'></i> Poster Available{% endif %}{% if event.has_zoom_info %}<br><i class='fas fa-video'></i> {{ event.get_zoom_display_text }}{% endif %}"
                                                      {% if event.has_poster %}data-poster-url="{{ event.get_poster_url }}"{% endif %}>
                                                     <i class="fa fa-circle event-dot"></i>
                                                     {% if event.has_poster %}
                                                     <i class="fas fa-image poster-indicator" title="Has Poster"></i>
+                                                    {% endif %}
+                                                    {% if event.has_zoom_info %}
+                                                    <i class="fas fa-video zoom-indicator" title="{{ event.get_zoom_display_text }}"></i>
                                                     {% endif %}
                                                     <span class="event-text">
                                                         {% if event.all_day %}
@@ -191,22 +194,24 @@
                                             <div class="week-day-events">
                                                 {% for event in day.events %}
                                                 <div class="week-event event-{{ event.event_type }}"
-                                                     title="{{ event.title }} - {{ event.description|truncatechars:50 }}{% if event.has_poster %} - Has Poster{% endif %}"
+                                                     title="{{ event.title }} - {{ event.description|truncatechars:50 }}{% if event.has_poster %} - Has Poster{% endif %}{% if event.has_zoom_info %} - Has Zoom Link{% endif %}"
                                                      data-toggle="tooltip" 
                                                      data-placement="top"
                                                      data-html="true"
-                                                     data-title="<strong>{{ event.title }}</strong><br>{{ event.get_event_type_display }}<br>{{ event.start_date|date:'M j, Y H:i' }}{% if event.has_poster %}<br><i class='fas fa-image'></i> Poster Available{% endif %}"
+                                                     data-title="<strong>{{ event.title }}</strong><br>{{ event.get_event_type_display }}<br>{{ event.start_date|date:'M j, Y H:i' }}{% if event.has_poster %}<br><i class='fas fa-image'></i> Poster Available{% endif %}{% if event.has_zoom_info %}<br><i class='fas fa-video'></i> {{ event.get_zoom_display_text }}{% endif %}"
                                                      {% if event.has_poster %}data-poster-url="{{ event.get_poster_url }}"{% endif %}>
                                                     {% if event.all_day %}
                                                         <div class="event-all-day">
                                                             <i class="fa fa-circle event-dot"></i>
                                                             {% if event.has_poster %}<i class="fas fa-image poster-indicator" title="Has Poster"></i>{% endif %}
+                                                            {% if event.has_zoom_info %}<i class="fas fa-video zoom-indicator" title="{{ event.get_zoom_display_text }}"></i>{% endif %}
                                                             {{ event.title }}
                                                         </div>
                                                     {% else %}
                                                         <div class="event-timed">
                                                             <span class="event-time">{{ event.start_date|date:"H:i" }}</span>
                                                             {% if event.has_poster %}<i class="fas fa-image poster-indicator" title="Has Poster"></i>{% endif %}
+                                                            {% if event.has_zoom_info %}<i class="fas fa-video zoom-indicator" title="{{ event.get_zoom_display_text }}"></i>{% endif %}
                                                             {{ event.title }}
                                                         </div>
                                                     {% endif %}
@@ -233,13 +238,14 @@
                             <div class="all-day-events">
                                 {% for event in all_day_events %}
                                 <div class="day-event event-{{ event.event_type }}"
-                                     title="{{ event.title }} - {{ event.description|truncatechars:100 }}{% if event.has_poster %} - Has Poster{% endif %}"
+                                     title="{{ event.title }} - {{ event.description|truncatechars:100 }}{% if event.has_poster %} - Has Poster{% endif %}{% if event.has_zoom_info %} - Has Zoom Link{% endif %}"
                                      data-toggle="tooltip" 
                                      data-placement="right"
                                      data-html="true"
                                      {% if event.has_poster %}data-poster-url="{{ event.get_poster_url }}"{% endif %}>
                                     <i class="fa fa-circle event-dot"></i>
                                     {% if event.has_poster %}<i class="fas fa-image poster-indicator" title="Has Poster"></i>{% endif %}
+                                    {% if event.has_zoom_info %}<i class="fas fa-video zoom-indicator" title="{{ event.get_zoom_display_text }}"></i>{% endif %}
                                     <strong>{{ event.title }}</strong>
                                     <small class="text-muted">{{ event.get_event_type_display }}</small>
                                 </div>
@@ -261,7 +267,7 @@
                                             <td class="hour-events">
                                                 {% for event in hour_block.events %}
                                                 <div class="day-event event-{{ event.event_type }}"
-                                                     title="{{ event.title }} - {{ event.description|truncatechars:100 }}{% if event.has_poster %} - Has Poster{% endif %}"
+                                                     title="{{ event.title }} - {{ event.description|truncatechars:100 }}{% if event.has_poster %} - Has Poster{% endif %}{% if event.has_zoom_info %} - Has Zoom Link{% endif %}"
                                                      data-toggle="tooltip" 
                                                      data-placement="right"
                                                      data-html="true"
@@ -271,6 +277,7 @@
                                                         {% if event.end_date %} - {{ event.end_date|date:"H:i" }}{% endif %}
                                                     </span>
                                                     {% if event.has_poster %}<i class="fas fa-image poster-indicator" title="Has Poster"></i>{% endif %}
+                                                    {% if event.has_zoom_info %}<i class="fas fa-video zoom-indicator" title="{{ event.get_zoom_display_text }}"></i>{% endif %}
                                                     <strong>{{ event.title }}</strong>
                                                     <small class="text-muted">{{ event.get_event_type_display }}</small>
                                                 </div>
@@ -763,6 +770,24 @@
     margin-right: 6px;
 }
 
+/* Zoom Indicator Icons */
+.zoom-indicator {
+    color: var(--accent-color, #00bcd4);
+    font-size: 0.8em;
+    margin-right: 4px;
+    opacity: 0.9;
+}
+
+.calendar-event .zoom-indicator {
+    margin-left: 2px;
+    margin-right: 2px;
+}
+
+.week-event .zoom-indicator,
+.day-event .zoom-indicator {
+    margin-right: 6px;
+}
+
 /* Poster Preview Popup */
 .poster-preview-popup {
     display: none;
@@ -1120,6 +1145,28 @@ $(document).ready(function() {
             $(this).remove();
         });
     }
+    
+    // Zoom link functionality
+    $('.zoom-indicator').click(function(e) {
+        e.stopPropagation();
+        var $eventDiv = $(this).closest('.calendar-event, .week-event, .day-event');
+        var eventTitle = $eventDiv.find('.event-text, strong').first().text().trim();
+        
+        // Check for zoom URLs in the event data (these would need to be added via data attributes)
+        // For now, show notification about Zoom link
+        showEventNotification('<strong>Zoom Meeting Available</strong><br>' + 
+                            'Event: ' + eventTitle + '<br>' +
+                            'Click on event title for full details and Zoom links.');
+    });
+    
+    // Make events with Zoom clickable for joining
+    $('.calendar-event, .week-event, .day-event').each(function() {
+        var $this = $(this);
+        if ($this.find('.zoom-indicator').length > 0) {
+            $this.css('cursor', 'pointer');
+            $this.attr('title', $this.attr('title') + ' - Click for Zoom details');
+        }
+    });
     
     // Keyboard navigation
     $(document).keydown(function(e) {

@@ -186,6 +186,36 @@ else
     test_results+=("Static Files:FAIL")
 fi
 
+echo -e "${MAGENTA}🧪 Pytest Test Suite${NC}"
+echo -e "${MAGENTA}===================${NC}\n"
+
+# 11. Pytest Polling System Tests
+((total_tests++))
+if run_test "Polling System Tests (pytest)" "\"$PYTHON_EXE\" -m pytest tests/test_polling_system.py -v --tb=short" "Test Secret Chamber polling system with pytest"; then
+    ((passed_tests++))
+    test_results+=("Polling System Tests (pytest):PASS")
+else
+    test_results+=("Polling System Tests (pytest):FAIL")
+fi
+
+# 12. All Pytest Tests
+((total_tests++))
+if run_test "All Pytest Tests" "\"$PYTHON_EXE\" -m pytest tests/ -v --tb=short --disable-warnings" "Run all pytest tests"; then
+    ((passed_tests++))
+    test_results+=("All Pytest Tests:PASS")
+else
+    test_results+=("All Pytest Tests:FAIL")
+fi
+
+# 13. Pytest with Coverage
+((total_tests++))
+if run_test "Pytest Coverage Report" "\"$PYTHON_EXE\" -m pytest tests/test_polling_system.py --cov=blog.secret_chamber --cov-report=term-missing --tb=short" "Generate coverage report for polling system"; then
+    ((passed_tests++))
+    test_results+=("Pytest Coverage Report:PASS")
+else
+    test_results+=("Pytest Coverage Report:FAIL")
+fi
+
 echo -e "${GREEN}📊 Test Results Summary${NC}"
 echo -e "${GREEN}======================${NC}\n"
 

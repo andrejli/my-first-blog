@@ -1,0 +1,214 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block title %}{{ profile_user.get_full_name|default:profile_user.username }}'s Blog - FORTIS AURIS LMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .blog-post-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        background: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: box-shadow 0.3s ease;
+    }
+    
+    .blog-post-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .blog-post-title {
+        color: #2c3e50;
+        margin-bottom: 10px;
+        font-size: 1.5em;
+    }
+    
+    .blog-post-title a {
+        text-decoration: none;
+        color: inherit;
+    }
+    
+    .blog-post-title a:hover {
+        color: #3498db;
+    }
+    
+    .blog-post-meta {
+        color: #7f8c8d;
+        font-size: 0.9em;
+        margin-bottom: 15px;
+    }
+    
+    .blog-post-excerpt {
+        color: #34495e;
+        line-height: 1.6;
+        margin-bottom: 15px;
+    }
+    
+    .blog-post-actions {
+        border-top: 1px solid #ecf0f1;
+        padding-top: 15px;
+        text-align: right;
+    }
+    
+    .user-blog-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px 0;
+        margin-bottom: 30px;
+        border-radius: 8px;
+    }
+    
+    .user-blog-header h1 {
+        margin: 0;
+        font-size: 2.5em;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .user-blog-header p {
+        margin: 10px 0 0 0;
+        opacity: 0.9;
+        font-size: 1.1em;
+    }
+    
+    .pagination-wrapper {
+        text-align: center;
+        margin-top: 30px;
+    }
+    
+    .no-posts {
+        text-align: center;
+        padding: 60px 20px;
+        color: #7f8c8d;
+    }
+    
+    .no-posts i {
+        font-size: 4em;
+        margin-bottom: 20px;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="col-md-12">
+    <!-- User Header -->
+    <div class="user-blog-header text-center">
+        <h1>{{ profile_user.get_full_name|default:profile_user.username }}'s Blog</h1>
+        <p>
+            {% if blog_posts %}
+                {{ page_obj.paginator.count }} published post{{ page_obj.paginator.count|pluralize }}
+            {% else %}
+                No published posts yet
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- Blog Posts -->
+    {% if page_obj %}
+        {% for post in page_obj %}
+            <div class="blog-post-card">
+                <h2 class="blog-post-title">
+                    <a href="{% url 'blog:blog_post_detail' username=profile_user.username slug=post.slug %}">
+                        {{ post.title }}
+                    </a>
+                </h2>
+                
+                <div class="blog-post-meta">
+                    <i class="fa fa-calendar"></i> Published on {{ post.published_date|date:"F j, Y" }}
+                    {% if post.view_count > 0 %}
+                        | <i class="fa fa-eye"></i> {{ post.view_count }} view{{ post.view_count|pluralize }}
+                    {% endif %}
+                </div>
+                
+                {% if post.excerpt %}
+                    <div class="blog-post-excerpt">
+                        {{ post.excerpt|linebreaksbr }}
+                    </div>
+                {% else %}
+                    <div class="blog-post-excerpt">
+                        {{ post.content|truncatewords:50|linebreaksbr }}
+                    </div>
+                {% endif %}
+                
+                <div class="blog-post-actions">
+                    <a href="{% url 'blog:blog_post_detail' username=profile_user.username slug=post.slug %}" 
+                       class="btn btn-primary btn-sm">
+                        <i class="fa fa-book"></i> Read More
+                    </a>
+                </div>
+            </div>
+        {% endfor %}
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+            <div class="pagination-wrapper">
+                <nav aria-label="Blog posts pagination">
+                    <ul class="pagination">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1" aria-label="First">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        {% endif %}
+
+    {% else %}
+        <!-- No Posts Message -->
+        <div class="no-posts">
+            <i class="fa fa-pencil-square-o"></i>
+            <h3>No blog posts yet</h3>
+            <p>{{ profile_user.get_full_name|default:profile_user.username }} hasn't published any blog posts yet.</p>
+            {% if user == profile_user %}
+                <p>
+                    <a href="{% url 'blog:create_blog_post' %}" class="btn btn-primary">
+                        <i class="fa fa-plus"></i> Create Your First Post
+                    </a>
+                </p>
+            {% endif %}
+        </div>
+    {% endif %}
+    
+    <!-- Back to All Blogs -->
+    <div class="text-center" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ecf0f1;">
+        <a href="{% url 'blog:all_blogs' %}" class="btn btn-default">
+            <i class="fa fa-arrow-left"></i> Back to All Blogs
+        </a>
+    </div>
+</div>
+{% endblock %}

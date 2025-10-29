@@ -191,7 +191,8 @@ class EventForm(forms.ModelForm):
             'title', 'description', 'event_type_new', 'event_type', 'priority', 'visibility',
             'custom_color', 'custom_background', 'start_date', 'end_date', 'all_day',
             'is_published', 'is_featured', 'course', 'linked_lesson', 'obsidian_link', 
-            'poster', 'materials', 'is_recurring', 'recurrence_pattern', 'recurrence_interval',
+            'poster', 'materials', 'zoom_meeting_url', 'zoom_meeting_id', 'zoom_meeting_password',
+            'zoom_webinar_url', 'is_recurring', 'recurrence_pattern', 'recurrence_interval',
             'recurrence_days', 'recurrence_end_date', 'max_occurrences', 'exclude_weekends',
             'exclude_holidays'
         ]
@@ -244,6 +245,22 @@ class EventForm(forms.ModelForm):
             'materials': forms.FileInput(attrs={
                 'class': 'form-control',
                 'accept': '.pdf,.doc,.docx,.txt'
+            }),
+            'zoom_meeting_url': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'https://zoom.us/j/1234567890 (complete Zoom meeting join URL)'
+            }),
+            'zoom_meeting_id': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g., 123-456-7890 or 1234567890'
+            }),
+            'zoom_meeting_password': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Meeting password (optional)'
+            }),
+            'zoom_webinar_url': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'https://zoom.us/webinar/register/... (webinar registration URL)'
             }),
             'is_recurring': forms.CheckboxInput(attrs={
                 'class': 'form-check-input',

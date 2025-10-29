@@ -1,0 +1,27 @@
+# Test Requirements for Django LMS
+# Install with: pip install -r test-requirements.txt
+#
+# Additional packages needed for testing the Secret Chamber polling system
+
+# Core testing frameworks
+pytest>=7.0.0
+pytest-django>=4.5.0
+pytest-cov>=4.0.0
+
+# Coverage reporting
+coverage>=7.0.0
+pytest-html>=3.1.0
+
+# Testing utilities
+factory-boy>=3.3.0
+faker>=19.0.0
+
+# Performance testing
+pytest-benchmark>=4.0.0
+pytest-mock>=3.11.0
+
+# Test database
+pytest-xdist>=3.3.0  # For parallel test execution
+
+# Additional assertion libraries
+pytest-sugar>=0.9.7  # Better test output formatting

@@ -186,7 +186,6 @@ def create_simple_poll(request):
                     description=request.POST.get('description', '').strip(),
                     poll_type=request.POST.get('poll_type', 'single'),
                     created_by=request.user,
-                    show_results=request.POST.get('show_results') == 'true',
                     allow_comments=request.POST.get('allow_comments') == 'true'
                 )
                 
@@ -209,7 +208,7 @@ def create_simple_poll(request):
                     if option_text:
                         PollOption.objects.create(
                             poll=poll,
-                            text=option_text,
+                            option_text=option_text,
                             order=option_count
                         )
                     option_count += 1
@@ -281,7 +280,7 @@ def poll_status_api(request, poll_id):
     
     data = {
         'is_active': poll.is_active,
-        'total_votes': poll.votes.count(),
+        'total_votes': poll.admin_votes.count(),
         'can_user_vote': poll.can_user_vote(request.user),
     }
     
