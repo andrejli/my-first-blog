@@ -1,5 +1,7 @@
 # Django Blog to Ultralight LMS Conversion Plan
 
+> Do not put files explaining new features in the root directory. Instead, use the copilot-talks/ directory. For documentation files, put them in docs/ and update /docs/index.html.
+
 ## 🚀 **PROJECT PHASES OVERVIEW** - Complete Roadmap
 
 ### **📋 Phase Summary Table:**
