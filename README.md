@@ -1,4 +1,4 @@
-# 🛡️ Terminal LMS - Complete Educational Platform 📚⚡
+# Terminal LMS
 
 >[!CAUTION]
 >This project is made with AI! This README may be inaccurate and is still under development.
