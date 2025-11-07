@@ -2,14 +2,29 @@
 Django LMS Test Configuration
 
 This module provides fixtures and configuration for pytest-django testing.
+Enhanced with secure random password generation for test security.
 """
 
 import pytest
+import secrets
 
 
 # ================================
 # PYTEST FIXTURES
 # ================================
+
+@pytest.fixture
+def test_passwords():
+    """
+    Generate secure random passwords for test users.
+    Returns a dictionary with role-based passwords for tests that need authentication.
+    """
+    return {
+        'admin': secrets.token_urlsafe(20),
+        'instructor': secrets.token_urlsafe(20), 
+        'student': secrets.token_urlsafe(20),
+        'default': secrets.token_urlsafe(20)
+    }
 
 @pytest.fixture
 def client():
@@ -19,15 +34,15 @@ def client():
 
 
 @pytest.fixture
-def admin_user():
-    """Create admin user"""
+def admin_user(test_passwords):
+    """Create admin user with secure random password"""
     from django.contrib.auth.models import User
     from blog.models import UserProfile
     
     user = User.objects.create_user(
         username='admin',
         email='admin@lms.com',
-        password='admin123',
+        password=test_passwords['admin'],
         is_staff=True,
         is_superuser=True
     )
@@ -44,15 +59,15 @@ def admin_user():
 
 
 @pytest.fixture
-def instructor_user():
-    """Create instructor user with profile"""
+def instructor_user(test_passwords):
+    """Create instructor user with profile and secure random password"""
     from django.contrib.auth.models import User
     from blog.models import UserProfile
     
     user = User.objects.create_user(
         username='instructor',
         email='instructor@lms.com',
-        password='instructor123',
+        password=test_passwords['instructor'],
         first_name='John',
         last_name='Teacher'
     )
@@ -78,15 +93,15 @@ def instructor_user():
 
 
 @pytest.fixture
-def student_user():
-    """Create student user with profile"""
+def student_user(test_passwords):
+    """Create student user with profile and secure random password"""
     from django.contrib.auth.models import User
     from blog.models import UserProfile
     
     user = User.objects.create_user(
         username='student',
         email='student@lms.com',
-        password='student123',
+        password=test_passwords['student'],
         first_name='Jane',
         last_name='Student'
     )
@@ -191,14 +206,17 @@ def sample_course(instructor_user):
 
 @pytest.fixture
 def user_factory():
-    """Factory for creating users"""
+    """Factory for creating users with secure random passwords"""
     from django.contrib.auth.models import User
     
-    def _create_user(username=None, email=None, password='testpass123'):
+    def _create_user(username=None, email=None, password=None):
         if username is None:
             username = f'user_{User.objects.count() + 1}'
         if email is None:
             email = f'{username}@test.com'
+        if password is None:
+            # Generate cryptographically secure random password
+            password = secrets.token_urlsafe(20)
         
         return User.objects.create_user(
             username=username,

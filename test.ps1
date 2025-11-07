@@ -174,23 +174,51 @@ Write-Host "Pytest Test Suite" -ForegroundColor Magenta
 Write-Host "=================" -ForegroundColor Magenta
 Write-Host ""
 
-# 10. Pytest Polling System Tests
+# 10. XSS Protection Tests
+$totalTests++
+if (Run-Test "XSS Protection Tests" "& '$PYTHON_EXE' manage.py test tests.test_xss_protection --verbosity=1" "Test XSS protection implementation") {
+    $passedTests++
+}
+$testResults += [PSCustomObject]@{Name="XSS Protection Tests"; Passed=($LASTEXITCODE -eq 0)}
+
+# 11. Polling System Integration Tests
+$totalTests++
+if (Run-Test "Polling Integration Tests" "& '$PYTHON_EXE' manage.py test tests.test_polling_runner --verbosity=1" "Test polling system integration") {
+    $passedTests++
+}
+$testResults += [PSCustomObject]@{Name="Polling Integration Tests"; Passed=($LASTEXITCODE -eq 0)}
+
+# 12. Pytest Polling System Tests
 $totalTests++
 if (Run-Test "Polling System Tests (pytest)" "& '$PYTHON_EXE' -m pytest tests/test_polling_system.py -v --tb=short" "Test Secret Chamber polling system with pytest") {
     $passedTests++
 }
 $testResults += [PSCustomObject]@{Name="Polling System Tests (pytest)"; Passed=($LASTEXITCODE -eq 0)}
 
-# 11. All Pytest Tests
+# 13. Enhanced Markdown Tests
+$totalTests++
+if (Run-Test "Enhanced Markdown Tests" "& '$PYTHON_EXE' -m pytest tests/test_enhanced_markdown.py -v --tb=short" "Test enhanced markdown functionality") {
+    $passedTests++
+}
+$testResults += [PSCustomObject]@{Name="Enhanced Markdown Tests"; Passed=($LASTEXITCODE -eq 0)}
+
+# 14. Course Import/Export Tests
+$totalTests++
+if (Run-Test "Course Import/Export Tests" "& '$PYTHON_EXE' -m pytest tests/test_course_import_export.py -v --tb=short" "Test course import/export functionality") {
+    $passedTests++
+}
+$testResults += [PSCustomObject]@{Name="Course Import/Export Tests"; Passed=($LASTEXITCODE -eq 0)}
+
+# 15. All Pytest Tests
 $totalTests++
 if (Run-Test "All Pytest Tests" "& '$PYTHON_EXE' -m pytest tests/ -v --tb=short --disable-warnings" "Run all pytest tests") {
     $passedTests++
 }
 $testResults += [PSCustomObject]@{Name="All Pytest Tests"; Passed=($LASTEXITCODE -eq 0)}
 
-# 12. Pytest with Coverage
+# 16. Pytest with Coverage
 $totalTests++
-if (Run-Test "Pytest Coverage Report" "& '$PYTHON_EXE' -m pytest tests/test_polling_system.py --cov=blog.secret_chamber --cov-report=term-missing --tb=short" "Generate coverage report for polling system") {
+if (Run-Test "Pytest Coverage Report" "& '$PYTHON_EXE' -m pytest tests/ --cov=blog --cov-report=term-missing:skip-covered --tb=short" "Generate comprehensive coverage report") {
     $passedTests++
 }
 $testResults += [PSCustomObject]@{Name="Pytest Coverage Report"; Passed=($LASTEXITCODE -eq 0)}

@@ -437,8 +437,8 @@ class TestExportCourseView:
         url = reverse('export_course', kwargs={'course_id': sample_course.id})
         response = client.get(url)
         
-        # Should redirect or return 403 (depends on decorator implementation)
-        assert response.status_code in [302, 403]
+        # Returns 404 because course is not found for non-instructor user
+        assert response.status_code == 404
     
     def test_export_nonexistent_course(self, client, instructor_user):
         """Test exporting non-existent course"""
@@ -526,7 +526,9 @@ class TestImportCourseView:
         })
         
         assert response.status_code == 200
-        assert b'valid ZIP file' in response.content
+        # Check for error message in Django messages
+        messages_list = list(response.context['messages'])
+        assert any('valid ZIP file' in str(message) for message in messages_list)
     
     def test_import_course_missing_file(self, client, instructor_user):
         """Test importing without selecting a file"""
@@ -536,7 +538,9 @@ class TestImportCourseView:
         response = client.post(url, {})
         
         assert response.status_code == 200
-        assert b'select a course file' in response.content
+        # Check for error message in Django messages
+        messages_list = list(response.context['messages'])
+        assert any('select a course file' in str(message) for message in messages_list)
     
     def test_import_course_invalid_zip_content(self, client, instructor_user):
         """Test importing ZIP without course_data.json"""
@@ -559,7 +563,9 @@ class TestImportCourseView:
         })
         
         assert response.status_code == 200
-        assert b'missing course_data.json' in response.content
+        # Check for error message in Django messages
+        messages_list = list(response.context['messages'])
+        assert any('missing course_data.json' in str(message) for message in messages_list)
     
     def test_import_course_unauthorized(self, client, student_user):
         """Test unauthorized access to import course"""
@@ -638,7 +644,10 @@ class TestConfirmImportView:
         })
         
         assert response.status_code == 302  # Redirect back to import
-        assert b'already exists' in client.get(reverse('import_course')).content
+        # Follow redirect and check for error message
+        follow_response = client.get(reverse('import_course'))
+        messages_list = list(follow_response.context['messages'])
+        assert any('already exists' in str(message) for message in messages_list)
     
     def test_confirm_import_missing_session_data(self, client, instructor_user):
         """Test import confirmation without session data"""

@@ -1,5 +1,6 @@
 {% extends 'blog/base.html' %}
 {% load static %}
+{% load csp_tags %}
 
 {% block title %}iCal Import/Export - Calendar Management{% endblock %}
 
@@ -138,7 +139,7 @@
     <div class="mb-4">
         {% for message in messages %}
         <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message|safe }}
+            <pre>{{ message|escape }}</pre>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close">×</button>
         </div>
         {% endfor %}
@@ -353,7 +354,7 @@ python manage.py export_ical events.ics --course=CS101 --published-only
     </div>
 </div>
 
-<script>
+<script {% csp_script_attrs %}>
 document.addEventListener('DOMContentLoaded', function() {
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('icalFile');

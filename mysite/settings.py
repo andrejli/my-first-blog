@@ -65,6 +65,9 @@ MIDDLEWARE = [
     # Security monitoring middleware (uncomment after installing dependencies)
     # 'blog.security_middleware.SecurityMonitoringMiddleware',
     
+    # XSS Protection middleware - adds CSP headers and nonce support
+    'blog.middleware.csp_middleware.CSPMiddleware',
+    
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     

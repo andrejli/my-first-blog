@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 {% load static %}
 {% load cli_browser_tags %}
+{% load csp_tags %}
 <html lang="en"{% if user_theme != 'terminal-amber' %} data-theme="{{ user_theme }}"{% endif %}>
 <head>
     <meta charset="UTF-8">
@@ -126,7 +127,7 @@
     
     <!-- MathJax for Math Equation Rendering -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script>
+    <script {% csp_script_attrs %}>
         window.MathJax = {
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
@@ -144,7 +145,7 @@
     <script src="{% static 'js/theme-switcher.js' %}"></script>
     
     <!-- ZULU/GMT Time Clock -->
-    <script>
+    <script {% csp_script_attrs %}>
         function ActualTime() {
             var now = new Date();
             // Get UTC time components

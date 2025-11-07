@@ -16,40 +16,42 @@ from blog.secret_chamber.models import AdminPoll, PollOption, AdminVote, AdminPo
 from blog.secret_chamber.views import superuser_required
 
 
+# Module-level fixtures for all test classes
+@pytest.fixture
+def superuser(db):
+    """Create a superuser for testing"""
+    return User.objects.create_user(
+        username='admin_test',
+        email='admin@test.com',
+        password='SecureTestPass123!',  # Enhanced password for Django validation
+        is_superuser=True,
+        is_staff=True
+    )
+
+@pytest.fixture
+def regular_user(db):
+    """Create a regular user for testing"""
+    return User.objects.create_user(
+        username='regular_test',
+        email='regular@test.com',
+        password='SecureTestPass123!',  # Enhanced password for Django validation
+        is_superuser=False,
+        is_staff=False
+    )
+
+@pytest.fixture
+def future_date():
+    """Get a future date for poll end dates"""
+    return timezone.now() + timedelta(days=7)
+
+@pytest.fixture
+def past_date():
+    """Get a past date for poll end dates"""
+    return timezone.now() - timedelta(days=1)
+
+
 class TestAdminPollModel:
     """Test the AdminPoll model functionality"""
-    
-    @pytest.fixture
-    def superuser(self, db):
-        """Create a superuser for testing"""
-        return User.objects.create_user(
-            username='admin_test',
-            email='admin@test.com',
-            password='testpass123',
-            is_superuser=True,
-            is_staff=True
-        )
-    
-    @pytest.fixture
-    def regular_user(self, db):
-        """Create a regular user for testing"""
-        return User.objects.create_user(
-            username='regular_test',
-            email='regular@test.com',
-            password='testpass123',
-            is_superuser=False,
-            is_staff=False
-        )
-    
-    @pytest.fixture
-    def future_date(self):
-        """Get a future date for poll end dates"""
-        return timezone.now() + timedelta(days=7)
-    
-    @pytest.fixture
-    def past_date(self):
-        """Get a past date for poll end dates"""
-        return timezone.now() - timedelta(days=1)
     
     @pytest.fixture
     def active_poll(self, db, superuser, future_date):
@@ -361,23 +363,12 @@ class TestPollingViews:
         return Client()
     
     @pytest.fixture
-    def superuser(self, db):
-        """Create superuser for view testing"""
-        return User.objects.create_user(
-            username='admin_view_test',
-            email='admin_view@test.com',
-            password='testpass123',
-            is_superuser=True,
-            is_staff=True
-        )
-    
-    @pytest.fixture
-    def regular_user(self, db):
+    def view_regular_user(self, db):
         """Create regular user for view testing"""
         return User.objects.create_user(
             username='regular_view_test',
             email='regular_view@test.com',
-            password='testpass123',
+            password='SecureTestPass123!',  # Enhanced password for Django validation
             is_superuser=False
         )
     
@@ -487,8 +478,9 @@ class TestPollingViews:
         
         option = test_poll.options.first()
         
+        # For multiple_choice polls, use 'options' (plural) as expected by the view
         data = {
-            'option': option.id
+            'options': [option.id]
         }
         
         response = client.post(
@@ -538,8 +530,8 @@ class TestPollingViews:
         
         option = test_poll.options.first()
         
-        # First vote
-        data = {'option': option.id}
+        # First vote - use 'options' (plural) for multiple_choice poll type
+        data = {'options': [option.id]}
         response1 = client.post(
             reverse('secret_chamber:cast_vote', kwargs={'poll_id': test_poll.id}),
             data
@@ -591,14 +583,14 @@ class TestPollingSecurityFeatures:
         superuser = User.objects.create_user(
             username='security_admin',
             email='security@test.com',
-            password='testpass123',
+            password='SecureTestPass123!',  # Enhanced password for Django validation
             is_superuser=True
         )
         
         regular_user = User.objects.create_user(
             username='security_regular',
             email='security_regular@test.com',
-            password='testpass123',
+            password='SecureTestPass123!',  # Enhanced password for Django validation
             is_superuser=False
         )
         
@@ -690,7 +682,7 @@ class TestPollingSecurityFeatures:
         regular_user = User.objects.create_user(
             username='unauthorized',
             email='unauthorized@test.com',
-            password='testpass123',
+            password='SecureTestPass123!',  # Enhanced password for Django validation
             is_superuser=False
         )
         
@@ -743,7 +735,7 @@ class TestPollingIntegration:
         
         # 2. Vote as first admin
         option_a = poll.options.get(option_text='Workflow Option A')
-        vote_data = {'option': option_a.id}
+        vote_data = {'options': [option_a.id]}  # Use 'options' (plural) for multiple_choice poll
         
         response = client.post(
             reverse('secret_chamber:cast_vote', kwargs={'poll_id': poll.id}),
@@ -754,7 +746,7 @@ class TestPollingIntegration:
         # 3. Vote as second admin
         client.force_login(admin2)
         option_b = poll.options.get(option_text='Workflow Option B')
-        vote_data = {'option': option_b.id}
+        vote_data = {'options': [option_b.id]}  # Use 'options' (plural) for multiple_choice poll
         
         response = client.post(
             reverse('secret_chamber:cast_vote', kwargs={'poll_id': poll.id}),

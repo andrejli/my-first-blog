@@ -44,8 +44,8 @@ class TestAuthenticationViews:
         """Test successful user registration"""
         user_data = {
             'username': 'newuser',
-            'password1': 'testpass123',
-            'password2': 'testpass123'
+            'password1': 'SecureTestPass123!',
+            'password2': 'SecureTestPass123!'
         }
         
         response = client.post(reverse('register'), data=user_data)

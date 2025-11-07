@@ -3460,11 +3460,14 @@ def admin_export_ical(request):
         filename = '_'.join(filename_parts) + '.ics'
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         
-        messages.success(request, f'Successfully exported events to {filename}')
+        from html import escape
+        safe_filename = escape(filename)
+        messages.success(request, f'Successfully exported events to {safe_filename}')
         return response
         
     except Exception as e:
-        messages.error(request, f'Export failed: {str(e)}')
+        safe_error = escape(str(e))[:200]  # Limit error message length and escape HTML
+        messages.error(request, f'Export failed: {safe_error}')
         return redirect('admin_event_import_export')
 
 
@@ -3537,13 +3540,18 @@ def admin_import_ical(request):
         # Clean up temporary file
         os.unlink(temp_filename)
         
-        # Process results
+        # Process results - sanitize command output to prevent XSS
+        from html import escape
+        
         if stderr_content:
-            messages.error(request, f'Import error: {stderr_content}')
+            safe_stderr = escape(stderr_content.strip())[:500]  # Limit length and escape HTML
+            messages.error(request, f'Import error: {safe_stderr}')
         elif dry_run:
-            messages.info(request, f'Preview completed successfully:\n{stdout_content}')
+            safe_stdout = escape(stdout_content.strip())[:1000]  # Limit length and escape HTML
+            messages.info(request, f'Preview completed successfully:\n{safe_stdout}')
         else:
-            messages.success(request, f'Import completed successfully:\n{stdout_content}')
+            safe_stdout = escape(stdout_content.strip())[:1000]  # Limit length and escape HTML
+            messages.success(request, f'Import completed successfully:\n{safe_stdout}')
         
         return redirect('admin_event_import_export')
         

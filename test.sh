@@ -189,7 +189,25 @@ fi
 echo -e "${MAGENTA}🧪 Pytest Test Suite${NC}"
 echo -e "${MAGENTA}===================${NC}\n"
 
-# 11. Pytest Polling System Tests
+# 11. XSS Protection Tests
+((total_tests++))
+if run_test "XSS Protection Tests" "\"$PYTHON_EXE\" manage.py test tests.test_xss_protection --verbosity=1" "Test XSS protection implementation"; then
+    ((passed_tests++))
+    test_results+=("XSS Protection Tests:PASS")
+else
+    test_results+=("XSS Protection Tests:FAIL")
+fi
+
+# 12. Polling Integration Tests
+((total_tests++))
+if run_test "Polling Integration Tests" "\"$PYTHON_EXE\" manage.py test tests.test_polling_runner --verbosity=1" "Test polling system integration"; then
+    ((passed_tests++))
+    test_results+=("Polling Integration Tests:PASS")
+else
+    test_results+=("Polling Integration Tests:FAIL")
+fi
+
+# 13. Pytest Polling System Tests
 ((total_tests++))
 if run_test "Polling System Tests (pytest)" "\"$PYTHON_EXE\" -m pytest tests/test_polling_system.py -v --tb=short" "Test Secret Chamber polling system with pytest"; then
     ((passed_tests++))
@@ -198,7 +216,25 @@ else
     test_results+=("Polling System Tests (pytest):FAIL")
 fi
 
-# 12. All Pytest Tests
+# 14. Enhanced Markdown Tests
+((total_tests++))
+if run_test "Enhanced Markdown Tests" "\"$PYTHON_EXE\" -m pytest tests/test_enhanced_markdown.py -v --tb=short" "Test enhanced markdown functionality"; then
+    ((passed_tests++))
+    test_results+=("Enhanced Markdown Tests:PASS")
+else
+    test_results+=("Enhanced Markdown Tests:FAIL")
+fi
+
+# 15. Course Import/Export Tests
+((total_tests++))
+if run_test "Course Import/Export Tests" "\"$PYTHON_EXE\" -m pytest tests/test_course_import_export.py -v --tb=short" "Test course import/export functionality"; then
+    ((passed_tests++))
+    test_results+=("Course Import/Export Tests:PASS")
+else
+    test_results+=("Course Import/Export Tests:FAIL")
+fi
+
+# 16. All Pytest Tests
 ((total_tests++))
 if run_test "All Pytest Tests" "\"$PYTHON_EXE\" -m pytest tests/ -v --tb=short --disable-warnings" "Run all pytest tests"; then
     ((passed_tests++))
@@ -207,9 +243,9 @@ else
     test_results+=("All Pytest Tests:FAIL")
 fi
 
-# 13. Pytest with Coverage
+# 17. Pytest with Coverage
 ((total_tests++))
-if run_test "Pytest Coverage Report" "\"$PYTHON_EXE\" -m pytest tests/test_polling_system.py --cov=blog.secret_chamber --cov-report=term-missing --tb=short" "Generate coverage report for polling system"; then
+if run_test "Pytest Coverage Report" "\"$PYTHON_EXE\" -m pytest tests/ --cov=blog --cov-report=term-missing:skip-covered --tb=short" "Generate comprehensive coverage report"; then
     ((passed_tests++))
     test_results+=("Pytest Coverage Report:PASS")
 else

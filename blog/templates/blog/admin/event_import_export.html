@@ -113,7 +113,7 @@
     <div class="status-messages">
         {% for message in messages %}
         <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message|safe }}
+            <pre>{{ message|escape }}</pre>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         {% endfor %}

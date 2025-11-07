@@ -26,8 +26,8 @@ class TestAuthentication:
         """Test user registration process"""
         response = client.post('/register/', {
             'username': 'newuser',
-            'password1': 'testpass123',
-            'password2': 'testpass123',
+            'password1': 'SecureTestPass123!',
+            'password2': 'SecureTestPass123!',
             'email': 'newuser@test.com'
         })
         
