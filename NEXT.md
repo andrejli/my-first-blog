@@ -3,6 +3,27 @@
 **Last Updated**: November 7, 2025  
 **Status**: Critical Security Issues Identified - Immediate Action Required
 
+> Do not put files explaining new features in the root directory. Instead, use the copilot-talks/ directory. For documentation files, put them in docs/ and update /docs/index.html.
+
+## 🚀 **PROJECT PHASES OVERVIEW** - Complete Roadmap
+
+### **📋 Phase Summary Table:**
+| Phase | Name | Status | Key Features | Priority |
+|-------|------|--------|--------------|----------|
+| **Phase 1** | Foundation | ✅ **COMPLETED** | User management, course system, enrollment | DONE |
+| **Phase 2A** | Enhanced Content | ✅ **COMPLETED** | Lesson management, instructor tools | DONE |
+| **Phase 2B** | File & Assignments | ✅ **COMPLETED** | File uploads, assignment system, grading | DONE |
+| **Phase 3** | Assessment System | ✅ **COMPLETED** | Quiz creation, student interface, auto-grading | DONE |
+| **Phase 4** | Communication | ✅ **COMPLETED** | Announcements, forums, themes, testing | DONE |
+| **Phase 5A** | Enhanced Markdown | ✅ **COMPLETED** | Obsidian-compatible markdown editor | DONE |
+| **Phase 5B** | Course Management | ✅ **COMPLETED** | Import/export, backup, migration tools | DONE |
+| **Phase 6** | Personal Blogs | ✅ **COMPLETED** | Individual blogs, community features | DONE |
+| **Phase 7** | Calendar System | ✅ **COMPLETED** | Event calendar, file uploads, admin management | DONE |
+| **Phase 8A** | Security Hardening | ✅ **COMPLETED** | File upload security, production config | DONE |
+| **Phase 8B** | Privacy Protection | ✅ **COMPLETED** | EXIF removal, image privacy protection | DONE |
+| **Phase 8C** | iCal Integration | ✅ **COMPLETED** | Professional iCal import/export, web interface | DONE |
+| **Secret Chamber** | Admin Polling | ✅ **PHASE 1 COMPLETE** | Secure superuser polling system | DONE ⭐ **MAJOR!**
+
 ---
 
 ## � **CRITICAL SECURITY ISSUES - IMMEDIATE ACTION REQUIRED**
