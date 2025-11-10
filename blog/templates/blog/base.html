@@ -8,9 +8,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}FORTIS AURIS LMS{% endblock %}</title>
     <meta name="csrf-token" content="{{ csrf_token }}">
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="{% static 'css/blog.css' %}">
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
     {% block extra_css %}{% endblock %}
@@ -86,8 +86,8 @@
         <h1><a href="{% url 'landing' %}">⚡ FORTIS AURIS LMS</a></h1>
         <div class="top-menu">
             <span class="zulu-time">
-                ZULU: <span id="watch">--:--:--:---</span>
-                <noscript>({{ "now"|date:"H:i:s" }} UTC)</noscript>
+                CET: <span id="watch">--:--:--:---</span>
+                <noscript>({{ "now"|date:"H:i:s" }} CET)</noscript>
             </span>
             <!-- Public Calendar Link - Available to Everyone -->
             <a href="{% url 'event_calendar' %}" class="btn btn-warning"><i class="glyphicon glyphicon-calendar"></i> calendar</a>
@@ -122,8 +122,8 @@
 
 
 
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
     
     <!-- MathJax for Math Equation Rendering -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -143,38 +143,7 @@
     </script>
     
     <script src="{% static 'js/theme-switcher.js' %}"></script>
-    
-    <!-- ZULU/GMT Time Clock -->
-    <script {% csp_script_attrs %}>
-        function ActualTime() {
-            var now = new Date();
-            // Get UTC time components
-            var hours = now.getUTCHours();
-            var minutes = now.getUTCMinutes();
-            var seconds = now.getUTCSeconds();
-            var milliseconds = now.getUTCMilliseconds();
-            
-            minutes = actualizeTime(minutes);
-            seconds = actualizeTime(seconds);
-            // Format milliseconds to 3 digits
-            milliseconds = String(milliseconds).padStart(3, '0');
-            
-            document.getElementById('watch').innerHTML =
-                hours + ":" + minutes + ":" + seconds + ":" + milliseconds;
-            var timer = setTimeout(ActualTime, 1);
-        }
-        
-        function actualizeTime(i) {
-            if (i < 10) {i = "0" + i}
-            return i;
-        }
-        
-        // Start the clock when the page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            ActualTime();
-        });
-
-    </script>
+    <script src="{% static 'js/cet-clock.js' %}"></script>
     
     {% block extra_js %}{% endblock %}
 </body>
