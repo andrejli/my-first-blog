@@ -5,14 +5,9 @@
 
 A **production-ready** Learning Management System (LMS) built with Django, featuring comprehensive security, terminal-inspired dark theme, calendar integration, **Secret Chamber administrative polling system**, and **safe source code upload** capabilities for programming courses.
 
-![Terminal Theme](https://img.shields.io/badge/Theme-Terminal-orange?style=flat-square&logo=linux)
 ![Django](https://img.shields.io/badge/Django-5.2+-success?style=flat-square&logo=django)
 ![Python](https://img.shields.io/badge/Python-3.8+-blue?style=flat-square&logo=python)
-![Security](https://img.shields.io/badge/Security-Production%20Ready-green?style=flat-square&logo=shield)
-![File Upload](https://img.shields.io/badge/File%20Upload-Secure%20Validation-blue?style=flat-square&logo=upload)
 ![License](https://img.shields.io/badge/License-GPL%20v3-blue?style=flat-square)
-![Calendar](https://img.shields.io/badge/Events-Calendar-green?style=flat-square&logo=calendar)
-![Secret Chamber](https://img.shields.io/badge/Secret%20Chamber-Secure%20Polling-red?style=flat-square&logo=shield)
 
 ## 🎯 Features
 
