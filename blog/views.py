@@ -2822,6 +2822,14 @@ def set_user_theme(request):
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
 
+def list_themes(request):
+    """API endpoint to list all available themes"""
+    themes = SiteTheme.objects.filter(is_active=True).values(
+        'id', 'name', 'display_name', 'theme_key', 'description', 'is_default'
+    )
+    return JsonResponse(list(themes), safe=False)
+
+
 # ==============================================
 # INDIVIDUAL USER BLOG VIEWS
 # ==============================================

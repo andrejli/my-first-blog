@@ -45,26 +45,26 @@ class TestAuthentication:
 
     @pytest.mark.auth
     @pytest.mark.django_db
-    def test_login_redirects(self, client, student_user, instructor_user, admin_user):
+    def test_login_redirects(self, client, student_user, instructor_user, admin_user, test_passwords):
         """Test role-based login redirects"""
         # Test student login
         response = client.post('/login/', {
             'username': 'student',
-            'password': 'student123'
+            'password': test_passwords['student']
         })
         assert response.status_code == 302
         
         # Test instructor login  
         response = client.post('/login/', {
             'username': 'instructor',
-            'password': 'instructor123'
+            'password': test_passwords['instructor']
         })
         assert response.status_code == 302
         
         # Test admin login
         response = client.post('/login/', {
             'username': 'admin',
-            'password': 'admin123'
+            'password': test_passwords['admin']
         })
         assert response.status_code == 302
 
@@ -112,9 +112,9 @@ class TestCourseManagement:
     @pytest.mark.django_db
     def test_course_access_permissions(self, client, student_user, course):
         """Test course access permissions"""
-        # Unauthenticated access should redirect
+        # Unauthenticated access should work for published courses
         response = client.get(f'/course/{course.id}/')
-        assert response.status_code == 302
+        assert response.status_code == 200  # Published courses are viewable by all
         
         # Authenticated but not enrolled
         client.force_login(student_user)

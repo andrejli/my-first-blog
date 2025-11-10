@@ -106,6 +106,7 @@ urlpatterns = [
     path('post/<int:post_id>/delete/', views.delete_post, name='delete_post'),
     
     # Theme Management
+    path('api/themes/', views.list_themes, name='list_themes'),
     path('api/theme/get/', views.get_user_theme, name='get_user_theme'),
     path('api/theme/set/', views.set_user_theme, name='set_user_theme'),
     path('set-theme/', views.set_user_theme, name='set_theme_legacy'),  # Legacy URL for tests

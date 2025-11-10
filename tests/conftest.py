@@ -34,6 +34,13 @@ def client():
 
 
 @pytest.fixture
+def authenticated_client(client, student_user):
+    """Django test client with authenticated student user"""
+    client.force_login(student_user)
+    return client
+
+
+@pytest.fixture
 def admin_user(test_passwords):
     """Create admin user with secure random password"""
     from django.contrib.auth.models import User
