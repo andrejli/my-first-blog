@@ -216,7 +216,14 @@ if (Run-Test "All Pytest Tests" "& '$PYTHON_EXE' -m pytest tests/ -v --tb=short 
 }
 $testResults += [PSCustomObject]@{Name="All Pytest Tests"; Passed=($LASTEXITCODE -eq 0)}
 
-# 16. Pytest with Coverage
+# 16. Quarantine System Tests
+$totalTests++
+if (Run-Test "Quarantine System Tests" "& '$PYTHON_EXE' -m pytest tests/test_quarantine.py -v --tb=short" "Test content quarantine system") {
+    $passedTests++
+}
+$testResults += [PSCustomObject]@{Name="Quarantine System Tests"; Passed=($LASTEXITCODE -eq 0)}
+
+# 17. Pytest with Coverage
 $totalTests++
 if (Run-Test "Pytest Coverage Report" "& '$PYTHON_EXE' -m pytest tests/ --cov=blog --cov-report=term-missing:skip-covered --tb=short" "Generate comprehensive coverage report") {
     $passedTests++

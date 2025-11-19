@@ -1,3 +1,16 @@
+"""
+Django models for the FORTIS AURIS LMS (Learning Management System).
+
+This module contains all database models for the LMS including:
+- User profiles and authentication
+- Course management (courses, lessons, modules)
+- Assessment system (quizzes, assignments, submissions)
+- Forum and blog functionality
+- Calendar and events
+- Theme customization
+- Content moderation (Secret Chamber)
+"""
+
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -7,22 +20,67 @@ import os
 
 
 def course_material_upload_path(instance, filename):
-    """Generate upload path for course materials"""
+    """
+    Generate upload path for course materials.
+    
+    Args:
+        instance: CourseMaterial instance
+        filename (str): Original filename
+        
+    Returns:
+        str: Upload path in format 'course_materials/{course_code}/{filename}'
+    """
     return f'course_materials/{instance.course.course_code}/{filename}'
 
 
 def assignment_upload_path(instance, filename):
-    """Generate upload path for assignment files"""
+    """
+    Generate upload path for assignment files.
+    
+    Args:
+        instance: Assignment instance
+        filename (str): Original filename
+        
+    Returns:
+        str: Upload path in format 'assignments/{course_code}/{filename}'
+    """
     return f'assignments/{instance.course.course_code}/{filename}'
 
 
 def submission_upload_path(instance, filename):
-    """Generate upload path for assignment submissions"""
+    """
+    Generate upload path for assignment submissions.
+    
+    Args:
+        instance: AssignmentSubmission instance
+        filename (str): Original filename
+        
+    Returns:
+        str: Upload path in format 'submissions/{course_code}/{assignment_id}/{username}/{filename}'
+    """
     return f'submissions/{instance.assignment.course.course_code}/{instance.assignment.id}/{instance.student.username}/{filename}'
 
 
+# ============================================================================
 # User Profile Models
+# ============================================================================
+
 class UserProfile(models.Model):
+    """
+    Extended user profile model for LMS users.
+    
+    Extends Django's built-in User model with additional fields for
+    role-based access control (student, instructor, admin) and personal
+    information.
+    
+    Attributes:
+        user (User): One-to-one relationship with Django User model
+        role (str): User role (student/instructor/admin)
+        bio (str): User biography (max 500 chars)
+        phone (str): Contact phone number
+        date_of_birth (date): User's date of birth
+        created_date (datetime): Profile creation timestamp
+    """
     ROLE_CHOICES = [
         ('student', 'Student'),
         ('instructor', 'Instructor'),
@@ -37,11 +95,31 @@ class UserProfile(models.Model):
     created_date = models.DateTimeField(default=timezone.now)
     
     def __str__(self):
+        """Return string representation of user profile."""
         return f"{self.user.username} - {self.role}"
 
 
+# ============================================================================
 # Site Configuration Models
+# ============================================================================
+
 class SiteTheme(models.Model):
+    """
+    Site theme configuration for visual customization.
+    
+    Manages available color themes for the LMS interface. Includes terminal-style
+    themes (amber, matrix), modern themes (dark-blue, light), and special themes
+    (cyberpunk). Only one theme can be set as default at a time.
+    
+    Attributes:
+        name (str): Unique theme identifier
+        display_name (str): Human-readable theme name
+        theme_key (str): Theme key from THEME_CHOICES
+        is_default (bool): Whether this is the default theme for new users
+        is_active (bool): Whether theme is available for selection
+        description (str): Optional theme description
+        created_date (datetime): Theme creation timestamp
+    """
     THEME_CHOICES = [
         ('terminal-amber', 'Terminal Amber'),
         ('dark-blue', 'Dark Blue'),
@@ -63,10 +141,17 @@ class SiteTheme(models.Model):
         verbose_name_plural = "Site Themes"
     
     def __str__(self):
+        """Return theme display name with default indicator."""
         default_text = " (Default)" if self.is_default else ""
         return f"{self.display_name}{default_text}"
     
     def save(self, *args, **kwargs):
+        """
+        Save theme and ensure only one default exists.
+        
+        Automatically unsets is_default on all other themes when
+        this theme is set as default.
+        """
         # Ensure only one default theme
         if self.is_default:
             SiteTheme.objects.filter(is_default=True).update(is_default=False)
@@ -74,6 +159,18 @@ class SiteTheme(models.Model):
 
 
 class UserThemePreference(models.Model):
+    """
+    User's selected theme preference.
+    
+    Stores individual user theme choices. Linked to active themes only.
+    Updates automatically track when preferences change.
+    
+    Attributes:
+        user (User): One-to-one relationship with User
+        theme (SiteTheme): Selected theme (must be active)
+        created_date (datetime): When preference was first created
+        updated_date (datetime): Last time preference was updated
+    """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='theme_preference')
     theme = models.ForeignKey(SiteTheme, on_delete=models.CASCADE, limit_choices_to={'is_active': True})
     created_date = models.DateTimeField(default=timezone.now)
@@ -84,10 +181,14 @@ class UserThemePreference(models.Model):
         verbose_name_plural = "User Theme Preferences"
     
     def __str__(self):
+        """Return user and their selected theme."""
         return f"{self.user.username} - {self.theme.display_name}"
 
 
+# ============================================================================
 # Course Management Models
+# ============================================================================
+
 class Course(models.Model):
     STATUS_CHOICES = [
         ('draft', 'Draft'),
@@ -1646,6 +1747,201 @@ class Event(models.Model):
             'max_occurrences': parent.max_occurrences,
             'is_parent': self.is_recurring_parent
         }
+# =============================================================================
+# CONTENT MODERATION MODELS
+# =============================================================================
+
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+
+
+class ContentQuarantine(models.Model):
+    """
+    Model for quarantining inappropriate content with democratic resolution.
+    
+    Administrators can flag forum posts or blog posts for quarantine. The content
+    is hidden from public view and a mandatory Secret Chamber poll is automatically
+    created for community resolution.
+    
+    Attributes:
+        content_type (ContentType): Type of content being quarantined (ForumPost/BlogPost)
+        object_id (int): ID of the specific content instance
+        content_object: Generic foreign key to the actual content
+        quarantined_by (User): Administrator who initiated quarantine
+        quarantine_reason (str): Explanation for quarantine action
+        quarantine_date (datetime): Timestamp of quarantine initiation
+        status (str): Current quarantine status (ACTIVE/RESOLVED_RESTORE/RESOLVED_DELETE)
+        linked_poll (AdminPoll): Optional link to Secret Chamber poll for resolution
+        resolution_deadline (datetime): Deadline for poll voting and resolution
+    """
+    STATUS_CHOICES = [
+        ('ACTIVE', 'Active Quarantine'),
+        ('RESOLVED_RESTORE', 'Resolved - Content Restored'),
+        ('RESOLVED_DELETE', 'Resolved - Content Deleted'),
+        ('RESOLVED_EXTENDED', 'Resolved - Quarantine Extended'),
+    ]
+    
+    # Generic foreign key to support multiple content types
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+    
+    # Quarantine metadata
+    quarantined_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True,
+        related_name='quarantined_content'
+    )
+    quarantine_reason = models.TextField(
+        help_text="Detailed explanation for why this content was quarantined"
+    )
+    quarantine_date = models.DateTimeField(default=timezone.now)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
+    
+    # Secret Chamber poll integration (optional)
+    linked_poll = models.ForeignKey(
+        'secret_chamber.AdminPoll',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='quarantined_content'
+    )
+    resolution_deadline = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Deadline for poll voting and resolution"
+    )
+    
+    class Meta:
+        ordering = ['-quarantine_date']
+        verbose_name = 'Content Quarantine'
+        verbose_name_plural = 'Content Quarantines'
+        indexes = [
+            models.Index(fields=['content_type', 'object_id']),
+            models.Index(fields=['status', 'quarantine_date']),
+        ]
+    
+    def __str__(self):
+        """Return string representation of quarantined content."""
+        return f"{self.content_type.model} #{self.object_id} - {self.status}"
+    
+    def is_active(self):
+        """Check if quarantine is currently active."""
+        return self.status == 'ACTIVE'
+    
+    def can_view_content(self, user):
+        """
+        Check if a user can view quarantined content.
+        
+        Only admins and the content author can view quarantined content.
+        
+        Args:
+            user (User): User requesting access
+            
+        Returns:
+            bool: True if user can view content, False otherwise
+        """
+        if not user.is_authenticated:
+            return False
+        
+        # Admins can always view
+        if user.is_superuser or user.is_staff:
+            return True
+        
+        # Content author can view their own quarantined content
+        try:
+            content = self.content_object
+            if hasattr(content, 'author'):
+                return content.author == user
+            elif hasattr(content, 'user'):
+                return content.user == user
+        except:
+            pass
+        
+        return False
+    
+    def get_content_preview(self):
+        """Get a preview of the quarantined content."""
+        try:
+            content = self.content_object
+            if hasattr(content, 'content'):
+                text = content.content
+            elif hasattr(content, 'text'):
+                text = content.text
+            elif hasattr(content, 'body'):
+                text = content.body
+            else:
+                text = str(content)
+            
+            # Return first 100 characters
+            return text[:100] + '...' if len(text) > 100 else text
+        except:
+            return "Content unavailable"
+
+
+class QuarantineDecision(models.Model):
+    """
+    Model for tracking decisions on quarantined content.
+    
+    Records the outcome of Secret Chamber polls and the actions taken
+    on quarantined content based on community voting.
+    
+    Attributes:
+        quarantine (ContentQuarantine): The quarantine record
+        poll_result (str): Outcome of the Secret Chamber poll
+        decision_date (datetime): When the decision was made
+        action_taken (str): What action was performed (RESTORED/DELETED/EXTENDED)
+        decision_notes (str): Additional notes about the decision
+        decided_by (User): Administrator who executed the decision
+    """
+    POLL_RESULT_CHOICES = [
+        ('RESTORE', 'Restore Content'),
+        ('DELETE', 'Delete Permanently'),
+        ('EXTEND', 'Extend Quarantine'),
+    ]
+    
+    ACTION_CHOICES = [
+        ('RESTORED', 'Content Restored'),
+        ('DELETED', 'Content Deleted'),
+        ('EXTENDED', 'Quarantine Extended'),
+    ]
+    
+    quarantine = models.ForeignKey(
+        ContentQuarantine,
+        on_delete=models.CASCADE,
+        related_name='decisions'
+    )
+    poll_result = models.CharField(
+        max_length=20,
+        choices=POLL_RESULT_CHOICES,
+        help_text="Majority vote outcome from Secret Chamber poll"
+    )
+    decision_date = models.DateTimeField(default=timezone.now)
+    action_taken = models.CharField(
+        max_length=20,
+        choices=ACTION_CHOICES,
+        help_text="Action performed based on poll result"
+    )
+    decision_notes = models.TextField(
+        blank=True,
+        help_text="Additional context or reasoning for the decision"
+    )
+    decided_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='quarantine_decisions'
+    )
+    
+    class Meta:
+        ordering = ['-decision_date']
+        verbose_name = 'Quarantine Decision'
+        verbose_name_plural = 'Quarantine Decisions'
+    
+    def __str__(self):
+        """Return string representation of decision."""
+        return f"{self.quarantine} - {self.action_taken} on {self.decision_date.strftime('%Y-%m-%d')}"
 
 
 # =============================================================================
@@ -1665,6 +1961,8 @@ __all__ = [
     'Quiz', 'Question', 'Answer', 'QuizAttempt', 'QuizResponse', 'Announcement',
     'AnnouncementRead', 'Forum', 'Topic', 'ForumPost', 'BlogPost', 'BlogComment',
     'EventType', 'Event', 
+    # Content moderation models
+    'ContentQuarantine', 'QuarantineDecision',
     # Security models
     'SecurityEvent', 'SystemMetrics', 'ThreatIntelligence', 'AuditLog', 'AlertRule'
 ]

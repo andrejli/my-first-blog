@@ -69,12 +69,17 @@
                 <div class="col-12">
                     {% for post_data in posts_with_permissions %}
                     {% with post=post_data.post %}
-                    <div class="card mb-3">
+                    <div class="card mb-3 {% if post_data.is_quarantined %}quarantined-content{% endif %}">
                         <div class="card-header bg-light">
                             <div class="row align-items-center">
                                 <div class="col-12 col-md-8">
                                     <div>
-                                        <h6 class="mb-1">{{ post.author.get_full_name|default:post.author.username }}</h6>
+                                        <h6 class="mb-1">
+                                            {{ post.author.get_full_name|default:post.author.username }}
+                                            {% if post_data.is_quarantined %}
+                                                <span class="quarantine-badge ms-2">🔴 QUARANTINED</span>
+                                            {% endif %}
+                                        </h6>
                                         <small class="text-muted">
                                             {% if post.author.userprofile.role == 'instructor' %}
                                                 <span class="badge bg-warning">Instructor</span>
@@ -102,11 +107,48 @@
                             </div>
                         </div>
                         
+                        {% if post_data.is_quarantined %}
+                        <!-- Quarantine Alert for Admins/Authors -->
+                        <div class="card-body">
+                            <div class="quarantine-alert">
+                                <h4>⚠️ Content Under Review</h4>
+                                <p><strong>This post has been quarantined and is hidden from public view.</strong></p>
+                                <div class="quarantine-details mt-3">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Quarantined By:</span>
+                                        <span class="detail-value">{{ post_data.quarantine.quarantined_by.username }}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Date:</span>
+                                        <span class="detail-value">{{ post_data.quarantine.quarantine_date|date:"M d, Y H:i" }}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Reason:</span>
+                                        <span class="detail-value">{{ post_data.quarantine.quarantine_reason }}</span>
+                                    </div>
+                                    {% if post_data.quarantine.resolution_deadline %}
+                                    <div class="detail-item">
+                                        <span class="detail-label">Resolution Deadline:</span>
+                                        <span class="detail-value">{{ post_data.quarantine.resolution_deadline|date:"M d, Y H:i" }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <hr>
+                                <p class="mb-0"><em>Only you and administrators can view this content.</em></p>
+                            </div>
+                            <div class="post-content mt-3">
+                                <h6>Original Content:</h6>
+                                {{ post.content|linebreaks }}
+                            </div>
+                        </div>
+                        {% else %}
+                        <!-- Normal Content Display -->
                         <div class="card-body">
                             <div class="post-content">
                                 {{ post.content|linebreaks }}
                             </div>
                         </div>
+                        {% endif %}
                         
                         {% if post_data.can_edit or post_data.can_delete %}
                         <div class="card-footer bg-transparent">

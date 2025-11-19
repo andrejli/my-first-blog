@@ -110,7 +110,7 @@
         {% for post in page_obj %}
             <div class="blog-post-card">
                 <h2 class="blog-post-title">
-                    <a href="{% url 'blog:blog_post_detail' username=profile_user.username slug=post.slug %}">
+                    <a href="{% url 'blog_post_detail' username=profile_user.username slug=post.slug %}">
                         {{ post.title }}
                     </a>
                 </h2>
@@ -133,7 +133,7 @@
                 {% endif %}
                 
                 <div class="blog-post-actions">
-                    <a href="{% url 'blog:blog_post_detail' username=profile_user.username slug=post.slug %}" 
+                    <a href="{% url 'blog_post_detail' username=profile_user.username slug=post.slug %}" 
                        class="btn btn-primary btn-sm">
                         <i class="fa fa-book"></i> Read More
                     </a>
@@ -196,7 +196,7 @@
             <p>{{ profile_user.get_full_name|default:profile_user.username }} hasn't published any blog posts yet.</p>
             {% if user == profile_user %}
                 <p>
-                    <a href="{% url 'blog:create_blog_post' %}" class="btn btn-primary">
+                    <a href="{% url 'create_blog_post' %}" class="btn btn-primary">
                         <i class="fa fa-plus"></i> Create Your First Post
                     </a>
                 </p>
@@ -206,7 +206,7 @@
     
     <!-- Back to All Blogs -->
     <div class="text-center" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ecf0f1;">
-        <a href="{% url 'blog:all_blogs' %}" class="btn btn-default">
+        <a href="{% url 'all_blogs' %}" class="btn btn-default">
             <i class="fa fa-arrow-left"></i> Back to All Blogs
         </a>
     </div>

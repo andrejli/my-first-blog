@@ -8,10 +8,45 @@
     <div class="row">
         <div class="col-md-8 col-md-offset-2">
             <!-- Blog Post -->
-            <article class="blog-post">
+            <article class="blog-post {% if is_quarantined %}quarantined-content{% endif %}">
+                <!-- Quarantine Alert (if applicable) -->
+                {% if is_quarantined %}
+                <div class="quarantine-alert mb-4">
+                    <h4>⚠️ Content Under Review</h4>
+                    <p><strong>This blog post has been quarantined and is hidden from public view.</strong></p>
+                    <div class="quarantine-details mt-3">
+                        <div class="detail-item">
+                            <span class="detail-label">Quarantined By:</span>
+                            <span class="detail-value">{{ quarantine.quarantined_by.username }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Date:</span>
+                            <span class="detail-value">{{ quarantine.quarantine_date|date:"M d, Y H:i" }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Reason:</span>
+                            <span class="detail-value">{{ quarantine.quarantine_reason }}</span>
+                        </div>
+                        {% if quarantine.resolution_deadline %}
+                        <div class="detail-item">
+                            <span class="detail-label">Resolution Deadline:</span>
+                            <span class="detail-value">{{ quarantine.resolution_deadline|date:"M d, Y H:i" }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <hr>
+                    <p class="mb-0"><em>Only you and administrators can view this content.</em></p>
+                </div>
+                {% endif %}
+                
                 <!-- Post Header -->
                 <header class="post-header">
-                    <h1 class="post-title">{{ blog_post.title }}</h1>
+                    <h1 class="post-title">
+                        {{ blog_post.title }}
+                        {% if is_quarantined %}
+                            <span class="quarantine-badge ms-2">🔴 QUARANTINED</span>
+                        {% endif %}
+                    </h1>
                     
                     <div class="post-meta">
                         <div class="author-info">
@@ -51,6 +86,9 @@
                 
                 <!-- Post Content -->
                 <div class="post-content">
+                    {% if is_quarantined %}
+                        <h6 class="text-muted">Original Content:</h6>
+                    {% endif %}
                     {{ blog_post.content|obsidian_markdown }}
                 </div>
                 

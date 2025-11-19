@@ -9,7 +9,7 @@ from .models import (
     Quiz, Question, Answer, QuizAttempt, QuizResponse,
     Announcement, AnnouncementRead,
     Forum, Topic, ForumPost, SiteTheme, UserThemePreference,
-    Event
+    Event, ContentQuarantine, QuarantineDecision
 )
 from .forms import WeekdayMultipleChoiceField
 from .utils.image_processing import process_uploaded_image, get_image_info
@@ -386,13 +386,101 @@ class TopicAdmin(admin.ModelAdmin):
 
 @admin.register(ForumPost)
 class ForumPostAdmin(admin.ModelAdmin):
-    list_display = ['topic', 'author', 'created_date', 'is_first_post']
+    list_display = ['topic', 'author', 'created_date', 'is_first_post', 'quarantine_status']
     list_filter = ['topic__forum', 'is_first_post', 'created_date']
     search_fields = ['topic__title', 'author__username', 'content']
     ordering = ['-created_date']
+    actions = ['quarantine_posts', 'restore_quarantined_posts']
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('topic', 'author')
+    
+    def quarantine_status(self, obj):
+        """Display quarantine status with visual indicator."""
+        from django.contrib.contenttypes.models import ContentType
+        ct = ContentType.objects.get_for_model(obj)
+        quarantine = ContentQuarantine.objects.filter(
+            content_type=ct,
+            object_id=obj.id,
+            status='ACTIVE'
+        ).first()
+        
+        if quarantine:
+            return format_html(
+                '<span style="color: red; font-weight: bold;">🔴 QUARANTINED</span>'
+            )
+        return format_html('<span style="color: green;">✓ Active</span>')
+    quarantine_status.short_description = 'Status'
+    
+    @admin.action(description='Quarantine selected forum posts')
+    def quarantine_posts(self, request, queryset):
+        """Quarantine selected forum posts."""
+        from django.contrib.contenttypes.models import ContentType
+        from datetime import timedelta
+        
+        quarantined_count = 0
+        for post in queryset:
+            ct = ContentType.objects.get_for_model(post)
+            
+            # Check if already quarantined
+            existing = ContentQuarantine.objects.filter(
+                content_type=ct,
+                object_id=post.id,
+                status='ACTIVE'
+            ).exists()
+            
+            if not existing:
+                # Create quarantine record
+                quarantine = ContentQuarantine.objects.create(
+                    content_type=ct,
+                    object_id=post.id,
+                    quarantined_by=request.user,
+                    quarantine_reason=f"Forum post quarantined by {request.user.username} via admin action",
+                    resolution_deadline=timezone.now() + timedelta(days=7)
+                )
+                quarantined_count += 1
+        
+        self.message_user(
+            request,
+            f"{quarantined_count} forum post(s) have been quarantined. "
+            f"Content is now hidden from public view and awaiting resolution.",
+            level='WARNING'
+        )
+    
+    @admin.action(description='Restore quarantined forum posts')
+    def restore_quarantined_posts(self, request, queryset):
+        """Restore quarantined forum posts."""
+        from django.contrib.contenttypes.models import ContentType
+        
+        restored_count = 0
+        for post in queryset:
+            ct = ContentType.objects.get_for_model(post)
+            quarantines = ContentQuarantine.objects.filter(
+                content_type=ct,
+                object_id=post.id,
+                status='ACTIVE'
+            )
+            
+            for quarantine in quarantines:
+                # Create decision record
+                QuarantineDecision.objects.create(
+                    quarantine=quarantine,
+                    poll_result='RESTORE',
+                    action_taken='RESTORED',
+                    decided_by=request.user,
+                    decision_notes=f"Restored by {request.user.username} via admin action"
+                )
+                
+                # Update quarantine status
+                quarantine.status = 'RESOLVED_RESTORE'
+                quarantine.save()
+                restored_count += 1
+        
+        self.message_user(
+            request,
+            f"{restored_count} forum post(s) have been restored from quarantine.",
+            level='SUCCESS'
+        )
 
 
 # Site Theme Administration
@@ -433,12 +521,13 @@ class UserThemePreferenceAdmin(admin.ModelAdmin):
 # BlogPost Administration with EXIF processing
 @admin.register(BlogPost)
 class BlogPostAdmin(admin.ModelAdmin):
-    list_display = ['title', 'author', 'status', 'created_date', 'published_date', 'has_featured_image', 'image_security_status']
+    list_display = ['title', 'author', 'status', 'created_date', 'published_date', 'has_featured_image', 'image_security_status', 'quarantine_status']
     list_filter = ['status', 'created_date', 'published_date', 'author']
     search_fields = ['title', 'content', 'excerpt', 'author__username', 'author__first_name', 'author__last_name']
     prepopulated_fields = {'slug': ('title',)}
     ordering = ['-created_date']
     date_hierarchy = 'created_date'
+    actions = ['process_featured_images', 'make_published', 'make_draft', 'quarantine_posts', 'restore_quarantined_posts']
     
     fieldsets = (
         ('Content', {
@@ -460,7 +549,93 @@ class BlogPostAdmin(admin.ModelAdmin):
     )
     
     readonly_fields = ['created_date', 'updated_date', 'view_count']
-    actions = ['process_featured_images', 'make_published', 'make_draft']
+    
+    def quarantine_status(self, obj):
+        """Display quarantine status with visual indicator."""
+        from django.contrib.contenttypes.models import ContentType
+        ct = ContentType.objects.get_for_model(obj)
+        quarantine = ContentQuarantine.objects.filter(
+            content_type=ct,
+            object_id=obj.id,
+            status='ACTIVE'
+        ).first()
+        
+        if quarantine:
+            return format_html(
+                '<span style="color: red; font-weight: bold;">🔴 QUARANTINED</span>'
+            )
+        return format_html('<span style="color: green;">✓ Active</span>')
+    quarantine_status.short_description = 'Status'
+    
+    @admin.action(description='Quarantine selected blog posts')
+    def quarantine_posts(self, request, queryset):
+        """Quarantine selected blog posts."""
+        from django.contrib.contenttypes.models import ContentType
+        from datetime import timedelta
+        
+        quarantined_count = 0
+        for post in queryset:
+            ct = ContentType.objects.get_for_model(post)
+            
+            # Check if already quarantined
+            existing = ContentQuarantine.objects.filter(
+                content_type=ct,
+                object_id=post.id,
+                status='ACTIVE'
+            ).exists()
+            
+            if not existing:
+                # Create quarantine record
+                quarantine = ContentQuarantine.objects.create(
+                    content_type=ct,
+                    object_id=post.id,
+                    quarantined_by=request.user,
+                    quarantine_reason=f"Blog post quarantined by {request.user.username} via admin action",
+                    resolution_deadline=timezone.now() + timedelta(days=7)
+                )
+                quarantined_count += 1
+        
+        self.message_user(
+            request,
+            f"{quarantined_count} blog post(s) have been quarantined. "
+            f"Content is now hidden from public view and awaiting resolution.",
+            level='WARNING'
+        )
+    
+    @admin.action(description='Restore quarantined blog posts')
+    def restore_quarantined_posts(self, request, queryset):
+        """Restore quarantined blog posts."""
+        from django.contrib.contenttypes.models import ContentType
+        
+        restored_count = 0
+        for post in queryset:
+            ct = ContentType.objects.get_for_model(post)
+            quarantines = ContentQuarantine.objects.filter(
+                content_type=ct,
+                object_id=post.id,
+                status='ACTIVE'
+            )
+            
+            for quarantine in quarantines:
+                # Create decision record
+                QuarantineDecision.objects.create(
+                    quarantine=quarantine,
+                    poll_result='RESTORE',
+                    action_taken='RESTORED',
+                    decided_by=request.user,
+                    decision_notes=f"Restored by {request.user.username} via admin action"
+                )
+                
+                # Update quarantine status
+                quarantine.status = 'RESOLVED_RESTORE'
+                quarantine.save()
+                restored_count += 1
+        
+        self.message_user(
+            request,
+            f"{restored_count} blog post(s) have been restored from quarantine.",
+            level='SUCCESS'
+        )
     
     def has_featured_image(self, obj):
         """Display if blog post has a featured image."""
@@ -802,6 +977,191 @@ class EventAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('created_by', 'course')
+
+
+# =============================================================================
+# CONTENT QUARANTINE ADMIN
+# =============================================================================
+
+@admin.register(ContentQuarantine)
+class ContentQuarantineAdmin(admin.ModelAdmin):
+    """Admin interface for managing quarantined content."""
+    list_display = [
+        'id', 'content_type', 'object_id', 'quarantine_status_badge', 
+        'quarantined_by', 'quarantine_date', 'resolution_deadline', 'has_poll'
+    ]
+    list_filter = ['status', 'content_type', 'quarantine_date']
+    search_fields = [
+        'quarantine_reason', 'quarantined_by__username', 
+        'object_id', 'content_type__model'
+    ]
+    ordering = ['-quarantine_date']
+    date_hierarchy = 'quarantine_date'
+    readonly_fields = [
+        'content_type', 'object_id', 'quarantined_by', 
+        'quarantine_date', 'content_preview_html'
+    ]
+    
+    fieldsets = (
+        ('Quarantined Content', {
+            'fields': ('content_type', 'object_id', 'content_preview_html')
+        }),
+        ('Quarantine Details', {
+            'fields': ('quarantine_reason', 'quarantined_by', 'quarantine_date', 'status')
+        }),
+        ('Resolution', {
+            'fields': ('linked_poll', 'resolution_deadline'),
+            'description': 'Secret Chamber poll for democratic resolution'
+        }),
+    )
+    
+    actions = ['resolve_restore', 'resolve_delete', 'extend_quarantine']
+    
+    def quarantine_status_badge(self, obj):
+        """Display quarantine status with color-coded badge."""
+        status_colors = {
+            'ACTIVE': 'red',
+            'RESOLVED_RESTORE': 'green',
+            'RESOLVED_DELETE': 'gray',
+            'RESOLVED_EXTENDED': 'orange',
+        }
+        color = status_colors.get(obj.status, 'black')
+        
+        if obj.status == 'ACTIVE':
+            icon = '🔴'
+        elif obj.status == 'RESOLVED_RESTORE':
+            icon = '✓'
+        elif obj.status == 'RESOLVED_DELETE':
+            icon = '🗑️'
+        else:
+            icon = '⏱️'
+        
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{} {}</span>',
+            color, icon, obj.get_status_display()
+        )
+    quarantine_status_badge.short_description = 'Status'
+    
+    def has_poll(self, obj):
+        """Display if quarantine has linked Secret Chamber poll."""
+        return bool(obj.linked_poll)
+    has_poll.boolean = True
+    has_poll.short_description = 'Poll Created'
+    
+    def content_preview_html(self, obj):
+        """Display preview of quarantined content."""
+        preview = obj.get_content_preview()
+        return format_html(
+            '<div style="padding: 10px; background-color: #fff3cd; '
+            'border: 1px solid #ffc107; border-radius: 4px;">'
+            '<strong>Content Preview:</strong><br>{}</div>',
+            preview
+        )
+    content_preview_html.short_description = 'Content Preview'
+    
+    @admin.action(description='Resolve: Restore quarantined content')
+    def resolve_restore(self, request, queryset):
+        """Restore quarantined content."""
+        restored_count = 0
+        for quarantine in queryset.filter(status='ACTIVE'):
+            # Create decision record
+            QuarantineDecision.objects.create(
+                quarantine=quarantine,
+                poll_result='RESTORE',
+                action_taken='RESTORED',
+                decided_by=request.user,
+                decision_notes=f"Manually restored by {request.user.username}"
+            )
+            
+            # Update status
+            quarantine.status = 'RESOLVED_RESTORE'
+            quarantine.save()
+            restored_count += 1
+        
+        self.message_user(
+            request,
+            f"{restored_count} item(s) restored from quarantine.",
+            level='SUCCESS'
+        )
+    
+    @admin.action(description='Resolve: Delete quarantined content permanently')
+    def resolve_delete(self, request, queryset):
+        """Mark quarantined content for deletion."""
+        deleted_count = 0
+        for quarantine in queryset.filter(status='ACTIVE'):
+            # Create decision record
+            QuarantineDecision.objects.create(
+                quarantine=quarantine,
+                poll_result='DELETE',
+                action_taken='DELETED',
+                decided_by=request.user,
+                decision_notes=f"Marked for deletion by {request.user.username}"
+            )
+            
+            # Update status
+            quarantine.status = 'RESOLVED_DELETE'
+            quarantine.save()
+            
+            # Note: Actual content deletion should be done manually or via separate process
+            deleted_count += 1
+        
+        self.message_user(
+            request,
+            f"{deleted_count} item(s) marked for permanent deletion. "
+            f"Content should be manually deleted if appropriate.",
+            level='WARNING'
+        )
+    
+    @admin.action(description='Extend quarantine period')
+    def extend_quarantine(self, request, queryset):
+        """Extend quarantine deadline."""
+        from datetime import timedelta
+        extended_count = 0
+        
+        for quarantine in queryset.filter(status='ACTIVE'):
+            if quarantine.resolution_deadline:
+                quarantine.resolution_deadline += timedelta(days=7)
+            else:
+                quarantine.resolution_deadline = timezone.now() + timedelta(days=7)
+            
+            quarantine.save()
+            extended_count += 1
+        
+        self.message_user(
+            request,
+            f"{extended_count} quarantine(s) extended by 7 days.",
+            level='SUCCESS'
+        )
+
+
+@admin.register(QuarantineDecision)
+class QuarantineDecisionAdmin(admin.ModelAdmin):
+    """Admin interface for viewing quarantine decisions."""
+    list_display = [
+        'id', 'quarantine', 'poll_result', 'action_taken', 
+        'decided_by', 'decision_date'
+    ]
+    list_filter = ['poll_result', 'action_taken', 'decision_date']
+    search_fields = ['decision_notes', 'decided_by__username']
+    ordering = ['-decision_date']
+    date_hierarchy = 'decision_date'
+    readonly_fields = [
+        'quarantine', 'poll_result', 'decision_date', 
+        'action_taken', 'decided_by'
+    ]
+    
+    fieldsets = (
+        ('Decision Details', {
+            'fields': ('quarantine', 'poll_result', 'action_taken')
+        }),
+        ('Decision Metadata', {
+            'fields': ('decided_by', 'decision_date', 'decision_notes')
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        """Decisions are created automatically, not manually added."""
+        return False
 
 
 # =============================================================================

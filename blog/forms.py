@@ -1,14 +1,44 @@
+"""
+Django forms for the FORTIS AURIS LMS (Learning Management System).
+
+This module contains form classes for:
+- Event management (creation, editing, filtering)
+- Custom event types
+- Calendar functionality with recurring events
+- Course and lesson linking
+- Custom widgets for weekday selection
+
+The forms include comprehensive validation and custom widgets for enhanced
+user experience, especially for recurring event management.
+"""
+
 from django import forms
 from django.contrib.auth.models import User
 from .models import Event, EventType, Course, Lesson
 
 
 class WeekdayCheckboxWidget(forms.CheckboxSelectMultiple):
-    """Custom widget for selecting weekdays with checkboxes"""
+    """
+    Custom widget for selecting weekdays with checkboxes.
+    
+    Provides a user-friendly checkbox interface for selecting multiple
+    weekdays for recurring events. Handles conversion between list format
+    (for display) and comma-separated string format (for storage).
+    
+    Attributes:
+        template_name (str): Django template for checkbox group rendering
+        option_template_name (str): Django template for individual checkbox rendering
+    """
     template_name = 'django/forms/widgets/checkbox_select.html'
     option_template_name = 'django/forms/widgets/checkbox_option.html'
     
     def __init__(self, attrs=None):
+        """
+        Initialize weekday choices.
+        
+        Args:
+            attrs (dict, optional): HTML attributes for the widget
+        """
         weekday_choices = [
             (0, 'Monday'),
             (1, 'Tuesday'), 
@@ -21,7 +51,20 @@ class WeekdayCheckboxWidget(forms.CheckboxSelectMultiple):
         super().__init__(attrs=attrs, choices=weekday_choices)
         
     def optgroups(self, name, value, attrs=None):
-        """Override to handle comma-separated string values"""
+        """
+        Override to handle comma-separated string values.
+        
+        Converts stored comma-separated string back to list of integers
+        for proper checkbox rendering.
+        
+        Args:
+            name (str): Field name
+            value (str or list): Current field value
+            attrs (dict, optional): HTML attributes
+            
+        Returns:
+            list: Option groups for rendering
+        """
         if isinstance(value, str) and value:
             # Convert comma-separated string to list of integers for rendering
             try:
@@ -31,7 +74,19 @@ class WeekdayCheckboxWidget(forms.CheckboxSelectMultiple):
         return super().optgroups(name, value, attrs)
         
     def value_from_datadict(self, data, files, name):
-        """Extract the value from form data"""
+        """
+        Extract the value from form data.
+        
+        Handles both QueryDict (web requests) and regular dict (tests).
+        
+        Args:
+            data (QueryDict or dict): Form data
+            files (MultiValueDict): Uploaded files
+            name (str): Field name
+            
+        Returns:
+            list: List of selected weekday integers
+        """
         if hasattr(data, 'getlist'):
             values = data.getlist(name)
         else:
@@ -48,8 +103,23 @@ class WeekdayCheckboxWidget(forms.CheckboxSelectMultiple):
 
 
 class WeekdayMultipleChoiceField(forms.MultipleChoiceField):
-    """Custom field for selecting multiple weekdays"""
+    """
+    Custom field for selecting multiple weekdays.
+    
+    Stores selected weekdays as comma-separated string (e.g., "0,2,4" for
+    Monday, Wednesday, Friday). Provides validation and conversion between
+    display format (list) and storage format (string).
+    """
     def __init__(self, *args, **kwargs):
+        """
+        Initialize weekday multiple choice field.
+        
+        Sets up weekday choices (0-6 for Monday-Sunday) and custom widget.
+        
+        Args:
+            *args: Positional arguments passed to parent
+            **kwargs: Keyword arguments passed to parent
+        """
         weekday_choices = [
             (0, 'Monday'),
             (1, 'Tuesday'), 
@@ -64,7 +134,15 @@ class WeekdayMultipleChoiceField(forms.MultipleChoiceField):
         super().__init__(*args, **kwargs)
     
     def to_python(self, value):
-        """Convert to comma-separated string for storage"""
+        """
+        Convert to comma-separated string for storage.
+        
+        Args:
+            value (list or str or None): Selected weekdays
+            
+        Returns:
+            str: Comma-separated string of day numbers (e.g., "0,2,4")
+        """
         if value is None or value == '' or value == []:
             return ''
         # Convert list of strings/integers to list of integers, then to comma-separated string
@@ -80,7 +158,15 @@ class WeekdayMultipleChoiceField(forms.MultipleChoiceField):
             return ''
     
     def prepare_value(self, value):
-        """Convert stored comma-separated string back to list for display"""
+        """
+        Convert stored comma-separated string back to list for display.
+        
+        Args:
+            value (str or list): Stored weekday data
+            
+        Returns:
+            list: List of weekday integers for checkbox rendering
+        """
         if not value:
             return []
         try:
@@ -91,7 +177,18 @@ class WeekdayMultipleChoiceField(forms.MultipleChoiceField):
             return []
     
     def validate(self, value):
-        """Override validation to handle comma-separated string"""
+        """
+        Override validation to handle comma-separated string.
+        
+        Ensures all selected days are valid (0-6) and at least one day
+        is selected when required.
+        
+        Args:
+            value (str or list): Value to validate
+            
+        Raises:
+            ValidationError: If value contains invalid day numbers
+        """
         # Skip the parent's validation since we're using a different format
         if value and isinstance(value, str):
             # Our format is comma-separated, parent expects individual choices
@@ -108,7 +205,15 @@ class WeekdayMultipleChoiceField(forms.MultipleChoiceField):
 
 
 class EventTypeForm(forms.ModelForm):
-    """Form for creating and editing custom event types"""
+    """
+    Form for creating and editing custom event types.
+    
+    Allows administrators to create custom event categories with:
+    - Custom colors and icons
+    - Slug for URL-friendly identification
+    - Sort order for display prioritization
+    - Active/inactive status
+    """
     
     class Meta:
         model = EventType
@@ -150,6 +255,12 @@ class EventTypeForm(forms.ModelForm):
         }
 
     def clean_slug(self):
+        """
+        Normalize slug to lowercase with hyphens.
+        
+        Returns:
+            str: Cleaned slug (lowercase, spaces replaced with hyphens)
+        """
         slug = self.cleaned_data['slug']
         # Convert to lowercase and replace spaces with hyphens
         slug = slug.lower().replace(' ', '-')
@@ -157,7 +268,19 @@ class EventTypeForm(forms.ModelForm):
 
 
 class EventForm(forms.ModelForm):
-    """Enhanced form for creating and editing events with custom types and colors"""
+    """
+    Enhanced form for creating and editing events.
+    
+    Comprehensive event management form supporting:
+    - Custom event types with colors and icons
+    - Course and lesson linking
+    - Obsidian-style wiki links
+    - Zoom integration (meetings and webinars)
+    - Recurring event patterns (daily, weekly, biweekly, monthly, yearly)
+    - File attachments (posters, materials)
+    - Priority and visibility settings
+    - Holiday and weekend exclusion for recurring events
+    """
     
     event_type_new = forms.ModelChoiceField(
         queryset=EventType.objects.filter(is_active=True).order_by('sort_order', 'name'),
@@ -291,6 +414,14 @@ class EventForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize event form with customized choices and defaults.
+        
+        Sets up:
+        - Formatted lesson choices showing "Course - Lesson" format
+        - Default values for common fields
+        - Help text for recurring event fields
+        """
         super().__init__(*args, **kwargs)
         
         # Customize lesson choices to show course + lesson title
@@ -319,6 +450,22 @@ class EventForm(forms.ModelForm):
         )
 
     def clean(self):
+        """
+        Comprehensive validation for event data.
+        
+        Validates:
+        - End date is after start date
+        - Recurring events have required fields (pattern, end date or max occurrences)
+        - Recurrence end date is after start date
+        - Weekly/biweekly events have selected weekdays
+        - Max occurrences doesn't exceed 365
+        
+        Returns:
+            dict: Cleaned form data
+            
+        Raises:
+            ValidationError: If validation fails
+        """
         cleaned_data = super().clean()
         start_date = cleaned_data.get('start_date')
         end_date = cleaned_data.get('end_date')
@@ -374,7 +521,16 @@ class EventForm(forms.ModelForm):
 
 
 class EventFilterForm(forms.Form):
-    """Form for filtering events in the management interface"""
+    """
+    Form for filtering events in the management interface.
+    
+    Provides filtering by:
+    - Publication status (all, published, draft, featured)
+    - Custom event type
+    - Legacy event type
+    - Priority level
+    - Associated course
+    """
     
     STATUS_CHOICES = [
         ('', 'All Events'),

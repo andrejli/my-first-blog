@@ -1,3 +1,20 @@
+"""
+Django views for the FORTIS AURIS LMS (Learning Management System).
+
+This module contains all view functions and logic for the LMS including:
+- Authentication (login, logout, registration)
+- Student dashboard and course access
+- Instructor dashboard and course management
+- Assignment submission and grading
+- Quiz system
+- Forum and blog functionality
+- Calendar and events
+- Theme management
+- API endpoints
+
+All views handle proper authentication, authorization, and role-based access control.
+"""
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -8,13 +25,84 @@ from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse
 from django.db import transaction
 import logging
-from .models import Post, Course, Enrollment, Lesson, Progress, UserProfile, CourseMaterial, Assignment, Submission, Quiz, Question, Answer, QuizAttempt, QuizResponse, Announcement, AnnouncementRead, Forum, Topic, ForumPost, Event, EventType
+from .models import Post, Course, Enrollment, Lesson, Progress, UserProfile, CourseMaterial, Assignment, Submission, Quiz, Question, Answer, QuizAttempt, QuizResponse, Announcement, AnnouncementRead, Forum, Topic, ForumPost, Event, EventType, ContentQuarantine, QuarantineDecision
 from .course_import_export import export_course, import_course, confirm_import_course
 
 
+# =============================================================================
+# QUARANTINE HELPER FUNCTIONS
+# =============================================================================
+
+def is_content_quarantined(content_object):
+    """
+    Check if content is currently quarantined.
+    
+    Args:
+        content_object: Django model instance (ForumPost, BlogPost, etc.)
+        
+    Returns:
+        ContentQuarantine instance if quarantined, None otherwise
+    """
+    from django.contrib.contenttypes.models import ContentType
+    ct = ContentType.objects.get_for_model(content_object)
+    return ContentQuarantine.objects.filter(
+        content_type=ct,
+        object_id=content_object.id,
+        status='ACTIVE'
+    ).first()
+
+
+def can_view_quarantined_content(content_object, user):
+    """
+    Check if user can view quarantined content.
+    
+    Only admins and content authors can view quarantined content.
+    
+    Args:
+        content_object: The quarantined content
+        user: User requesting access
+        
+    Returns:
+        bool: True if user can view, False otherwise
+    """
+    if not user.is_authenticated:
+        return False
+    
+    # Admins can always view
+    if user.is_superuser or user.is_staff:
+        return True
+    
+    # Check if user is the author
+    if hasattr(content_object, 'author'):
+        return content_object.author == user
+    elif hasattr(content_object, 'user'):
+        return content_object.user == user
+    
+    return False
+
+
+# ============================================================================
 # Authentication Views
+# ============================================================================
+
 def user_login(request):
-    """Login view for students and instructors"""
+    """
+    Handle user login with role-based redirection.
+    
+    Authenticates users and redirects them to appropriate dashboard based on
+    their role (admin -> /admin/, instructor -> instructor_dashboard,
+    student -> student_dashboard).
+    
+    Args:
+        request: HTTP request object
+        
+    Returns:
+        HttpResponse: Login page or redirect to appropriate dashboard
+        
+    POST Parameters:
+        username (str): User's username
+        password (str): User's password
+    """
     if request.method == 'POST':
         username = request.POST['username']
         password = request.POST['password']
@@ -40,14 +128,39 @@ def user_login(request):
 
 
 def user_logout(request):
-    """Logout view"""
+    """
+    Handle user logout.
+    
+    Logs out the current user and redirects to the course list with a
+    success message.
+    
+    Args:
+        request: HTTP request object
+        
+    Returns:
+        HttpResponseRedirect: Redirect to course list page
+    """
     logout(request)
     messages.success(request, 'You have been logged out successfully.')
     return redirect('course_list')
 
 
 def user_register(request):
-    """Registration view for new students"""
+    """
+    Handle new student registration.
+    
+    Creates a new user account with student role. Automatically creates
+    a UserProfile with role='student' upon successful registration.
+    
+    Args:
+        request: HTTP request object
+        
+    Returns:
+        HttpResponse: Registration page or redirect to login on success
+        
+    POST Parameters:
+        Form data from UserCreationForm (username, password1, password2)
+    """
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
@@ -2512,6 +2625,7 @@ def forum_list(request):
     # General forum - all students and instructors can access
     general_forum, created = Forum.objects.get_or_create(
         forum_type='general',
+        course=None,
         defaults={
             'title': 'General Discussion',
             'description': 'General discussion for all students and instructors'
@@ -2523,6 +2637,7 @@ def forum_list(request):
     if profile.role == 'instructor':
         instructor_forum, created = Forum.objects.get_or_create(
             forum_type='instructor',
+            course=None,
             defaults={
                 'title': 'Instructor Forum',
                 'description': 'Private discussion area for instructors'
@@ -2594,15 +2709,30 @@ def topic_detail(request, topic_id):
         messages.error(request, 'You do not have permission to view this topic.')
         return redirect('forum_list')
     
-    posts = topic.posts.all().select_related('author', 'edited_by')
+    # Get all posts
+    all_posts = topic.posts.all().select_related('author', 'edited_by')
+    
+    # Filter out quarantined posts (unless user can view them)
+    posts = []
+    for post in all_posts:
+        quarantine = is_content_quarantined(post)
+        if quarantine:
+            # Only show if user can view quarantined content
+            if can_view_quarantined_content(post, request.user):
+                posts.append(post)
+        else:
+            posts.append(post)
     
     # Calculate permissions for each post
     posts_with_permissions = []
     for post in posts:
+        quarantine = is_content_quarantined(post)
         posts_with_permissions.append({
             'post': post,
             'can_edit': post.can_edit(request.user),
             'can_delete': post.can_delete(request.user),
+            'is_quarantined': quarantine is not None,
+            'quarantine': quarantine,
         })
     
     context = {
@@ -2909,6 +3039,17 @@ def blog_post_detail(request, username, slug):
         status='published'
     )
     
+    # Check if post is quarantined
+    quarantine = is_content_quarantined(blog_post)
+    if quarantine:
+        # Only allow admins and author to view
+        if not can_view_quarantined_content(blog_post, request.user):
+            messages.error(
+                request, 
+                'This content is currently under review and not available for public viewing.'
+            )
+            return redirect('user_blog_list', username=username)
+    
     # Increment view count
     blog_post.increment_view_count()
     
@@ -2921,7 +3062,7 @@ def blog_post_detail(request, username, slug):
     
     # Handle comment submission
     if request.method == 'POST' and request.user.is_authenticated:
-        if blog_post.allow_comments:
+        if blog_post.allow_comments and not quarantine:  # Don't allow comments on quarantined posts
             content = request.POST.get('content', '').strip()
             parent_id = request.POST.get('parent_id')
             
@@ -2953,7 +3094,9 @@ def blog_post_detail(request, username, slug):
         'blog_post': blog_post,
         'profile_user': profile_user,
         'comments': comments,
-        'can_comment': request.user.is_authenticated and blog_post.allow_comments,
+        'can_comment': request.user.is_authenticated and blog_post.allow_comments and not quarantine,
+        'is_quarantined': quarantine is not None,
+        'quarantine': quarantine,
     }
     
     return render(request, 'blog/blog_post_detail.html', context)

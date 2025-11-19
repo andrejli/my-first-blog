@@ -1447,3 +1447,213 @@ h1::after, h2::after {
     }
 }
 
+/* =================================
+   CONTENT QUARANTINE STYLES
+   ================================= */
+
+/* Quarantine Badge */
+.quarantine-badge {
+    display: inline-block;
+    background-color: #dc3545;
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0%, 100% {
+        background-color: #dc3545;
+        box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+    }
+    50% {
+        background-color: #c82333;
+        box-shadow: 0 0 20px rgba(220, 53, 69, 0.8);
+    }
+}
+
+/* Quarantined Content Container */
+.quarantined-content {
+    border: 3px solid #dc3545;
+    background-color: rgba(220, 53, 69, 0.05);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 15px 0;
+    position: relative;
+}
+
+.quarantined-content::before {
+    content: '🔴';
+    position: absolute;
+    top: -15px;
+    left: 20px;
+    font-size: 24px;
+    background: var(--primary-bg);
+    padding: 0 10px;
+}
+
+/* Quarantine Overlay (for hidden content) */
+.quarantine-overlay {
+    position: relative;
+    background: repeating-linear-gradient(
+        45deg,
+        rgba(220, 53, 69, 0.1),
+        rgba(220, 53, 69, 0.1) 10px,
+        rgba(220, 53, 69, 0.05) 10px,
+        rgba(220, 53, 69, 0.05) 20px
+    );
+    border: 2px solid #dc3545;
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--danger-color);
+}
+
+.quarantine-overlay::after {
+    content: 'CONTENT UNDER REVIEW';
+    display: block;
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    margin-top: 10px;
+    color: #dc3545;
+}
+
+/* Quarantine Alert Message */
+.quarantine-alert {
+    background-color: rgba(220, 53, 69, 0.1);
+    border: 2px solid #dc3545;
+    border-left: 5px solid #dc3545;
+    border-radius: 5px;
+    padding: 15px;
+    margin: 15px 0;
+    color: var(--text-light);
+}
+
+.quarantine-alert h4 {
+    color: #dc3545;
+    margin-bottom: 10px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.quarantine-alert h4::before {
+    content: '⚠️';
+    font-size: 20px;
+}
+
+.quarantine-alert p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+.quarantine-alert ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.quarantine-alert ul li {
+    margin: 5px 0;
+}
+
+/* Quarantine Details Box */
+.quarantine-details {
+    background: var(--tertiary-bg);
+    border: 1px solid var(--border-secondary);
+    border-radius: 5px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.quarantine-details h5 {
+    color: #dc3545;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.quarantine-details .detail-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.quarantine-details .detail-item:last-child {
+    border-bottom: none;
+}
+
+.quarantine-details .detail-label {
+    font-weight: bold;
+    color: var(--muted-color);
+}
+
+.quarantine-details .detail-value {
+    color: var(--text-light);
+}
+
+/* Forum Post / Blog Post Quarantine Styling */
+.forum-post.quarantined,
+.blog-post.quarantined {
+    border-left: 5px solid #dc3545;
+    background: rgba(220, 53, 69, 0.05);
+}
+
+.forum-post.quarantined .post-header,
+.blog-post.quarantined .post-header {
+    background: rgba(220, 53, 69, 0.1);
+}
+
+/* Admin-Only Quarantine Actions */
+.quarantine-actions {
+    background: var(--quaternary-bg);
+    border: 1px solid var(--border-secondary);
+    border-radius: 5px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.quarantine-actions h5 {
+    color: var(--accent-color);
+    margin-bottom: 10px;
+}
+
+.quarantine-actions .btn-group {
+    display: flex;
+    gap: 10px;
+}
+
+.quarantine-actions .btn-group .btn {
+    flex: 1;
+}
+
+/* Responsive Quarantine Styles */
+@media (max-width: 768px) {
+    .quarantine-badge {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+    
+    .quarantine-overlay {
+        padding: 30px 15px;
+    }
+    
+    .quarantine-overlay::after {
+        font-size: 14px;
+    }
+    
+    .quarantine-details .detail-item {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .quarantine-actions .btn-group {
+        flex-direction: column;
+    }
+}
+

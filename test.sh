@@ -243,7 +243,16 @@ else
     test_results+=("All Pytest Tests:FAIL")
 fi
 
-# 17. Pytest with Coverage
+# 17. Quarantine System Tests
+((total_tests++))
+if run_test "Quarantine System Tests" "\"$PYTHON_EXE\" -m pytest tests/test_quarantine.py -v --tb=short" "Test content quarantine system"; then
+    ((passed_tests++))
+    test_results+=("Quarantine System Tests:PASS")
+else
+    test_results+=("Quarantine System Tests:FAIL")
+fi
+
+# 18. Pytest with Coverage
 ((total_tests++))
 if run_test "Pytest Coverage Report" "\"$PYTHON_EXE\" -m pytest tests/ --cov=blog --cov-report=term-missing:skip-covered --tb=short" "Generate comprehensive coverage report"; then
     ((passed_tests++))
