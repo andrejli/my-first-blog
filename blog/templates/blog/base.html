@@ -2,7 +2,7 @@
 {% load static %}
 {% load cli_browser_tags %}
 {% load csp_tags %}
-<html lang="en"{% if user_theme != 'terminal-amber' %} data-theme="{{ user_theme }}"{% endif %}>
+<html lang="en" data-theme="{{ user_theme }}"{% if user_theme == 'terminal-amber' %} data-default-theme="true"{% endif %}>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

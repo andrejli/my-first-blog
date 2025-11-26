@@ -22,6 +22,8 @@ class ThemeSwitcher {
         const html = document.documentElement;
         const serverTheme = html.getAttribute('data-theme');
         if (serverTheme && this.themes[serverTheme]) {
+            // Theme is set by server, use it and update localStorage
+            localStorage.setItem('user_theme', serverTheme);
             return serverTheme;
         }
         
@@ -74,11 +76,10 @@ class ThemeSwitcher {
                 const data = await response.json();
                 const serverTheme = data.theme || 'terminal-amber';
                 
-                // If server theme differs from current, use server theme
+                // Server theme is authoritative - always use it
                 if (serverTheme !== this.currentTheme) {
+                    this.currentTheme = serverTheme;
                     this.applyTheme(serverTheme);
-                    // Update localStorage
-                    localStorage.setItem('user_theme', serverTheme);
                 }
             }
         } catch (error) {

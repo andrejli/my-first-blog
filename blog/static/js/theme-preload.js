@@ -26,6 +26,8 @@
         const html = document.documentElement;
         const serverTheme = html.getAttribute('data-theme');
         if (serverTheme) {
+            // Server has set the theme, save to localStorage for consistency
+            localStorage.setItem('user_theme', serverTheme);
             return; // Already set by server
         }
         
@@ -37,7 +39,7 @@
             theme = getCookie('theme_preference');
         }
         
-        // Apply theme if found and valid
+        // Apply theme if found and valid (and not terminal-amber which is default)
         if (theme && theme !== 'terminal-amber') {
             html.setAttribute('data-theme', theme);
         }

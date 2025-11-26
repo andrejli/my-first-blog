@@ -3116,10 +3116,15 @@ def my_blog_dashboard(request):
     page_obj = paginator.get_page(page_number)
     
     # Statistics
+    total_posts = blog_posts.count()
+    published_posts = blog_posts.filter(status='published')
+    draft_posts = blog_posts.filter(status='draft')
+    archived_posts = blog_posts.filter(status='archived')
+    
     stats = {
-        'total_posts': blog_posts.count(),
-        'published_posts': blog_posts.filter(status='published').count(),
-        'draft_posts': blog_posts.filter(status='draft').count(),
+        'total_posts': total_posts,
+        'published_posts': published_posts.count(),
+        'draft_posts': draft_posts.count(),
         'total_views': sum(post.view_count for post in blog_posts),
         'total_comments': sum(post.get_comment_count() for post in blog_posts),
     }
@@ -3128,6 +3133,17 @@ def my_blog_dashboard(request):
         'page_obj': page_obj,
         'blog_posts': page_obj.object_list,
         'stats': stats,
+        'total_posts': total_posts,
+        'total_views': stats['total_views'],
+        'total_comments': stats['total_comments'],
+        'posts_this_month': blog_posts.filter(
+            created_date__month=timezone.now().month,
+            created_date__year=timezone.now().year
+        ).count(),
+        'published_count': stats['published_posts'],
+        'draft_count': stats['draft_posts'],
+        'archived_count': archived_posts.count(),
+        'is_paginated': page_obj.has_other_pages(),
     }
     
     return render(request, 'blog/my_blog_dashboard.html', context)
