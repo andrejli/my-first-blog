@@ -252,7 +252,52 @@ else
     test_results+=("Quarantine System Tests:FAIL")
 fi
 
-# 18. Pytest with Coverage
+# 18. Cache System Tests
+((total_tests++))
+if run_test "Cache System Tests" "\"$PYTHON_EXE\" manage.py test tests.test_cache_system --verbosity=1" "Test Django cache implementation and performance"; then
+    ((passed_tests++))
+    test_results+=("Cache System Tests:PASS")
+else
+    test_results+=("Cache System Tests:FAIL")
+fi
+
+# 19. Cache Functionality Test
+((total_tests++))
+if run_test "Cache Functionality Test" "\"$PYTHON_EXE\" test_cache.py" "Test cache configuration and basic operations"; then
+    ((passed_tests++))
+    test_results+=("Cache Functionality Test:PASS")
+else
+    test_results+=("Cache Functionality Test:FAIL")
+fi
+
+# 20. Template Fragment Cache Tests
+((total_tests++))
+if run_test "Template Fragment Cache" "\"$PYTHON_EXE\" manage.py test tests.test_template_fragment_cache --no-input" "Test template fragment caching"; then
+    ((passed_tests++))
+    test_results+=("Template Fragment Cache:PASS")
+else
+    test_results+=("Template Fragment Cache:FAIL")
+fi
+
+# 21. N+1 Query Optimization Tests
+((total_tests++))
+if run_test "N+1 Query Optimization" "\"$PYTHON_EXE\" manage.py test tests.test_n_plus_one_optimization --no-input" "Test N+1 query fixes"; then
+    ((passed_tests++))
+    test_results+=("N+1 Query Optimization:PASS")
+else
+    test_results+=("N+1 Query Optimization:FAIL")
+fi
+
+# 22. Static File Optimization Tests
+((total_tests++))
+if run_test "Static File Optimization" "\"$PYTHON_EXE\" -m pytest tests/test_static_file_optimization.py -v" "Test Whitenoise and django-compressor configuration"; then
+    ((passed_tests++))
+    test_results+=("Static File Optimization:PASS")
+else
+    test_results+=("Static File Optimization:FAIL")
+fi
+
+# 23. Pytest with Coverage
 ((total_tests++))
 if run_test "Pytest Coverage Report" "\"$PYTHON_EXE\" -m pytest tests/ --cov=blog --cov-report=term-missing:skip-covered --tb=short" "Generate comprehensive coverage report"; then
     ((passed_tests++))

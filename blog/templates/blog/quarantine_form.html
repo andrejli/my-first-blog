@@ -1,0 +1,174 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block title %}Quarantine {{ content_type }} - Terminal LMS{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="page-header">
+        <h1>🔴 Quarantine {{ content_type }}</h1>
+        <p class="subtitle">This action will hide the content from public view</p>
+    </div>
+
+    <div class="card quarantine-form-card">
+        <h2>Content Preview</h2>
+        <div class="content-preview">
+            {% if post.content %}
+                <div class="preview-text">
+                    {{ post.content|truncatewords:50 }}
+                </div>
+            {% elif post.body %}
+                <div class="preview-text">
+                    {{ post.body|truncatewords:50 }}
+                </div>
+            {% endif %}
+            <div class="preview-meta">
+                <strong>Author:</strong> {{ post.author.username }} |
+                <strong>Posted:</strong> {{ post.created_date|date:"F d, Y \a\t g:i A" }}
+            </div>
+        </div>
+
+        <form method="post" class="quarantine-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="reason">Quarantine Reason <span class="required">*</span></label>
+                <textarea 
+                    id="reason" 
+                    name="reason" 
+                    rows="4" 
+                    required
+                    placeholder="Explain why this content needs to be quarantined (e.g., policy violation, spam, inappropriate content)..."
+                ></textarea>
+                <small>This reason will be visible to the author and other administrators.</small>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-danger">
+                    🔴 Quarantine Content
+                </button>
+                <a href="{{ return_url }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="info-box">
+        <h3>ℹ️ What happens when content is quarantined?</h3>
+        <ul>
+            <li>The content is immediately hidden from public view</li>
+            <li>Only administrators and the original author can view it</li>
+            <li>A 7-day resolution deadline is automatically set</li>
+            <li>You can resolve it later by restoring, deleting, or extending the deadline</li>
+            <li>The author will be notified of the quarantine reason</li>
+        </ul>
+    </div>
+</div>
+
+<style>
+.quarantine-form-card {
+    max-width: 800px;
+    margin: 2rem auto;
+}
+
+.content-preview {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+}
+
+.preview-text {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+.preview-meta {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.quarantine-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.quarantine-form label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.quarantine-form .required {
+    color: #ff4444;
+}
+
+.quarantine-form textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 1rem;
+    resize: vertical;
+}
+
+.quarantine-form textarea:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
+}
+
+.quarantine-form small {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+    border: none;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+.info-box {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 1.5rem;
+    background: var(--info-bg, #e3f2fd);
+    border-left: 4px solid var(--info-color, #2196F3);
+    border-radius: 4px;
+}
+
+.info-box h3 {
+    margin-top: 0;
+    color: var(--text-primary);
+}
+
+.info-box ul {
+    margin: 1rem 0 0 0;
+    padding-left: 1.5rem;
+}
+
+.info-box li {
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+</style>
+{% endblock %}

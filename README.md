@@ -3,7 +3,9 @@
 >[!CAUTION]
 >This project is made with AI! This README may be inaccurate and is still under development.
 
-A **production-ready** Learning Management System (LMS) built with Django, featuring comprehensive security, terminal-inspired dark theme, calendar integration, **Secret Chamber administrative polling system**, and **safe source code upload** capabilities for programming courses.
+A **feature-rich demonstration** Learning Management System (LMS) built with Django, featuring comprehensive security, terminal-inspired dark theme, calendar integration, **Secret Chamber administrative polling system**, and **safe source code upload** capabilities for programming courses.
+
+> ⚠️ **Important**: This project requires significant architectural refactoring before production deployment (5,088-line views.py file, no caching, monolithic structure). Suitable for learning, development, and demonstration purposes.
 
 ![Django](https://img.shields.io/badge/Django-5.2+-success?style=flat-square&logo=django)
 ![Python](https://img.shields.io/badge/Python-3.8+-blue?style=flat-square&logo=python)
@@ -43,7 +45,7 @@ A **production-ready** Learning Management System (LMS) built with Django, featu
 - **🔐 Security Audit Trail**: Complete logging of image processing for compliance
 
 ### 🎨 **Enhanced Terminal Design**
-- **Security First**: Production-ready security with comprehensive file validation
+- **Security Features**: Comprehensive file validation and security features (architecture needs refactoring)
 - **Educational Focus**: Safe source code uploads for programming assignments  
 - **Retro Aesthetics**: Authentic terminal green-on-black color scheme
 - **Multi-Theme Support**: 5 built-in themes with live switching capabilities
@@ -406,13 +408,13 @@ CMD ["gunicorn", "mysite.wsgi:application"]
 - **✅ Secret Chamber Phase 1**: Administrative polling system with secure voting
 
 ### 🎯 **Current Status:**
-**Terminal LMS** is now a **complete, production-ready educational platform** with all core LMS functionality plus the secure Secret Chamber administrative polling system.
+**Terminal LMS** is a **feature-complete educational demo platform** with all core LMS functionality plus the Secret Chamber administrative polling system. **Requires architectural refactoring before production use** (see critical issues: 5,088-line views.py, no caching implementation, monolithic app structure).
 
 #### **📊 Project Statistics:**
 - **Total Features**: 60+ major features implemented
 - **Database Models**: 15+ comprehensive models
 - **Test Coverage**: 100+ automated tests
-- **Security Score**: 8.7/10 (Production-Ready)
+- **Security Score**: 8.7/10 (Good security, needs architectural improvements)
 - **Phases Complete**: 8/8 + Secret Chamber Phase 1
 
 #### **🔮 Future Enhancement Opportunities:**
@@ -493,7 +495,7 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 - **Language**: Python (Django 5.2+)
 - **Database**: SQLite (development), PostgreSQL ready
 - **Frontend**: HTML5, CSS3, Bootstrap 3.2
-- **Security**: Production-ready file upload validation system
+- **Security**: Comprehensive file upload validation system
 - **Theme**: Terminal-inspired dark theme with 5 color schemes
 - **Features**: Complete LMS + Calendar + **Secure File Management** + **Image Privacy Protection** + **iCal Import/Export**
 - **Test Coverage**: 64 comprehensive Django tests + Security validation tests + EXIF removal tests

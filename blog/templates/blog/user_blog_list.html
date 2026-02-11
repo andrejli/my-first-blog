@@ -1,5 +1,6 @@
 {% extends 'blog/base.html' %}
 {% load static %}
+{% load cache %}
 
 {% block title %}{{ profile_user.get_full_name|default:profile_user.username }}'s Blog - FORTIS AURIS LMS{% endblock %}
 

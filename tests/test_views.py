@@ -325,8 +325,8 @@ class TestLessonViews:
         client.login(username='student', password='testpass')
         response = client.get(reverse('lesson_detail', kwargs={'course_id': course.id, 'lesson_id': lesson.id}))
         
-        # Should redirect to course detail with message
-        assert response.status_code == 302
+        # Should return 404 for unenrolled users trying to access lesson
+        assert response.status_code == 404
 
 
 # ================================
@@ -513,6 +513,17 @@ class TestQuizViews:
             is_published=True
         )
         
+        # Add at least one question to the quiz
+        from blog.models import Question, Answer
+        question = Question.objects.create(
+            quiz=quiz,
+            question_text='What is 2+2?',
+            question_type='multiple_choice',
+            points=1
+        )
+        Answer.objects.create(question=question, answer_text='4', is_correct=True)
+        Answer.objects.create(question=question, answer_text='3', is_correct=False)
+        
         # Enroll student
         Enrollment.objects.create(student=student, course=course, status='enrolled')
         
@@ -522,7 +533,8 @@ class TestQuizViews:
         # Should redirect to take quiz
         assert response.status_code == 302
         
-        # Quiz attempt should be created
+        # Quiz attempt should be created - refresh from DB
+        assert QuizAttempt.objects.filter(student=student, quiz=quiz).exists()
         attempt = QuizAttempt.objects.get(student=student, quiz=quiz)
         assert attempt.status == 'in_progress'
         assert attempt.attempt_number == 1

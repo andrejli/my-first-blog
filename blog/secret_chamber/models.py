@@ -85,11 +85,15 @@ class AdminPoll(models.Model):
     @property
     def is_open(self):
         """Check if voting is open"""
+        if not self.end_date:
+            return self.is_active
         return self.is_active and timezone.now() <= self.end_date
     
     @property
     def is_completed(self):
         """Check if poll is completed"""
+        if not self.end_date:
+            return not self.is_active or self.all_admins_voted
         return timezone.now() > self.end_date or not self.is_active or self.all_admins_voted
     
     @property

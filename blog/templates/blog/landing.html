@@ -1,4 +1,5 @@
 {% extends 'blog/base.html' %}
+{% load cache %}
 
 {% block title %}Welcome to FORTIS AURIS LMS{% endblock %}
 
@@ -6,6 +7,7 @@
 <div class="container">
     <div class="row">
         <div class="col-md-8 col-md-offset-2 text-center">
+            {% cache 1800 landing_welcome user.is_authenticated %}
             <div class="welcome-section">
                 <h1 class="terminal-welcome">
                     <i class="fa fa-graduation-cap"></i>
@@ -58,6 +60,7 @@
                     </p>
                 </div>
             </div>
+            {% endcache %}
         </div>
     </div>
 </div>

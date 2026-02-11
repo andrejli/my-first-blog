@@ -1178,6 +1178,9 @@ class Event(models.Model):
             models.Index(fields=['start_date', 'is_published']),
             models.Index(fields=['event_type', 'priority']),
             models.Index(fields=['is_featured', 'start_date']),
+            # P2 Optimization: Composite indexes for common query patterns
+            models.Index(fields=['start_date', 'visibility']),  # For public/registered event queries
+            models.Index(fields=['is_published', 'start_date', 'visibility']),  # For combined filters
             models.Index(fields=['course', 'start_date']),
         ]
     
@@ -1820,6 +1823,7 @@ class ContentQuarantine(models.Model):
         indexes = [
             models.Index(fields=['content_type', 'object_id']),
             models.Index(fields=['status', 'quarantine_date']),
+            # P2 Optimization: The index above already covers status + date queries
         ]
     
     def __str__(self):

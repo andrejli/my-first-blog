@@ -223,7 +223,42 @@ if (Run-Test "Quarantine System Tests" "& '$PYTHON_EXE' -m pytest tests/test_qua
 }
 $testResults += [PSCustomObject]@{Name="Quarantine System Tests"; Passed=($LASTEXITCODE -eq 0)}
 
-# 17. Pytest with Coverage
+# 17. Cache System Tests
+$totalTests++
+if (Run-Test "Cache System Tests" "& '$PYTHON_EXE' manage.py test tests.test_cache_system --verbosity=1" "Test Django cache implementation and performance") {
+    $passedTests++
+}
+$testResults += [PSCustomObject]@{Name="Cache System Tests"; Passed=($LASTEXITCODE -eq 0)}
+
+# 18. Cache Functionality Test
+$totalTests++
+if (Run-Test "Cache Functionality Test" "& '$PYTHON_EXE' test_cache.py" "Test cache configuration and basic operations") {
+    $passedTests++
+}
+$testResults += [PSCustomObject]@{Name="Cache Functionality Test"; Passed=($LASTEXITCODE -eq 0)}
+
+# 19. Template Fragment Cache Tests
+$totalTests++
+if (Run-Test "Template Fragment Cache" "& '$PYTHON_EXE' manage.py test tests.test_template_fragment_cache --no-input" "Test template fragment caching") {
+    $passedTests++
+}
+$testResults += [PSCustomObject]@{Name="Template Fragment Cache"; Passed=($LASTEXITCODE -eq 0)}
+
+# 20. N+1 Query Optimization Tests
+$totalTests++
+if (Run-Test "N+1 Query Optimization" "& '$PYTHON_EXE' manage.py test tests.test_n_plus_one_optimization --no-input" "Test N+1 query fixes") {
+    $passedTests++
+}
+$testResults += [PSCustomObject]@{Name="N+1 Query Optimization"; Passed=($LASTEXITCODE -eq 0)}
+
+# 21. Static File Optimization Tests
+$totalTests++
+if (Run-Test "Static File Optimization" "& '$PYTHON_EXE' -m pytest tests/test_static_file_optimization.py -v" "Test Whitenoise and django-compressor configuration") {
+    $passedTests++
+}
+$testResults += [PSCustomObject]@{Name="Static File Optimization"; Passed=($LASTEXITCODE -eq 0)}
+
+# 22. Pytest with Coverage
 $totalTests++
 if (Run-Test "Pytest Coverage Report" "& '$PYTHON_EXE' -m pytest tests/ --cov=blog --cov-report=term-missing:skip-covered --tb=short" "Generate comprehensive coverage report") {
     $passedTests++

@@ -118,55 +118,132 @@ class DatabaseOptimizer:
 
 
 class QueryOptimizer:
-    """Query optimization utilities"""
+    """Query optimization utilities with enhanced prefetching patterns"""
     
     @staticmethod
     def get_optimized_course_queryset():
-        """Get optimized course queryset with proper select_related"""
-        from blog.models import Course
+        """Get optimized course queryset with proper select_related and prefetching"""
+        from blog.models import Course, Lesson
+        from django.db.models import Count, Q, Prefetch
+        
         return Course.objects.select_related(
             'instructor',
             'instructor__userprofile'
         ).prefetch_related(
-            'lessons',
-            'assignments',
-            'quizzes',
-            'enrollments__student'
+            Prefetch(
+                'lesson_set',
+                queryset=Lesson.objects.select_related('course').order_by('order')
+            ),
+            'assignment_set',
+            'quizzes'  # Course.quizzes is the correct related_name
+        ).annotate(
+            published_lessons_count=Count(
+                'lesson',
+                filter=Q(lesson__is_published=True)
+            ),
+            total_students=Count('enrollment', distinct=True),
+            active_enrollments=Count(
+                'enrollment',
+                filter=Q(enrollment__status='enrolled'),
+                distinct=True
+            )
         )
     
     @staticmethod
     def get_optimized_enrollment_queryset():
-        """Get optimized enrollment queryset"""
+        """Get optimized enrollment queryset with progress tracking"""
         from blog.models import Enrollment
+        from django.db.models import Count, Q, F
+        
         return Enrollment.objects.select_related(
             'student',
             'course',
             'student__userprofile',
             'course__instructor'
+        ).annotate(
+            completed_lessons_count=Count(
+                'student__progress',
+                filter=Q(
+                    student__progress__lesson__course_id=F('course_id'),
+                    student__progress__completed=True
+                )
+            )
         )
     
     @staticmethod
     def get_optimized_assignment_queryset():
-        """Get optimized assignment queryset"""
+        """Get optimized assignment queryset with submission prefetching"""
         from blog.models import Assignment
+        
         return Assignment.objects.select_related(
             'course',
             'course__instructor'
         ).prefetch_related(
-            'submissions__student'
+            'submission_set__student'
         )
     
     @staticmethod
     def get_optimized_quiz_queryset():
-        """Get optimized quiz queryset"""
+        """Get optimized quiz queryset with attempt statistics"""
         from blog.models import Quiz
+        from django.db.models import Count, Avg
+        
         return Quiz.objects.select_related(
             'course',
             'course__instructor'
         ).prefetch_related(
-            'questions__answers',
-            'attempts__student'
+            'questions__answers'
+        ).annotate(
+            total_attempts=Count('attempts', distinct=True),  # Quiz.attempts is correct
+            question_count=Count('questions', distinct=True),  # Rename to avoid @property conflict
+            avg_score=Avg('attempts__score')  # Use attempts, not quizattempt
         )
+    
+    @staticmethod
+    def get_optimized_lesson_queryset():
+        """Get optimized lesson queryset with completion statistics"""
+        from blog.models import Lesson
+        from django.db.models import Count, Q
+        
+        return Lesson.objects.select_related(
+            'course',
+            'course__instructor'
+        ).annotate(
+            total_progress=Count('progress', distinct=True),
+            completed_count=Count(
+                'progress',
+                filter=Q(progress__completed=True),
+                distinct=True
+            )
+        ).order_by('course', 'order')
+    
+    @staticmethod
+    def get_optimized_forum_queryset():
+        """Get optimized forum queryset with topic and post counts"""
+        from blog.models import Forum
+        from django.db.models import Count, Max
+        
+        return Forum.objects.select_related(
+            'course'
+        ).annotate(
+            topic_count=Count('topics', distinct=True),
+            post_count=Count('topics__posts', distinct=True),
+            last_post_date=Max('topics__posts__created_date')
+        ).order_by('name')
+    
+    @staticmethod
+    def get_optimized_event_queryset():
+        """Get optimized event queryset for calendar views"""
+        from blog.models import Event
+        from django.utils import timezone
+        
+        return Event.objects.filter(
+            is_published=True,
+            start_date__gte=timezone.now()
+        ).select_related(
+            'course',
+            'event_type'
+        ).order_by('start_date', 'priority')
 
 
 # Management command for database optimization

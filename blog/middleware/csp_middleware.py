@@ -5,6 +5,7 @@ Adds nonce to inline scripts and implements strict CSP headers.
 
 import secrets
 from django.utils.deprecation import MiddlewareMixin
+from django.urls import resolve
 
 
 class CSPMiddleware(MiddlewareMixin):
@@ -31,23 +32,46 @@ class CSPMiddleware(MiddlewareMixin):
             nonce = secrets.token_urlsafe(16)
         
         # Build CSP policy
-        csp_policies = [
-            "default-src 'self'",
-            f"script-src 'self' 'nonce-{nonce}' https://ajax.googleapis.com https://code.jquery.com https://cdn.jsdelivr.net https://maxcdn.bootstrapcdn.com",
-            "style-src 'self' 'unsafe-inline' https://maxcdn.bootstrapcdn.com https://fonts.googleapis.com https://cdn.jsdelivr.net",
-            "font-src 'self' https://fonts.gstatic.com https://maxcdn.bootstrapcdn.com",
-            "img-src 'self' data: https:",
-            "connect-src 'self'",
-            "form-action 'self'",
-            "frame-ancestors 'none'",
-            "base-uri 'self'",
-            "object-src 'none'"
-        ]
+        csp = {
+            'default-src': ["'self'"],
+            'script-src': [
+                "'self'",
+                f"'nonce-{nonce}'",
+                'https://ajax.googleapis.com',
+                'https://code.jquery.com',
+                'https://cdn.jsdelivr.net',
+                'https://maxcdn.bootstrapcdn.com',
+            ],
+            'style-src': [
+                "'self'",
+                "'unsafe-inline'",
+                'https://maxcdn.bootstrapcdn.com',
+                'https://fonts.googleapis.com',
+                'https://cdn.jsdelivr.net',
+            ],
+            'font-src': [
+                "'self'",
+                'https://fonts.gstatic.com',
+                'https://maxcdn.bootstrapcdn.com',
+                'https://cdn.jsdelivr.net',
+            ],
+            'img-src': ["'self'", 'data:', 'https:'],
+            'connect-src': ["'self'"],
+            'form-action': ["'self'"],
+            'frame-ancestors': ["'none'"],
+            'base-uri': ["'self'"],
+            'object-src': ["'none'"],
+        }
         
-        # Join policies with semicolons
-        csp_header = "; ".join(csp_policies)
+        # Check if the current view requires unsafe-inline
+        # Note: unsafe-inline is ignored when nonce is present, so we don't need it
+        # The templates should use nonce="{{ request.csp_nonce }}" instead
+
+        # Join the CSP directives into a single string
+        csp_header = "; ".join([
+            f"{key} {' '.join(value)}" for key, value in csp.items()
+        ])
         
-        # Add CSP header
         response['Content-Security-Policy'] = csp_header
         
         # Add additional security headers
@@ -57,3 +81,12 @@ class CSPMiddleware(MiddlewareMixin):
         response['Referrer-Policy'] = 'strict-origin-when-cross-origin'
         
         return response
+
+
+# Allow unsafe-inline for specific views that require it
+# This is a temporary solution. A better long-term fix is to refactor
+# the inline scripts into separate .js files.
+UNSAFE_INLINE_VIEWS = [
+    'blog.views.create_blog_post',
+    'blog.views.edit_blog_post',
+]

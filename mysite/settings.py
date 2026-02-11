@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
+from django.core.management.utils import get_random_secret_key
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -20,21 +21,19 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'test-lms-development-key-not-for-production-use-only'
+# Load from environment variable or generate a temporary one for development
+SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key-only-change-in-production-' + get_random_secret_key()[:20])
 
-# Secret Chamber encryption key (generate a new one for production)
-SECRET_CHAMBER_KEY = b'J8f5k2L9n3P6q1R4s7T0u9V2x5Y8z1A4b7C0d3F6g9H2'
+# Secret Chamber encryption key (load from environment or use development key)
+# For production: generate with: python -c "import os; import base64; print(base64.b64encode(os.urandom(32)))"
+SECRET_CHAMBER_KEY = os.environ.get('SECRET_CHAMBER_KEY', b'J8f5k2L9n3P6q1R4s7T0u9V2x5Y8z1A4b7C0d3F6g9H2')
+if isinstance(SECRET_CHAMBER_KEY, str):
+    SECRET_CHAMBER_KEY = SECRET_CHAMBER_KEY.encode('utf-8')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    '::1',
-    'testserver',  # For Django testing
-    '*',  # Allow all hosts for development (remove in production)
-]
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,::1,testserver').split(',')
 
 
 # Application definition
@@ -46,6 +45,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'compressor',  # CSS/JS compression and minification
     'blog.apps.BlogConfig',
     'blog.secret_chamber.apps.SecretChamberConfig',
     
@@ -57,9 +57,42 @@ INSTALLED_APPS = (
     # 'csp',
 )
 
+# =============================================================================
+# CACHING CONFIGURATION
+# =============================================================================
+# ⚠️ CRITICAL PERFORMANCE FIX: Implementing caching (was previously missing)
+# This addresses one of the major architectural issues identified
+
+# For development: Local memory cache
+# For production: Use Redis (install django-redis: pip install django-redis redis)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'lms-cache',
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+        },
+        'TIMEOUT': 300,  # 5 minutes default
+    }
+}
+
+# Production Redis cache (uncomment and configure for production with Redis):
+# CACHES = {
+#     'default': {
+#         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+#         'LOCATION': os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/1'),
+#         'OPTIONS': {
+#             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+#         },
+#         'KEY_PREFIX': 'lms',
+#         'TIMEOUT': 300,
+#     }
+# }
+
 MIDDLEWARE = [
     # Core Django middleware
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Static file serving with compression
     'django.contrib.sessions.middleware.SessionMiddleware', 
     
     # Security monitoring middleware (uncomment after installing dependencies)
@@ -179,6 +212,41 @@ LOGIN_REDIRECT_URL = '/courses/'
 LOGOUT_REDIRECT_URL = '/'
 
 # =============================================================================
+# CACHING CONFIGURATION
+# =============================================================================
+
+# Django Cache Framework - Local Memory Cache for Development
+# For production, switch to Redis: pip install django-redis redis
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'lms-cache',
+        'TIMEOUT': 300,  # Default timeout: 5 minutes
+        'KEY_PREFIX': 'lms',  # Prefix for all cache keys
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+        }
+    }
+}
+
+# Production Redis Configuration (commented out - uncomment and configure for production):
+# CACHES = {
+#     'default': {
+#         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+#         'LOCATION': 'redis://127.0.0.1:6379/1',
+#         'OPTIONS': {
+#             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+#         },
+#         'KEY_PREFIX': 'lms',
+#         'TIMEOUT': 300,  # 5 minutes default
+#     }
+# }
+
+# Cache timeout settings (in seconds)
+CACHE_MIDDLEWARE_SECONDS = 300  # 5 minutes default
+CACHE_MIDDLEWARE_KEY_PREFIX = 'lms'
+
+# =============================================================================
 # SECURITY MONITORING CONFIGURATION
 # =============================================================================
 
@@ -250,3 +318,59 @@ SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 # pip install geoip2 python-whois
 
 # After installing, uncomment the middleware and apps sections above
+
+# =============================================================================
+# STATIC FILE OPTIMIZATION (P1 - HIGH Priority)
+# =============================================================================
+# Whitenoise serves static files with compression and cache-busting
+# Django-compressor minifies and combines CSS/JS files
+# Target: 30-50% page load improvement, 60-80% file size reduction
+
+# Use Whitenoise's compressed manifest storage for automatic cache-busting
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Allow Whitenoise to use Django's staticfiles finders
+WHITENOISE_USE_FINDERS = True
+
+# Enable Brotli compression (better than gzip, ~20% smaller)
+WHITENOISE_BROTLI_SUPPORT = True
+
+# Whitenoise will also serve gzip for older browsers
+WHITENOISE_GZIP_SUPPORT = True
+
+# Cache static files aggressively (1 year for versioned files)
+WHITENOISE_MAX_AGE = 31536000  # 1 year in seconds
+
+# Compress static files in production
+COMPRESS_ENABLED = not DEBUG  # Enable compression when DEBUG=False
+
+# Offline compression (run ./manage.py compress before deployment)
+COMPRESS_OFFLINE = False  # Set to True for production deployments
+
+# CSS minification filters
+COMPRESS_CSS_FILTERS = [
+    'compressor.filters.css_default.CssAbsoluteFilter',  # Fix relative URLs
+    'compressor.filters.cssmin.rCSSMinFilter',            # Minify CSS
+]
+
+# JavaScript minification filters
+COMPRESS_JS_FILTERS = [
+    'compressor.filters.jsmin.JSMinFilter',  # Minify JavaScript
+]
+
+# Cache control for static files served by Whitenoise
+WHITENOISE_INDEX_FILE = True
+
+# Compressor output directory
+COMPRESS_OUTPUT_DIR = 'cache'
+
+# Add compressor finder to staticfiles finders
+STATICFILES_FINDERS = (
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    'compressor.finders.CompressorFinder',  # For django-compressor
+)
+
+# =============================================================================
+# STATIC FILE OPTIMIZATION (P1)
+# =============================================================================

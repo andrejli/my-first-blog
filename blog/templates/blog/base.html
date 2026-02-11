@@ -1,27 +1,41 @@
 <!DOCTYPE html>
 {% load static %}
+{% load compress %}
 {% load cli_browser_tags %}
 {% load csp_tags %}
+{% load cache %}
 <html lang="en" data-theme="{{ user_theme }}"{% if user_theme == 'terminal-amber' %} data-default-theme="true"{% endif %}>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}FORTIS AURIS LMS{% endblock %}</title>
     <meta name="csrf-token" content="{{ csrf_token }}">
+    
+    <!-- External CDN resources (not compressed) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Local CSS (compressed and minified) -->
+    {% compress css %}
     <link rel="stylesheet" href="{% static 'css/blog.css' %}">
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,0,1;wght@300;400;500;700&family=Ubuntu+Mono:ital,0,1;wght@400;700&display=swap" rel="stylesheet">
+    {% endcompress %}
+    
     {% block extra_css %}{% endblock %}
     
     <!-- Immediate Theme Loader - prevents flash -->
+    {% compress js %}
     <script src="{% static 'js/theme-preload.js' %}"></script>
+    {% endcompress %}
 </head>
 <body>
     {% csrf_token %}
     <!-- CLI Browser Navigation - Accessible for Links2, w3m, ELinks, Lynx -->
     <noscript>
+    {% cache 3600 cli_navigation user.is_authenticated user.is_staff user.is_superuser %}
     <div class="cli-navigation" style="background-color: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc;">
         <h4>CLI Browser Navigation</h4>
         <p><strong>FORTIS AURIS LMS</strong> - Main Navigation:</p>
@@ -48,6 +62,9 @@
                 {% if user.is_staff and user.is_superuser %}
                     <li style="margin: 5px 0;">
                         <a href="/admin/">[ADMIN]</a> - Site administration
+                    </li>
+                    <li style="margin: 5px 0;">
+                        <a href="{% url 'quarantine_dashboard' %}">[QUARANTINE]</a> - Content moderation dashboard
                     </li>
                     <li style="margin: 5px 0;">
                         <a href="{% url 'secret_chamber:dashboard' %}">[SECRET CHAMBER]</a> - Admin decision system (confidential)
@@ -77,6 +94,7 @@
         </ul>
         <hr style="margin: 10px 0;">
     </div>
+    {% endcache %}
     </noscript>
 
     <!-- CLI Browser Information Widget -->
@@ -84,6 +102,7 @@
 
     <div class="page-header">
         <h1><a href="{% url 'landing' %}">⚡ FORTIS AURIS LMS</a></h1>
+        {% cache 600 top_menu user.is_authenticated user.id user.is_staff user.is_superuser %}
         <div class="top-menu">
             <span class="zulu-time">
                 CET: <span id="watch">--:--:--:---</span>
@@ -115,6 +134,7 @@
                 <a href="{% url 'register' %}" class="btn btn-default">register</a>
             {% endif %}
         </div>
+        {% endcache %}
     </div>
 
     {% block content %}
@@ -122,6 +142,8 @@
 
 
 
+    
+    <!-- External CDN resources (not compressed) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
     
@@ -142,9 +164,10 @@
         };
     </script>
     
+    <!-- Local JavaScript (compressed and minified) -->
+    {% compress js %}
     <script src="{% static 'js/theme-switcher.js' %}"></script>
     <script src="{% static 'js/cet-clock.js' %}"></script>
-    
-    {% block extra_js %}{% endblock %}
+    {% endcompress %}    {% block extra_js %}{% endblock %}
 </body>
 </html>

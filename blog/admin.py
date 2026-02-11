@@ -1169,5 +1169,12 @@ class QuarantineDecisionAdmin(admin.ModelAdmin):
 # =============================================================================
 
 # Import security admin classes (they self-register)
-from .admin_security import *
+from .admin_security import (
+    SecurityEventAdmin,
+    SystemMetricsAdmin,
+    ThreatIntelligenceAdmin,
+    AuditLogAdmin,
+    AlertRuleAdmin,
+    SecurityAdminSite
+)
 

@@ -155,6 +155,12 @@ urlpatterns = [
     # Calendar View
     path('calendar/', views.event_calendar, name='event_calendar'),
     
+    # Content Quarantine Management (Admin/Staff Only)
+    path('quarantine/forum-post/<int:post_id>/', views.quarantine_forum_post, name='quarantine_forum_post'),
+    path('quarantine/blog-post/<int:post_id>/', views.quarantine_blog_post, name='quarantine_blog_post'),
+    path('quarantine/<int:quarantine_id>/resolve/', views.resolve_quarantine, name='resolve_quarantine'),
+    path('quarantine/dashboard/', views.quarantine_dashboard, name='quarantine_dashboard'),
+    
     # Debug/Test Views
     path('debug/theme-test/', views.theme_debug_view, name='theme_debug'),
 ]

@@ -1,5 +1,6 @@
 {% extends 'blog/base.html' %}
 {% load static %}
+{% load cache %}
 
 {% block title %}FORTIS AURIS LMS - Course Catalog{% endblock %}
 
@@ -11,6 +12,7 @@
                 {% if courses %}
                     <div class="row">
                         {% for course in courses %}
+                        {% cache 300 course_card course.id course.updated_date %}
                         <div class="col-md-6">
                             <div class="course-card panel panel-default">
                                 <div class="panel-body">
@@ -57,6 +59,7 @@
                                 </div>
                             </div>
                         </div>
+                        {% endcache %}
                         {% endfor %}
                     </div>
                 {% else %}

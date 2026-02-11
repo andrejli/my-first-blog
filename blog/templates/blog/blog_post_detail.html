@@ -72,15 +72,24 @@
                     </div>
                     
                     <!-- Author Actions -->
-                    {% if user.is_authenticated and user == blog_post.author %}
-                    <div class="post-actions">
-                        <a href="{% url 'edit_blog_post' blog_post.id %}" class="btn btn-sm btn-warning">
-                            <i class="fa fa-edit"></i> Edit Post
-                        </a>
-                        <a href="{% url 'delete_blog_post' blog_post.id %}" class="btn btn-sm btn-danger">
-                            <i class="fa fa-trash"></i> Delete Post
-                        </a>
-                    </div>
+                    {% if user.is_authenticated %}
+                        {% if user == blog_post.author or user.is_staff %}
+                        <div class="post-actions">
+                            {% if user == blog_post.author %}
+                            <a href="{% url 'edit_blog_post' blog_post.id %}" class="btn btn-sm btn-warning">
+                                <i class="fa fa-edit"></i> Edit Post
+                            </a>
+                            <a href="{% url 'delete_blog_post' blog_post.id %}" class="btn btn-sm btn-danger">
+                                <i class="fa fa-trash"></i> Delete Post
+                            </a>
+                            {% endif %}
+                            {% if user.is_staff and not is_quarantined %}
+                            <a href="{% url 'quarantine_blog_post' blog_post.id %}" class="btn btn-sm btn-danger">
+                                🔴 Quarantine
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
                     {% endif %}
                 </header>
                 

@@ -150,7 +150,7 @@
                         </div>
                         {% endif %}
                         
-                        {% if post_data.can_edit or post_data.can_delete %}
+                        {% if post_data.can_edit or post_data.can_delete or user.is_staff %}
                         <div class="card-footer bg-transparent">
                             <div class="d-flex flex-column flex-sm-row justify-content-end gap-2">
                                 {% if post_data.can_edit %}
@@ -161,6 +161,11 @@
                                 {% if post_data.can_delete %}
                                     <a href="{% url 'delete_post' post.id %}" class="btn btn-outline-danger btn-sm">
                                         <i class="fas fa-trash"></i> Delete
+                                    </a>
+                                {% endif %}
+                                {% if user.is_staff and not post_data.is_quarantined %}
+                                    <a href="{% url 'quarantine_forum_post' post.id %}" class="btn btn-outline-danger btn-sm">
+                                        🔴 Quarantine
                                     </a>
                                 {% endif %}
                             </div>

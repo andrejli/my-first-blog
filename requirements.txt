@@ -30,3 +30,8 @@ gunicorn>=21.0.0
 psycopg2-binary>=2.9.0  # For PostgreSQL
 whitenoise>=6.0.0       # For static files
 django-environ>=0.11.0  # For environment variables
+
+# Static file optimization
+django-compressor>=4.0  # CSS/JS compression and minification
+rcssmin>=1.1.0          # Fast CSS minifier for django-compressor
+rjsmin>=1.2.0           # Fast JS minifier for django-compressor

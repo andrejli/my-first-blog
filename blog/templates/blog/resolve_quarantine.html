@@ -1,0 +1,329 @@
+{% extends 'blog/base.html' %}
+{% load static %}
+
+{% block title %}Resolve Quarantine - Terminal LMS{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="page-header">
+        <h1>⚖️ Resolve Quarantine</h1>
+        <p class="subtitle">Choose how to handle this quarantined content</p>
+    </div>
+
+    <div class="card quarantine-detail-card">
+        <h2>Quarantine Details</h2>
+        
+        <div class="quarantine-info-grid">
+            <div class="info-item">
+                <span class="label">Content Type:</span>
+                <span class="value">{{ quarantine.content_type|title }}</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Quarantined By:</span>
+                <span class="value">{{ quarantine.quarantined_by.username }}</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Quarantine Date:</span>
+                <span class="value">{{ quarantine.quarantine_date|date:"F d, Y \a\t g:i A" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Resolution Deadline:</span>
+                <span class="value">
+                    {% if quarantine.resolution_deadline %}
+                        {{ quarantine.resolution_deadline|date:"F d, Y \a\t g:i A" }}
+                        {% if quarantine.resolution_deadline < now %}
+                            <span class="overdue-badge">OVERDUE</span>
+                        {% endif %}
+                    {% else %}
+                        No deadline set
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+
+        <div class="quarantine-reason">
+            <h3>Quarantine Reason</h3>
+            <p>{{ quarantine.quarantine_reason }}</p>
+        </div>
+
+        <div class="content-preview">
+            <h3>Content Preview</h3>
+            <div class="preview-text">
+                {{ quarantine.get_content_preview }}
+            </div>
+        </div>
+
+        {% if quarantine.linked_poll %}
+        <div class="linked-poll-section">
+            <h3>🗳️ Secret Chamber Poll</h3>
+            <div class="poll-info">
+                <p><strong>Poll Title:</strong> {{ quarantine.linked_poll.title }}</p>
+                <p><strong>Status:</strong> 
+                    {% if quarantine.linked_poll.is_open %}
+                        <span class="badge badge-success">OPEN</span>
+                    {% elif quarantine.linked_poll.is_completed %}
+                        <span class="badge badge-secondary">COMPLETED</span>
+                    {% endif %}
+                </p>
+                <p><strong>Votes:</strong> {{ quarantine.linked_poll.total_votes }} / {{ quarantine.linked_poll.eligible_voters.count }}</p>
+                <a href="{% url 'secret_chamber:poll_detail' quarantine.linked_poll.id %}" class="btn btn-sm btn-primary" target="_blank">
+                    View Poll Details
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card resolution-actions-card">
+        <h2>Resolution Actions</h2>
+        
+        <form method="post" id="resolve-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" id="action-input" value="">
+            
+            <div class="form-group">
+                <label for="notes">Resolution Notes (Optional)</label>
+                <textarea 
+                    id="notes" 
+                    name="notes" 
+                    rows="3"
+                    placeholder="Add any notes about this resolution decision..."
+                ></textarea>
+            </div>
+
+            <div class="action-buttons">
+                <button type="button" class="btn btn-success" onclick="submitAction('RESTORE')">
+                    ✅ Restore Content
+                    <small>Make visible to all users</small>
+                </button>
+                
+                <button type="button" class="btn btn-warning" onclick="submitAction('EXTEND')">
+                    ⏱️ Extend Deadline
+                    <small>Add 7 more days</small>
+                </button>
+                
+                <button type="button" class="btn btn-danger" onclick="submitAction('DELETE')">
+                    🗑️ Delete Content
+                    <small>Permanently remove</small>
+                </button>
+            </div>
+
+            <div class="form-actions">
+                <a href="{% url 'quarantine_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function submitAction(action) {
+    if (action === 'DELETE') {
+        if (!confirm('Are you sure you want to permanently delete this content? This action cannot be undone.')) {
+            return;
+        }
+    } else if (action === 'RESTORE') {
+        if (!confirm('Are you sure you want to restore this content and make it visible to all users?')) {
+            return;
+        }
+    }
+    
+    document.getElementById('action-input').value = action;
+    document.getElementById('resolve-form').submit();
+}
+</script>
+
+<style>
+.quarantine-detail-card,
+.resolution-actions-card {
+    max-width: 900px;
+    margin: 2rem auto;
+}
+
+.quarantine-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.info-item .label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-item .value {
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.overdue-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: #dc3545;
+    color: white;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+.quarantine-reason,
+.content-preview {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.quarantine-reason h3,
+.content-preview h3 {
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+
+.quarantine-reason p {
+    background: var(--bg-secondary);
+    padding: 1rem;
+    border-left: 4px solid #ffc107;
+    border-radius: 4px;
+    line-height: 1.6;
+}
+
+.preview-text {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1rem;
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+.linked-poll-section {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.linked-poll-section h3 {
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+
+.poll-info {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-left: 4px solid #ffc107;
+    border-radius: 6px;
+    padding: 1rem;
+}
+
+.poll-info p {
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.poll-info .badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.poll-info .badge-success {
+    background: #28a745;
+    color: white;
+}
+
+.poll-info .badge-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.resolution-actions-card .form-group {
+    margin-bottom: 2rem;
+}
+
+.resolution-actions-card label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.resolution-actions-card textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 1rem;
+    resize: vertical;
+}
+
+.action-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.action-buttons .btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    min-height: 100px;
+    justify-content: center;
+}
+
+.action-buttons .btn small {
+    font-size: 0.875rem;
+    opacity: 0.9;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #218838;
+}
+
+.btn-warning {
+    background: #ffc107;
+    color: #000;
+}
+
+.btn-warning:hover {
+    background: #e0a800;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+.form-actions {
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+}
+</style>
+{% endblock %}

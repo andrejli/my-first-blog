@@ -1,6 +1,7 @@
 {% extends 'blog/base.html' %}
 {% load static %}
 {% load course_extras %}
+{% load cache %}
 
 {% block title %}FORTIS AURIS LMS - Student Dashboard{% endblock %}
 
@@ -16,6 +17,7 @@
                     </div>
                     <div class="panel-body">
                         {% if course_progress %}
+                            {% cache 300 student_enrollments user.id %}
                             {% for item in course_progress %}
                             <div class="course-progress-item">
                                 <div class="row">
@@ -65,6 +67,7 @@
                                 </div>
                             </div>
                             {% endfor %}
+                            {% endcache %}
                         {% else %}
                             <div class="alert alert-info">
                                 <h4>No active enrollments</h4>

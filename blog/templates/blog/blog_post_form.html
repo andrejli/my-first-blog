@@ -61,7 +61,7 @@
                             <div class="image-upload-section">
                                 <div class="file-upload-area">
                                     <input type="file" id="imageUpload" accept="image/*" style="display: none;">
-                                    <button type="button" class="btn btn-info btn-upload" onclick="document.getElementById('imageUpload').click();">
+                                    <button type="button" class="btn btn-info btn-upload" id="uploadButton">
                                         <i class="fa fa-upload"></i> Upload Image
                                     </button>
                                     <span class="upload-status" id="uploadStatus"></span>
@@ -494,7 +494,7 @@
 
 {% block extra_js %}
 <script src="{% static 'js/markdown-editor.js' %}"></script>
-<script>
+<script nonce="{{ request.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize MarkdownEditor for content field
     if (document.getElementById('content')) {
@@ -530,16 +530,42 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Image Upload Functionality
     const imageUpload = document.getElementById('imageUpload');
+    const uploadButton = document.getElementById('uploadButton');
     const uploadStatus = document.getElementById('uploadStatus');
     const uploadProgress = document.getElementById('uploadProgress');
     const recentImages = document.getElementById('recentImages');
     const imageGrid = document.getElementById('imageGrid');
     const contentTextarea = document.getElementById('content');
     
+    console.log('Image upload elements:', {
+        imageUpload: !!imageUpload,
+        uploadButton: !!uploadButton,
+        uploadStatus: !!uploadStatus
+    });
+    
+    // Trigger file input when upload button is clicked
+    if (uploadButton && imageUpload) {
+        console.log('Setting up upload button click handler');
+        uploadButton.addEventListener('click', function(e) {
+            console.log('Upload button clicked');
+            e.preventDefault(); // Prevent any form submission
+            imageUpload.click();
+        });
+    } else {
+        console.error('Upload button or image input not found');
+    }
+    
     if (imageUpload) {
+        console.log('Setting up file input change handler');
         imageUpload.addEventListener('change', function(e) {
+            console.log('File input changed');
             const file = e.target.files[0];
-            if (!file) return;
+            if (!file) {
+                console.log('No file selected');
+                return;
+            }
+            
+            console.log('File selected:', file.name, file.size, file.type);
             
             // Show progress
             uploadProgress.style.display = 'block';

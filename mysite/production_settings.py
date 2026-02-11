@@ -1,10 +1,14 @@
 """
 Production settings for deployment.
 Use environment variables for sensitive data.
+
+⚠️ WARNING: This file uses 'from .settings import *' which is a wildcard import.
+This is a known code quality issue but is common practice in Django settings files.
+For stricter code quality, consider importing specific settings explicitly.
 """
 import os
 import environ
-from .settings import *
+from .settings import *  # noqa: F403, F401 - Django settings pattern
 
 # Initialize environ
 env = environ.Env(

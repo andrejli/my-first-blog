@@ -1,4 +1,5 @@
 {% extends 'blog/base.html' %}
+{% load cache %}
 
 {% block title %}Discussion Forums{% endblock %}
 
@@ -27,6 +28,7 @@
 
             <div class="row">
                 {% for forum in forums %}
+                {% cache 600 forum_card forum.id user.is_authenticated %}
                 <div class="col-12 col-md-6 col-xl-4 mb-4">
                     <div class="card h-100 shadow-sm">
                         <div class="card-body">
@@ -78,6 +80,7 @@
                         </div>
                     </div>
                 </div>
+                {% endcache %}
                 {% empty %}
                 <div class="col-12">
                     <div class="alert alert-info text-center">
